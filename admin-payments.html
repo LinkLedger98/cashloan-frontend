@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Payments</title>
+</head>
+<body>
+
+<h2>Activate Cashloan Subscription (P400)</h2>
+
+<input type="email" id="email" placeholder="Cashloan email">
+<button onclick="activate()">Activate Subscription</button>
+
+<script>
+async function activate() {
+  const email = document.getElementById("email").value;
+
+  const res = await fetch(
+    "https://cashloan-backend.onrender.com/api/admin/activate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }
+  );
+
+  const data = await res.json();
+  alert(data.message);
+}
+</script>
+
+</body>
+</html>

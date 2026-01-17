@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscription Payment</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h2>Subscription Payment Required</h2>
+
+  <p>Your cashloan account is currently inactive.</p>
+  <p>Subscription fee: <strong>P500 per month</strong></p>
+
+  <h3>How to Pay</h3>
+  <p>Bank transfer or deposit (manual activation by admin).</p>
+
+  <p>After payment, contact LinkLedger admin to activate your account.</p>
+
+  <button onclick="goBack()">Back to Login</button>
+
+  <script>
+    function goBack() {
+      localStorage.removeItem("authToken");
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

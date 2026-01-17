@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Link Ledger Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <h1>Link Ledger</h1>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="pill" id="signedInPill">Signed in</div>
+        <button class="btn-ghost" id="logoutBtn" type="button">Logout</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Client Management</h2>
+      <p>Add clients and search by National ID to see records across all cashloans.</p>
+
+      <h3 style="margin:10px 0 8px 0;">Add Client</h3>
+
+      <form id="addClientForm">
+        <div class="row">
+          <div>
+            <label for="fullName">Full Name</label>
+            <input id="fullName" type="text" placeholder="e.g. MFS Cashloans" required />
+          </div>
+
+          <div>
+            <label for="nationalId">National ID</label>
+            <input id="nationalId" type="text" placeholder="Enter National ID" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="status">Loan Status</label>
+            <select id="status" required>
+              <option value="" selected>Select status</option>
+              <option value="paid">paid</option>
+              <option value="owing">owing</option>
+              <option value="overdue">overdue</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:flex-end;">
+            <button class="btn-primary" type="submit" style="width:100%;">Save Client</button>
+          </div>
+        </div>
+      </form>
+
+      <hr />
+
+      <h3>Search Client by National ID</h3>
+
+      <div class="row">
+        <div>
+          <label for="searchNationalId">National ID</label>
+          <input id="searchNationalId" type="text" placeholder="Enter National ID" />
+        </div>
+
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-ghost" id="searchBtn" type="button" style="width:100%;">Search</button>
+        </div>
+      </div>
+
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+
+  <!-- MUST load config first -->
+  <script src="config.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

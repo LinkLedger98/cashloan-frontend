@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LinkLedger | Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    const token = localStorage.getItem("authToken");
+    const role = localStorage.getItem("userRole");
+
+    if (!token) {
+      alert("Please log in first");
+      window.location.href = "login.html";
+    }
+
+    if (role !== "admin") {
+      alert("Admin only");
+      window.location.href = "dashboard.html";
+    }
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div class="title">
+          <b>LinkLedger</b>
+          <span>Admin Dashboard</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <a class="btn" href="admin-create.html">Create Cashloan</a>
+        <button class="btn danger" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>Admin Super Dashboard</h1>
+      <p class="small">
+        Admin email is locked to <b>admin@linkledger.co.bw</b>. Use admin tools to manage the platform.
+      </p>
+
+      <hr />
+
+      <div class="grid two">
+        <div class="card" style="background: rgba(255,255,255,0.03);">
+          <h2>What Admin Can Do</h2>
+          <ul class="small" style="margin: 0; padding-left: 18px;">
+            <li>Create cashloan accounts</li>
+            <li>Later we will add audit log viewer and payments tracking</li>
+            <li>Later we will add platform analytics and reports</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background: rgba(255,255,255,0.03);">
+          <h2>Status</h2>
+          <p class="small" id="statusText">Checking...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
