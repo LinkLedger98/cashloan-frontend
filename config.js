@@ -1,2 +1,2 @@
 // config.js
-const API_BASE = "https://cashloan-backend.onrender.com";
+window.API_BASE = "https://cashloan-backend.onrender.com";
