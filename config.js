@@ -1,3 +1,2 @@
-// frontend/config.js
-// One place to control your backend URL
-window.API_BASE_URL = "https://cashloan-backend.onrender.com";
+// config.js
+export const API_BASE = "https://cashloan-backend.onrender.com";
