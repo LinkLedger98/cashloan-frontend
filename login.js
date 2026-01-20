@@ -1,59 +1,54 @@
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ login.js loaded");
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("login.js loaded");
 
-  const form = document.getElementById("loginForm");
-  const msg = document.getElementById("msg");
+  var form = document.getElementById("loginForm");
+  var msg = document.getElementById("msg");
 
   if (!form) {
-    console.error("❌ loginForm not found in HTML");
+    console.error("loginForm not found");
     return;
   }
 
-  const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
-  console.log("API_BASE_URL =", API_BASE_URL);
-
-  if (!API_BASE_URL) {
-    msg.textContent = "❌ Config missing. Check script order/path for config.js";
+  if (!window.APP_CONFIG || !window.APP_CONFIG.API_BASE_URL) {
+    msg.textContent = "Config missing";
     return;
   }
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault(); // ✅ stops refresh
+  var API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    console.log("submit intercepted");
 
     msg.textContent = "Logging in...";
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
+    var email = document.getElementById("email").value.trim();
+    var password = document.getElementById("password").value;
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+    fetch(API_BASE_URL + "/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password })
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        if (result.status !== 200) {
+          msg.textContent = result.data.message || "Login failed";
+          return;
+        }
+
+        localStorage.setItem("authToken", result.data.token);
+        localStorage.setItem("userEmail", result.data.email || email);
+
+        window.location.href = "dashboard.html";
+      })
+      .catch(function (err) {
+        console.error(err);
+        msg.textContent = "Network error";
       });
-
-      const data = await res.json().catch(() => ({}));
-      console.log("Login status:", res.status);
-      console.log("Login body:", data);
-
-      if (!res.ok) {
-        msg.textContent = data.message || `Login failed (${res.status})`;
-        return;
-      }
-
-      if (!data.token) {
-        msg.textContent = "Login succeeded but token missing in response.";
-        return;
-      }
-
-      localStorage.setItem("authToken", data.token);
-      localStorage.setItem("userEmail", data.email || email);
-
-      msg.textContent = "✅ Success. Redirecting...";
-      window.location.href = "dashboard.html";
-    } catch (err) {
-      console.error("❌ Network error:", err);
-      msg.textContent = "❌ Network/CORS error. Check backend URL & console.";
-    }
   });
 });
