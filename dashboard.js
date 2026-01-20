@@ -1,69 +1,145 @@
-﻿const token = localStorage.getItem("authToken");
-
-if (!token) {
-  alert("Please log in first");
-  window.location.href = "login.html";
+/********************************
+ * AUTH HELPERS
+ ********************************/
+function getToken() {
+  return localStorage.getItem("authToken");
 }
 
-async function addClient(e) {
-  e.preventDefault();
+function requireLogin() {
+  const token = getToken();
+  if (!token) {
+    alert("Please log in first");
+    window.location.href = "login.html";
+    return false;
+  }
+  return true;
+}
+
+/********************************
+ * CONFIG CHECK
+ ********************************/
+const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
+
+if (!API_BASE_URL) {
+  alert("Configuration error: API_BASE_URL not found. Check config.js path and script order.");
+  throw new Error("APP_CONFIG missing");
+}
+
+/********************************
+ * CLIENT ACTIONS
+ ********************************/
+async function addClient() {
+  if (!requireLogin()) return;
 
   const fullName = document.getElementById("fullName").value.trim();
   const nationalId = document.getElementById("nationalId").value.trim();
   const status = document.getElementById("status").value;
+  const token = getToken();
 
-  const response = await fetch(window.API_BASE + "/api/clients", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ fullName, nationalId, status })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    alert(data.message || "Failed to add client");
+  if (!fullName || !nationalId || !status) {
+    alert("Please fill all fields");
     return;
   }
 
-  alert("Client added successfully");
-  document.getElementById("clientForm").reset();
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/clients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ fullName, nationalId, status })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.message || "Failed to add client");
+      return;
+    }
+
+    alert("Client added successfully");
+    document.getElementById("fullName").value = "";
+    document.getElementById("nationalId").value = "";
+    document.getElementById("status").value = "paid";
+  } catch (err) {
+    console.error(err);
+    alert("Server error while adding client");
+  }
 }
 
 async function searchClient() {
+  if (!requireLogin()) return;
+
   const nationalId = document.getElementById("searchNationalId").value.trim();
   const resultsDiv = document.getElementById("results");
-  resultsDiv.innerHTML = "";
+  const token = getToken();
 
   if (!nationalId) {
     alert("Enter National ID");
     return;
   }
 
-  const response = await fetch(
-    window.API_BASE + "/api/clients/search?nationalId=" + encodeURIComponent(nationalId),
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  resultsDiv.innerHTML = "Searching...";
 
-  const data = await response.json();
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      }
+    );
 
-  if (!response.ok || data.length === 0) {
-    resultsDiv.innerHTML = "<p>No records found</p>";
-    return;
+    const data = await res.json().catch(() => []);
+
+    if (!res.ok) {
+      resultsDiv.innerHTML = "";
+      alert(data.message || "Search failed");
+      return;
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      resultsDiv.innerHTML = "<p>No records found</p>";
+      return;
+    }
+
+    resultsDiv.innerHTML = "";
+    data.forEach((r) => {
+      const item = document.createElement("div");
+      item.className = "result-item";
+      item.innerHTML = `
+        <div><strong>${r.fullName}</strong> (${r.nationalId})</div>
+        <div>Status: <span class="badge ${r.status}">${r.status}</span></div>
+        <div class="small">Reported by: ${r.cashloanEmail}</div>
+      `;
+      resultsDiv.appendChild(item);
+    });
+  } catch (err) {
+    console.error(err);
+    resultsDiv.innerHTML = "";
+    alert("Server error while searching");
   }
-
-  data.forEach(record => {
-    const div = document.createElement("div");
-    div.className = "result-item";
-    div.innerHTML = `
-      <strong>${record.fullName}</strong><br>
-      Status: ${record.status}<br>
-      Cashloan: ${record.cashloanEmail}
-    `;
-    resultsDiv.appendChild(div);
-  });
 }
 
-document.getElementById("clientForm").addEventListener("submit", addClient);
+/********************************
+ * LOGOUT
+ ********************************/
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail"); // ✅ correct key
+  window.location.href = "login.html";
+}
+
+/********************************
+ * EXPOSE TO HTML
+ ********************************/
+window.addClient = addClient;
+window.searchClient = searchClient;
+window.logout = logout;
+
+/********************************
+ * PAGE GUARD
+ ********************************/
+requireLogin();
