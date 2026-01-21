@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(function (result) {
         if (result.status !== 200) {
-          msg.textContent = result.data?.message || "Login failed";
+          msg.textContent = (result.data && result.data.message) ? result.data.message : "Login failed";
           return;
         }
 
@@ -40,7 +40,8 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("userEmail", result.data.email || email);
         window.location.href = "dashboard.html";
       })
-      .catch(function () {
+      .catch(function (err) {
+        console.error(err);
         msg.textContent = "Network error";
       });
   });
