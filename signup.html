@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account • LinkLedger</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <main class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <h1>LinkLedger</h1>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn-ghost" href="index.html">Home</a>
+        <a class="btn-ghost" href="login.html">Sign in</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Create your lender account</h2>
+      <p>Register your business to start verifying borrower history.</p>
+
+      <form id="signupForm">
+        <div class="row">
+          <div>
+            <label for="businessName">Business name</label>
+            <input id="businessName" type="text" required />
+          </div>
+
+          <div>
+            <label for="city">City</label>
+            <input id="city" type="text" placeholder="Gaborone" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="email">Email</label>
+            <input id="email" type="email" required />
+          </div>
+
+          <div>
+            <label for="phone">Phone</label>
+            <input id="phone" type="tel" placeholder="+267 ..." required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="password">Password</label>
+            <input id="password" type="password" required />
+          </div>
+
+          <div>
+            <label for="confirmPassword">Confirm password</label>
+            <input id="confirmPassword" type="password" required />
+          </div>
+        </div>
+
+        <button class="btn-primary" type="submit">Create account</button>
+        <p id="msg" class="small" style="margin-top:10px;"></p>
+      </form>
+    </div>
+  </main>
+
+  <!-- If you don't have signup.js yet, keep this commented out -->
+  <!-- <script src="config.js?v=FINAL"></script>
+  <script src="signup.js?v=FINAL"></script> -->
+</body>
+</html>

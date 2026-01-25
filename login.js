@@ -1,21 +1,19 @@
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("login loaded");
-
   var form = document.getElementById("loginForm");
   var msg = document.getElementById("msg");
-
   if (!form) return;
-  if (!window.APP_CONFIG) return;
+
+  if (!window.APP_CONFIG || !window.APP_CONFIG.API_BASE_URL) {
+    if (msg) msg.textContent = "Config not loaded. Check config.js";
+    return;
+  }
 
   var API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 
-  msg.textContent = "JS loaded OK";
-
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    console.log("submit intercepted");
 
-    msg.textContent = "Logging in...";
+    if (msg) msg.textContent = "Logging in...";
 
     var email = document.getElementById("email").value;
     var password = document.getElementById("password").value;
@@ -32,17 +30,19 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(function (result) {
         if (result.status !== 200) {
-          msg.textContent = (result.data && result.data.message) ? result.data.message : "Login failed";
+          if (msg) msg.textContent = (result.data && result.data.message) ? result.data.message : "Login failed";
           return;
         }
 
         localStorage.setItem("authToken", result.data.token);
         localStorage.setItem("userEmail", result.data.email || email);
-        window.location.href = "dashboard.html";
+
+        // ✅ Redirect to welcome page first (sales page)
+        window.location.href = "welcome.html";
       })
       .catch(function (err) {
         console.error(err);
-        msg.textContent = "Network error";
+        if (msg) msg.textContent = "Network error";
       });
   });
 });

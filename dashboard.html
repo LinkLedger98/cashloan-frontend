@@ -1,85 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Link Ledger Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard • LinkLedger</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <div class="container">
+  <main class="container">
+
     <div class="topbar">
       <div class="brand">
         <div class="brand-badge"></div>
-        <h1>Link Ledger</h1>
+        <h1>LinkLedger</h1>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="pill" id="signedInPill">Signed in</div>
-        <button class="btn-ghost" id="logoutBtn" type="button">Logout</button>
+      <div class="topbar-actions">
+        <span id="emailPill" class="email-pill" title="Logged in account">Logged in</span>
+        <a id="adminLink" class="btn-ghost btn-sm" href="admin.html" style="display:none;">Admin</a>
+        <a class="btn-ghost btn-sm" href="index.html">Home</a>
+        <button class="btn-ghost btn-sm" type="button" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Client Management</h2>
-      <p>Add clients and search by National ID to see records across all cashloans.</p>
-
-      <h3 style="margin:10px 0 8px 0;">Add Client</h3>
-
-      <form id="addClientForm">
-        <div class="row">
-          <div>
-            <label for="fullName">Full Name</label>
-            <input id="fullName" type="text" placeholder="e.g. MFS Cashloans" required />
-          </div>
-
-          <div>
-            <label for="nationalId">National ID</label>
-            <input id="nationalId" type="text" placeholder="Enter National ID" required />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label for="status">Loan Status</label>
-            <select id="status" required>
-              <option value="" selected>Select status</option>
-              <option value="paid">paid</option>
-              <option value="owing">owing</option>
-              <option value="overdue">overdue</option>
-            </select>
-          </div>
-
-          <div style="display:flex; align-items:flex-end;">
-            <button class="btn-primary" type="submit" style="width:100%;">Save Client</button>
-          </div>
-        </div>
-      </form>
+    <div class="card" style="margin-top:16px;">
+      <h2>Dashboard</h2>
+      <p class="muted">Add and verify borrowers using National ID-based history.</p>
 
       <hr />
 
-      <h3>Search Client by National ID</h3>
+      <h3 class="section-title">Add borrower</h3>
+
+      <div class="row">
+        <div>
+          <label for="fullName">Full name</label>
+          <input id="fullName" type="text" placeholder="e.g. Kabelo M." />
+        </div>
+
+        <div>
+          <label for="nationalId">National ID</label>
+          <input id="nationalId" type="text" placeholder="e.g. 123456789" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label for="status">Loan status</label>
+          <select id="status">
+            <option value="paid">paid</option>
+            <option value="owing">owing</option>
+            <option value="overdue">overdue</option>
+          </select>
+        </div>
+
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" type="button" onclick="addClient()">Add borrower</button>
+        </div>
+      </div>
+
+      <hr />
+
+      <h3 class="section-title">Verify borrower</h3>
 
       <div class="row">
         <div>
           <label for="searchNationalId">National ID</label>
-          <input id="searchNationalId" type="text" placeholder="Enter National ID" />
+          <input id="searchNationalId" type="text" placeholder="Enter National ID to search" />
         </div>
 
         <div style="display:flex; align-items:flex-end;">
-          <button class="btn-ghost" id="searchBtn" type="button" style="width:100%;">Search</button>
+          <button class="btn-primary" style="width:100%;" type="button" onclick="searchClient()">Search</button>
         </div>
       </div>
 
-      <div class="results" id="results"></div>
+      <div id="results" class="results"></div>
     </div>
-  </div>
 
-  <script src="config.js"></script>
-<script src="dashboard.js"></script>
-</body>
-</html>
+  </main>
 
+  <script src="config.js?v=DASH2"></script>
+  <script src="dashboard.js?v=DASH2"></script>
 </body>
 </html>

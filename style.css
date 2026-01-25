@@ -1,4 +1,4 @@
-r:root{
+:root{
   --bg:#0b0b0f;
   --card:#11111a;
   --text:#f5f5f7;
@@ -7,39 +7,54 @@ r:root{
 
   --pink:#ff2ea6;
   --pink2:#ff5bc0;
-
+  --danger:#ff4d4d;
   --ok:#22c55e;
   --warn:#f59e0b;
-  --danger:#ff4d4d;
-
-  /* NEW: light fade color */
-  --fade:#f4f4f7;
 }
 
-*{ box-sizing:border-box; margin:0; padding:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
 
 body{
-  /* polished: darker top, softer mid, clean white bottom */
   background:
-    radial-gradient(1100px 520px at 10% 0%, rgba(255,46,166,0.18), transparent 55%),
-    radial-gradient(1100px 520px at 95% 0%, rgba(255,46,166,0.10), transparent 60%),
-    linear-gradient(180deg, #0b0b0f 0%, #171722 38%, #ffffff 100%);
+    linear-gradient(
+      180deg,
+      #0b0b0f 0%,
+      #1a1a24 35%,
+      #f4f4f7 100%
+    );
   color:var(--text);
   min-height:100vh;
   padding:24px;
 }
 
-.container{ max-width:980px; margin:0 auto; }
+.container{
+  max-width:980px;
+  margin:0 auto;
+}
 
-.brand{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 
 .brand-badge{
-  width:14px; height:14px; border-radius:999px;
+  width:14px;
+  height:14px;
+  border-radius:999px;
   background:var(--pink);
   box-shadow:0 0 22px rgba(255,46,166,0.55);
 }
 
-.brand h1{ font-size:18px; letter-spacing:0.2px; }
+.brand h1{
+  font-size:18px;
+  letter-spacing:0.2px;
+}
 
 .topbar{
   display:flex;
@@ -49,45 +64,79 @@ body{
   margin-bottom:16px;
 }
 
-.pill{
+.topbar-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+/* NEW: logged-in email pill */
+.email-pill{
   padding:8px 10px;
   border-radius:999px;
   border:1px solid var(--border);
   color:var(--muted);
   font-size:13px;
-  background:rgba(0,0,0,0.18);
-  backdrop-filter: blur(10px);
+  background: rgba(0,0,0,0.18);
+  max-width: 360px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
-/* Card stays dark and premium even on light background */
 .card{
-  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.20));
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
   border:1px solid var(--border);
-  border-radius:18px;
+  border-radius:16px;
   padding:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.40);
-  backdrop-filter: blur(14px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.55);
 }
 
-.card h2{ font-size:18px; margin-bottom:14px; }
+.card h2{
+  font-size:18px;
+  margin-bottom:8px;
+}
 
-.card p{ color:var(--muted); margin-bottom:14px; font-size:14px; }
+.section-title{
+  font-size:15px;
+  margin-bottom:10px;
+}
 
-form{ display:flex; flex-direction:column; gap:12px; }
+.muted{
+  color:var(--muted);
+  font-size:14px;
+}
 
-label{ font-size:13px; color:var(--muted); margin-bottom:4px; }
+.card p{
+  color:var(--muted);
+  margin-bottom:14px;
+  font-size:14px;
+}
+
+form{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+label{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:4px;
+  display:block;
+}
 
 input, select{
   width:100%;
   padding:12px 12px;
   border-radius:12px;
   border:1px solid var(--border);
-  background:rgba(0,0,0,0.18);
+  background:rgba(0,0,0,0.25);
   color:var(--text);
   outline:none;
 }
-
-input::placeholder{ color:rgba(245,245,247,0.45); }
 
 input:focus, select:focus{
   border-color:rgba(255,46,166,0.7);
@@ -100,10 +149,7 @@ button{
   padding:12px 14px;
   font-weight:600;
   cursor:pointer;
-  transition: transform .06s ease, filter .12s ease;
 }
-
-button:active{ transform: translateY(1px); }
 
 .btn-primary{
   background: linear-gradient(90deg, var(--pink), var(--pink2));
@@ -111,15 +157,33 @@ button:active{ transform: translateY(1px); }
   box-shadow:0 12px 30px rgba(255,46,166,0.25);
 }
 
-.btn-primary:hover{ filter:brightness(1.05); }
-
-.btn-ghost{
-  background:rgba(255,255,255,0.06);
-  color:var(--text);
-  border:1px solid var(--border);
+.btn-primary:hover{
+  filter:brightness(1.05);
 }
 
-.btn-ghost:hover{ filter:brightness(1.1); }
+.btn-ghost{
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.btn-ghost:hover{
+  background: rgba(255,255,255,0.05);
+}
+
+.btn-sm{
+  padding:9px 12px;
+  border-radius:12px;
+  font-size:13px;
+}
 
 .row{
   display:grid;
@@ -130,6 +194,7 @@ button:active{ transform: translateY(1px); }
 @media (max-width:720px){
   .row{ grid-template-columns:1fr; }
   body{ padding:16px; }
+  .email-pill{ max-width: 100%; }
 }
 
 hr{
@@ -139,7 +204,6 @@ hr{
   margin:18px 0;
 }
 
-/* ✅ SEARCH RESULTS POLISH */
 .results{
   margin-top:12px;
   display:flex;
@@ -148,41 +212,10 @@ hr{
 }
 
 .result-item{
-  padding:14px;
-  border-radius:14px;
+  padding:12px;
+  border-radius:12px;
   border:1px solid var(--border);
-  background:rgba(0,0,0,0.16);
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:14px;
-}
-
-.result-left{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  min-width:0;
-}
-
-.result-name{
-  font-weight:700;
-  letter-spacing:0.2px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.result-meta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  align-items:center;
-}
-
-.small{
-  font-size:12px;
-  color:var(--muted);
+  background:rgba(0,0,0,0.20);
 }
 
 .badge{
@@ -194,30 +227,15 @@ hr{
   font-size:12px;
   border:1px solid var(--border);
   color:var(--muted);
-  background:rgba(255,255,255,0.04);
 }
 
 .badge.paid{ border-color:rgba(34,197,94,0.35); color:#bff3cf; }
 .badge.owing{ border-color:rgba(245,158,11,0.35); color:#ffe3b0; }
 .badge.overdue{ border-color:rgba(255,77,77,0.35); color:#ffc1c1; }
 
-.idpill{
-  padding:6px 10px;
-  border-radius:999px;
+.small{
   font-size:12px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,0.04);
-  color:rgba(245,245,247,0.75);
-}
-
-.result-right{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  text-align:right;
-}
-
-.result-date{
-  font-size:12px;
-  color:rgba(245,245,247,0.55);
+  color:var(--muted);
+  margin-top:6px;
+  display:block;
 }

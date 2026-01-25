@@ -1,8 +1,18 @@
-/********************************
- * AUTH HELPERS
- ********************************/
+// ------------------------
+// Auth helpers
+// ------------------------
 function getToken() {
   return localStorage.getItem("authToken");
+}
+
+function getUserEmail() {
+  return localStorage.getItem("userEmail");
+}
+
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  window.location.href = "login.html";
 }
 
 function requireLogin() {
@@ -15,26 +25,67 @@ function requireLogin() {
   return true;
 }
 
-/********************************
- * CONFIG CHECK
- ********************************/
-const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
-
-if (!API_BASE_URL) {
-  alert("Configuration error: API_BASE_URL not found. Check config.js path and script order.");
-  throw new Error("APP_CONFIG missing");
+// If token expires or backend rejects it, handle it cleanly
+function handleAuthFailure() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  alert("Your session expired. Please log in again.");
+  window.location.href = "login.html";
 }
 
-/********************************
- * CLIENT ACTIONS
- ********************************/
+// Wrap fetch so we consistently handle 401/403
+async function apiFetch(url, options) {
+  const res = await fetch(url, options);
+
+  if (res.status === 401 || res.status === 403) {
+    handleAuthFailure();
+    // stop further code
+    throw new Error("Unauthorized");
+  }
+
+  return res;
+}
+
+// ------------------------
+// UI init (email pill + admin link)
+// ------------------------
+function initTopbar() {
+  const email = getUserEmail() || "";
+  const emailPill = document.getElementById("emailPill");
+  const adminLink = document.getElementById("adminLink");
+
+  if (emailPill) {
+    emailPill.textContent = email ? ("Logged in as: " + email) : "Logged in";
+  }
+
+  // Simple admin check (MVP)
+  // Change this email to your real admin account later if needed.
+  if (adminLink) {
+    if (email && email.toLowerCase() === "admin@linkledger.co.bw") {
+      adminLink.style.display = "inline-flex";
+    } else {
+      adminLink.style.display = "none";
+    }
+  }
+}
+
+// ------------------------
+// Core actions
+// ------------------------
 async function addClient() {
   if (!requireLogin()) return;
 
   const fullName = document.getElementById("fullName").value.trim();
   const nationalId = document.getElementById("nationalId").value.trim();
   const status = document.getElementById("status").value;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
+
+  if (!API_BASE_URL) {
+    alert("Config not loaded. Check config.js");
+    return;
+  }
 
   if (!fullName || !nationalId || !status) {
     alert("Please fill all fields");
@@ -42,29 +93,33 @@ async function addClient() {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/clients`, {
+    const res = await apiFetch(API_BASE_URL + "/api/clients", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": token
       },
-      body: JSON.stringify({ fullName, nationalId, status })
+      body: JSON.stringify({ fullName: fullName, nationalId: nationalId, status: status })
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      alert(data.message || "Failed to add client");
+      alert(data.message || "Failed to add borrower");
       return;
     }
 
-    alert("Client added successfully");
+    alert("Borrower added successfully");
+
     document.getElementById("fullName").value = "";
     document.getElementById("nationalId").value = "";
     document.getElementById("status").value = "paid";
   } catch (err) {
+    // apiFetch already handles 401/403
     console.error(err);
-    alert("Server error while adding client");
+    if (String(err && err.message) !== "Unauthorized") {
+      alert("Server error while adding borrower");
+    }
   }
 }
 
@@ -73,7 +128,14 @@ async function searchClient() {
 
   const nationalId = document.getElementById("searchNationalId").value.trim();
   const resultsDiv = document.getElementById("results");
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
+
+  if (!API_BASE_URL) {
+    alert("Config not loaded. Check config.js");
+    return;
+  }
 
   if (!nationalId) {
     alert("Enter National ID");
@@ -83,12 +145,10 @@ async function searchClient() {
   resultsDiv.innerHTML = "Searching...";
 
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
+    const res = await apiFetch(
+      API_BASE_URL + "/api/clients/search?nationalId=" + encodeURIComponent(nationalId),
       {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: { "Authorization": token }
       }
     );
 
@@ -96,50 +156,46 @@ async function searchClient() {
 
     if (!res.ok) {
       resultsDiv.innerHTML = "";
-      alert(data.message || "Search failed");
+      alert((data && data.message) || "Search failed");
       return;
     }
 
     if (!Array.isArray(data) || data.length === 0) {
-      resultsDiv.innerHTML = "<p>No records found</p>";
+      resultsDiv.innerHTML = "<p class='small'>No records found</p>";
       return;
     }
 
     resultsDiv.innerHTML = "";
-    data.forEach((r) => {
+
+    data.forEach(function (r) {
       const item = document.createElement("div");
       item.className = "result-item";
-      item.innerHTML = `
-        <div><strong>${r.fullName}</strong> (${r.nationalId})</div>
-        <div>Status: <span class="badge ${r.status}">${r.status}</span></div>
-        <div class="small">Reported by: ${r.cashloanEmail}</div>
-      `;
+      item.innerHTML =
+        "<div><strong>" + (r.fullName || "Unknown") + "</strong> (" + (r.nationalId || "") + ")</div>" +
+        "<div>Status: <span class='badge " + (r.status || "") + "'>" + (r.status || "") + "</span></div>" +
+        "<div class='small'>Reported by: " + (r.cashloanEmail || r.userEmail || "Unknown") + "</div>";
+
       resultsDiv.appendChild(item);
     });
   } catch (err) {
     console.error(err);
     resultsDiv.innerHTML = "";
-    alert("Server error while searching");
+    if (String(err && err.message) !== "Unauthorized") {
+      alert("Server error while searching");
+    }
   }
 }
 
-/********************************
- * LOGOUT
- ********************************/
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail"); // ✅ correct key
-  window.location.href = "login.html";
-}
-
-/********************************
- * EXPOSE TO HTML
- ********************************/
+// ------------------------
+// Expose for HTML buttons
+// ------------------------
 window.addClient = addClient;
 window.searchClient = searchClient;
 window.logout = logout;
 
-/********************************
- * PAGE GUARD
- ********************************/
-requireLogin();
+// ------------------------
+// Boot
+// ------------------------
+if (requireLogin()) {
+  initTopbar();
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome • LinkLedger</title>
+  <link rel="stylesheet" href="welcome.css" />
+</head>
+
+<body>
+  <div class="page">
+
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Home">
+        <img src="assets/logo.png" class="brand-logo" alt="LinkLedger Logo">
+      </a>
+
+      <nav class="nav">
+        <a class="btn-ghost" href="index.html">Home</a>
+        <a class="btn-ghost" href="dashboard.html">Dashboard</a>
+        <button class="btn-ghost" onclick="logout()">Logout</button>
+      </nav>
+    </header>
+
+    <main class="wrap">
+
+      <section class="hero">
+        <div class="hero-left">
+
+          <div class="flag-row">
+            <div class="bw-flag" aria-label="Flag of Botswana" title="Botswana"></div>
+            <div class="flag-text">
+              <div class="kicker">Botswana-first platform</div>
+              <div class="tagline">Where trust meets transparency</div>
+            </div>
+          </div>
+
+          <div class="logo-hero">
+            <img src="assets/logo.png" class="logo-big" alt="LinkLedger Logo" />
+          </div>
+
+          <h1>Welcome to LinkLedger.</h1>
+          <p class="lead">
+            You’re now signed in. LinkLedger helps micro-lenders and similar institutions verify borrower history,
+            reduce fraud, and prevent repeat default hopping using National ID-based reporting.
+          </p>
+
+          <div class="cta-row">
+            <a class="btn-primary" href="dashboard.html">Go to Dashboard</a>
+            <a class="btn-ghost" href="index.html#pricing">View Pricing</a>
+          </div>
+
+          <div class="note">
+            <b>Early Access:</b> We’re onboarding lenders and improving features based on real Botswana market needs.
+          </div>
+        </div>
+
+        <aside class="hero-right card">
+          <div class="panel-title">Quick Summary</div>
+
+          <div class="list">
+            <span>• Register your business</span>
+            <span>• Add borrowers using National ID</span>
+            <span>• Mark: paid / owing / overdue</span>
+            <span>• Verify borrower history across lenders</span>
+            <span>• Improve collections + reduce fraud</span>
+          </div>
+
+          <div class="pricing">
+            Starting at <b>P500 / month</b> per business.
+          </div>
+
+          <div class="pill-row">
+            <span class="chip">Fast</span>
+            <span class="chip">Secure</span>
+            <span class="chip">Local-first</span>
+          </div>
+        </aside>
+
+        <div class="brand-shape" aria-hidden="true">
+          <span class="shape-m1"></span>
+          <span class="shape-mid"></span>
+          <span class="shape-m2"></span>
+        </div>
+
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      © <span id="year"></span> LinkLedger • Botswana
+    </footer>
+
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    function logout() {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userEmail");
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
