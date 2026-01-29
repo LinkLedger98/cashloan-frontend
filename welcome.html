@@ -3,104 +3,186 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome • LinkLedger</title>
+  <title>Welcome | LinkLedger</title>
   <link rel="stylesheet" href="welcome.css" />
+  <meta name="description" content="Welcome to LinkLedger — Where Trust Meets Transparency." />
 </head>
 
 <body>
-  <div class="page">
+  <div class="wrap">
 
+    <!-- Top bar -->
     <header class="topbar">
-      <a class="brand" href="index.html" aria-label="Home">
-        <img src="assets/logo.png" class="brand-logo" alt="LinkLedger Logo">
-      </a>
+      <div class="brand">
+        <!-- LOGO: replace src with your real path if different -->
+        <img class="logo" src="assets/logo.png" alt="LinkLedger logo" onerror="this.style.display='none'; document.getElementById('fallbackBrand').style.display='flex';" />
 
-      <nav class="nav">
+        <!-- fallback if logo not found -->
+        <div id="fallbackBrand" class="fallback-brand" style="display:none;">
+          <div class="brand-dot"></div>
+          <div class="brand-text">LinkLedger</div>
+        </div>
+
+        <div class="brand-side">
+          <div class="brand-name">LinkLedger</div>
+          <div class="brand-tagline">Where Trust Meets Transparency</div>
+        </div>
+      </div>
+
+      <div class="top-actions">
         <a class="btn-ghost" href="index.html">Home</a>
-        <a class="btn-ghost" href="dashboard.html">Dashboard</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
-      </nav>
+        <button class="btn-ghost" type="button" id="logoutBtn">Logout</button>
+      </div>
     </header>
 
-    <main class="wrap">
-
-      <section class="hero">
-        <div class="hero-left">
-
-          <div class="flag-row">
-            <div class="bw-flag" aria-label="Flag of Botswana" title="Botswana"></div>
-            <div class="flag-text">
-              <div class="kicker">Botswana-first platform</div>
-              <div class="tagline">Where trust meets transparency</div>
-            </div>
+    <!-- Main -->
+    <main class="grid">
+      <!-- Left: Welcome / Identity -->
+      <section class="card hero">
+        <div class="hero-head">
+          <div class="flag" aria-label="Botswana flag">
+            <div class="flag-blue"></div>
+            <div class="flag-white-top"></div>
+            <div class="flag-black"></div>
+            <div class="flag-white-bottom"></div>
+            <div class="flag-blue-bottom"></div>
           </div>
 
-          <div class="logo-hero">
-            <img src="assets/logo.png" class="logo-big" alt="LinkLedger Logo" />
-          </div>
-
-          <h1>Welcome to LinkLedger.</h1>
-          <p class="lead">
-            You’re now signed in. LinkLedger helps micro-lenders and similar institutions verify borrower history,
-            reduce fraud, and prevent repeat default hopping using National ID-based reporting.
-          </p>
-
-          <div class="cta-row">
-            <a class="btn-primary" href="dashboard.html">Go to Dashboard</a>
-            <a class="btn-ghost" href="index.html#pricing">View Pricing</a>
-          </div>
-
-          <div class="note">
-            <b>Early Access:</b> We’re onboarding lenders and improving features based on real Botswana market needs.
+          <div class="id-block">
+            <div class="kicker">Welcome</div>
+            <h1 class="title">Responsible lending starts here.</h1>
+            <p class="lead">
+              LinkLedger is Botswana-first lending intelligence built to strengthen accountability,
+              reduce repeat defaults, and protect legitimate lenders.
+            </p>
           </div>
         </div>
 
-        <aside class="hero-right card">
-          <div class="panel-title">Quick Summary</div>
-
-          <div class="list">
-            <span>• Register your business</span>
-            <span>• Add borrowers using National ID</span>
-            <span>• Mark: paid / owing / overdue</span>
-            <span>• Verify borrower history across lenders</span>
-            <span>• Improve collections + reduce fraud</span>
-          </div>
-
-          <div class="pricing">
-            Starting at <b>P500 / month</b> per business.
-          </div>
-
-          <div class="pill-row">
-            <span class="chip">Fast</span>
-            <span class="chip">Secure</span>
-            <span class="chip">Local-first</span>
-          </div>
-        </aside>
-
-        <div class="brand-shape" aria-hidden="true">
-          <span class="shape-m1"></span>
-          <span class="shape-mid"></span>
-          <span class="shape-m2"></span>
+        <div class="hero-actions">
+          <a class="btn-primary" href="dashboard.html">Proceed to Dashboard</a>
+          <a class="btn-ghost" href="index.html#about">About LinkLedger</a>
         </div>
 
+        <div class="chips">
+          <div class="chip">
+            <div class="chip-title">Secure</div>
+            <div class="chip-sub">Access controlled, audit-ready</div>
+          </div>
+          <div class="chip">
+            <div class="chip-title">Trusted</div>
+            <div class="chip-sub">Built for Botswana’s market reality</div>
+          </div>
+          <div class="chip">
+            <div class="chip-title">Practical</div>
+            <div class="chip-sub">Fast National ID verification</div>
+          </div>
+        </div>
       </section>
 
+      <!-- Right: Mission / Vision / Values -->
+      <aside class="stack">
+        <section class="card">
+          <h2 class="h2">Vision</h2>
+          <p class="p">
+            To build Botswana’s most trusted borrower verification and lending intelligence platform,
+            strengthening responsible lending and financial inclusion.
+          </p>
+        </section>
+
+        <section class="card">
+          <h2 class="h2">Mission</h2>
+          <p class="p">
+            To provide lenders with secure, accurate, real-time borrower history using National ID-based verification —
+            enabling safer decisions, reducing fraud, and restoring accountability in the lending market.
+          </p>
+        </section>
+
+        <section class="card">
+          <h2 class="h2">Values</h2>
+          <div class="values">
+            <div class="value">
+              <div class="value-top">
+                <span class="value-dot"></span>
+                <span class="value-title">Integrity</span>
+              </div>
+              <div class="value-text">We protect borrower data and lender trust.</div>
+            </div>
+
+            <div class="value">
+              <div class="value-top">
+                <span class="value-dot"></span>
+                <span class="value-title">Transparency</span>
+              </div>
+              <div class="value-text">Clear borrower history, no hidden risk.</div>
+            </div>
+
+            <div class="value">
+              <div class="value-top">
+                <span class="value-dot"></span>
+                <span class="value-title">Responsibility</span>
+              </div>
+              <div class="value-text">We support ethical lending and market discipline.</div>
+            </div>
+
+            <div class="value">
+              <div class="value-top">
+                <span class="value-dot"></span>
+                <span class="value-title">Security</span>
+              </div>
+              <div class="value-text">Strong controls designed for real-world risk.</div>
+            </div>
+
+            <div class="value">
+              <div class="value-top">
+                <span class="value-dot"></span>
+                <span class="value-title">National Impact</span>
+              </div>
+              <div class="value-text">Built for Botswana, by Batswana.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card compliance">
+          <h2 class="h2">Compliance & Responsibility</h2>
+          <p class="p">
+            LinkLedger operates with strict data minimisation principles and accountability controls.
+            Borrower search results provide risk intelligence (paid/owing/overdue) without exposing loan amounts.
+          </p>
+          <div class="mini">
+            <div class="mini-item">
+              <div class="mini-title">Audit-ready</div>
+              <div class="mini-text">Actions logged for accountability.</div>
+            </div>
+            <div class="mini-item">
+              <div class="mini-title">Data minimised</div>
+              <div class="mini-text">Only what lenders need to decide.</div>
+            </div>
+          </div>
+        </section>
+      </aside>
     </main>
 
     <footer class="footer">
-      © <span id="year"></span> LinkLedger • Botswana
+      <div>© <span id="year"></span> LinkLedger • Botswana</div>
+      <div class="footer-links">
+        <a href="index.html#products">Solutions</a>
+        <a href="index.html#contact">Contact</a>
+        <a href="login.html">Sign in</a>
+      </div>
     </footer>
 
   </div>
 
   <script>
+    // Footer year
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    function logout() {
+    // Logout behavior (safe even if login is currently bugged)
+    document.getElementById("logoutBtn").addEventListener("click", function () {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userEmail");
       window.location.href = "login.html";
-    }
+    });
   </script>
 </body>
 </html>

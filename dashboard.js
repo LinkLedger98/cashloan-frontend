@@ -1,18 +1,5 @@
-// ------------------------
-// Auth helpers
-// ------------------------
 function getToken() {
   return localStorage.getItem("authToken");
-}
-
-function getUserEmail() {
-  return localStorage.getItem("userEmail");
-}
-
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail");
-  window.location.href = "login.html";
 }
 
 function requireLogin() {
@@ -25,101 +12,70 @@ function requireLogin() {
   return true;
 }
 
-// If token expires or backend rejects it, handle it cleanly
-function handleAuthFailure() {
+function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
-  alert("Your session expired. Please log in again.");
   window.location.href = "login.html";
 }
 
-// Wrap fetch so we consistently handle 401/403
-async function apiFetch(url, options) {
-  const res = await fetch(url, options);
-
-  if (res.status === 401 || res.status === 403) {
-    handleAuthFailure();
-    // stop further code
-    throw new Error("Unauthorized");
-  }
-
-  return res;
-}
-
-// ------------------------
-// UI init (email pill + admin link)
-// ------------------------
-function initTopbar() {
-  const email = getUserEmail() || "";
-  const emailPill = document.getElementById("emailPill");
-  const adminLink = document.getElementById("adminLink");
-
-  if (emailPill) {
-    emailPill.textContent = email ? ("Logged in as: " + email) : "Logged in";
-  }
-
-  // Simple admin check (MVP)
-  // Change this email to your real admin account later if needed.
-  if (adminLink) {
-    if (email && email.toLowerCase() === "admin@linkledger.co.bw") {
-      adminLink.style.display = "inline-flex";
-    } else {
-      adminLink.style.display = "none";
-    }
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return "—";
   }
 }
 
-// ------------------------
-// Core actions
-// ------------------------
 async function addClient() {
   if (!requireLogin()) return;
 
   const fullName = document.getElementById("fullName").value.trim();
   const nationalId = document.getElementById("nationalId").value.trim();
   const status = document.getElementById("status").value;
+  const dueDate = document.getElementById("dueDate").value || null;
+  const paidDate = document.getElementById("paidDate").value || null;
 
-  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
   const token = getToken();
 
   if (!API_BASE_URL) {
-    alert("Config not loaded. Check config.js");
+    alert("API_BASE_URL missing in config.js");
     return;
   }
 
   if (!fullName || !nationalId || !status) {
-    alert("Please fill all fields");
+    alert("Please fill all required fields");
     return;
   }
 
   try {
-    const res = await apiFetch(API_BASE_URL + "/api/clients", {
+    const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": token
       },
-      body: JSON.stringify({ fullName: fullName, nationalId: nationalId, status: status })
+      body: JSON.stringify({ fullName, nationalId, status, dueDate, paidDate })
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      alert(data.message || "Failed to add borrower");
+      alert(data.message || "Failed to save record");
       return;
     }
 
-    alert("Borrower added successfully");
-
+    alert("Saved successfully ✅");
     document.getElementById("fullName").value = "";
     document.getElementById("nationalId").value = "";
     document.getElementById("status").value = "paid";
+    document.getElementById("dueDate").value = "";
+    document.getElementById("paidDate").value = "";
   } catch (err) {
-    // apiFetch already handles 401/403
     console.error(err);
-    if (String(err && err.message) !== "Unauthorized") {
-      alert("Server error while adding borrower");
-    }
+    alert("Server error while saving");
   }
 }
 
@@ -129,11 +85,11 @@ async function searchClient() {
   const nationalId = document.getElementById("searchNationalId").value.trim();
   const resultsDiv = document.getElementById("results");
 
-  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
   const token = getToken();
 
   if (!API_BASE_URL) {
-    alert("Config not loaded. Check config.js");
+    alert("API_BASE_URL missing in config.js");
     return;
   }
 
@@ -145,57 +101,70 @@ async function searchClient() {
   resultsDiv.innerHTML = "Searching...";
 
   try {
-    const res = await apiFetch(
-      API_BASE_URL + "/api/clients/search?nationalId=" + encodeURIComponent(nationalId),
-      {
-        headers: { "Authorization": token }
-      }
-    );
+    const res = await fetch(`${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`, {
+      headers: { "Authorization": token }
+    });
 
-    const data = await res.json().catch(() => []);
+    const data = await res.json().catch(() => null);
 
     if (!res.ok) {
       resultsDiv.innerHTML = "";
-      alert((data && data.message) || "Search failed");
+      alert((data && data.message) ? data.message : "Search failed");
       return;
     }
 
-    if (!Array.isArray(data) || data.length === 0) {
-      resultsDiv.innerHTML = "<p class='small'>No records found</p>";
+    // Expected data format:
+    // { nationalId, fullName, riskLabel, activeLoans: [...] }
+
+    const fullName = data.fullName || "Unknown";
+    const riskLabel = data.riskLabel || "🟢 Low Risk Borrower";
+    const loans = Array.isArray(data.activeLoans) ? data.activeLoans : [];
+
+    resultsDiv.innerHTML = `
+      <div class="result-item">
+        <div><strong>Search Result – National ID:</strong> ${nationalId}</div>
+        <div class="small" style="margin-top:6px;"><strong>Name:</strong> ${fullName}</div>
+        <div class="small"><strong>Status:</strong> ${riskLabel}</div>
+      </div>
+    `;
+
+    if (loans.length === 0) {
+      resultsDiv.innerHTML += `<p class="small" style="margin-top:10px;">No records found.</p>`;
       return;
     }
 
-    resultsDiv.innerHTML = "";
+    resultsDiv.innerHTML += `<div class="small" style="margin-top:10px;"><strong>Active Loans:</strong></div>`;
 
-    data.forEach(function (r) {
-      const item = document.createElement("div");
-      item.className = "result-item";
-      item.innerHTML =
-        "<div><strong>" + (r.fullName || "Unknown") + "</strong> (" + (r.nationalId || "") + ")</div>" +
-        "<div>Status: <span class='badge " + (r.status || "") + "'>" + (r.status || "") + "</span></div>" +
-        "<div class='small'>Reported by: " + (r.cashloanEmail || r.userEmail || "Unknown") + "</div>";
+    loans.forEach((r) => {
+      const statusLower = String(r.status || "").toLowerCase();
+      const badgeClass =
+        statusLower === "PAID".toLowerCase() ? "paid" :
+        statusLower === "OWING".toLowerCase() ? "owing" : "overdue";
 
-      resultsDiv.appendChild(item);
+      resultsDiv.innerHTML += `
+        <div class="result-item">
+          <div><strong>${r.cashloanName}</strong> – ${r.cashloanBranch} <span class="small">no: ${r.cashloanPhone}</span></div>
+          <div class="small">Status: <span class="badge ${badgeClass}">${r.status}</span></div>
+          <div class="small">Due: ${fmtDate(r.dueDate)}</div>
+        </div>
+      `;
     });
+
   } catch (err) {
     console.error(err);
     resultsDiv.innerHTML = "";
-    if (String(err && err.message) !== "Unauthorized") {
-      alert("Server error while searching");
-    }
+    alert("Server error while searching");
   }
 }
 
-// ------------------------
-// Expose for HTML buttons
-// ------------------------
+// Show who is logged in
+(function init() {
+  requireLogin();
+  const who = document.getElementById("whoami");
+  const email = localStorage.getItem("userEmail") || "Logged in";
+  if (who) who.textContent = email;
+})();
+
 window.addClient = addClient;
 window.searchClient = searchClient;
 window.logout = logout;
-
-// ------------------------
-// Boot
-// ------------------------
-if (requireLogin()) {
-  initTopbar();
-}
