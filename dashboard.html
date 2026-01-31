@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard | LinkLedger</title>
+  <title>LinkLedger | Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
 
+<body>
+  <object type="image/svg+xml" data="assets/legacy-icons.svg" style="display:none;"></object>
+  <div class="container">
     <div class="topbar">
       <div class="brand">
         <div class="brand-badge"></div>
@@ -16,14 +17,15 @@
       </div>
 
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="pill" id="whoami">Logged in</span>
+        <span class="pill" id="userPill">Logged in</span>
+        <a class="btn-ghost" href="index.html">Home</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Borrower Search</h2>
-      <p>Search across participating lenders using National ID.</p>
+      <h2>Search borrower history</h2>
+      <p>Search by National ID to see reported statuses across lenders.</p>
 
       <div class="row">
         <div>
@@ -31,18 +33,20 @@
           <input id="searchNationalId" placeholder="e.g. 123456789" />
         </div>
         <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" onclick="searchClient()" style="width:100%;">Search</button>
+          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
         </div>
       </div>
 
-      <div class="results" id="results" style="margin-top:14px;"></div>
+      <hr />
+
+      <div id="results" class="results">
+        <!-- Results render here -->
+      </div>
     </div>
 
-    <hr />
-
-    <div class="card">
-      <h2>Add Borrower Record</h2>
-      <p>Add a borrower to your own records (no amounts stored).</p>
+    <div class="card" style="margin-top:16px;">
+      <h2>Add borrower record</h2>
+      <p>Only logged-in lenders can add borrower status records.</p>
 
       <div class="row">
         <div>
@@ -55,7 +59,7 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row" style="margin-top:12px;">
         <div>
           <label for="status">Status</label>
           <select id="status">
@@ -65,25 +69,20 @@
           </select>
         </div>
         <div>
-          <label for="dueDate">Due date (optional)</label>
+          <label for="dueDate">Due date (for owing/overdue)</label>
           <input id="dueDate" type="date" />
         </div>
       </div>
 
-      <div class="row">
-        <div>
-          <label for="paidDate">Paid date (optional)</label>
-          <input id="paidDate" type="date" />
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" onclick="addClient()" style="width:100%;">Save Record</button>
-        </div>
+      <div style="margin-top:12px;">
+        <button class="btn-primary" onclick="addClient()">Save record</button>
       </div>
     </div>
 
   </div>
 
-  <script src="config.js"></script>
-  <script src="dashboard.js"></script>
+  <!-- MUST be at bottom, in this order -->
+  <script src="config.js?v=1"></script>
+  <script src="dashboard.js?v=1"></script>
 </body>
 </html>

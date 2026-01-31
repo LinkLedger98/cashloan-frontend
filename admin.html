@@ -6,6 +6,7 @@
   <title>Super Admin | LinkLedger</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div class="container">
 
@@ -15,9 +16,12 @@
         <h1>LinkLedger • Super Admin</h1>
       </div>
 
-      <div class="pill" style="display:flex; gap:10px; align-items:center;">
-        <span style="font-weight:800;">Mowanah &amp; Mufasah</span>
-        <span aria-hidden="true">👧🏽👦🏽</span>
+      <!-- Legacy badge -->
+      <div class="legacy-badge">
+        <span class="legacy-dot legacy-dot-pink"></span>
+        <span class="legacy-lt">&lt;</span>
+        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-text">Legacy Mode</span>
       </div>
     </div>
 
@@ -26,43 +30,45 @@
       <p>Private admin-only creation (NBIFIRA-ready control). Keep credentials safe.</p>
 
       <form id="adminForm">
+
         <label>ADMIN KEY</label>
-        <input id="adminKey" placeholder="Paste ADMIN_KEY here" />
+        <input id="adminKey" placeholder="Paste ADMIN_KEY here" autocomplete="off" />
 
         <div class="row">
           <div>
             <label>Business Name</label>
-            <input id="businessName" placeholder="e.g. Golden Finance" />
+            <input id="businessName" placeholder="e.g. Golden Finance" required />
           </div>
           <div>
             <label>Branch</label>
-            <input id="branchName" placeholder="e.g. Palapye" />
+            <input id="branchName" placeholder="e.g. Palapye" required />
           </div>
         </div>
 
         <div class="row">
           <div>
             <label>Phone (will show in borrower search)</label>
-            <input id="phone" placeholder="e.g. 490000" />
+            <input id="phone" placeholder="e.g. 490000" required />
           </div>
           <div>
             <label>NBIFIRA License No.</label>
-            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" />
+            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
           </div>
         </div>
 
         <div class="row">
           <div>
             <label>Email (login)</label>
-            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" />
+            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
           </div>
           <div>
             <label>Temporary Password</label>
-            <input id="tempPassword" placeholder="Set temp password" />
+            <input id="tempPassword" placeholder="Set temp password" required />
           </div>
         </div>
 
         <button class="btn-primary" type="submit">Create Lender</button>
+
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
     </div>
@@ -80,6 +86,7 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
+
   <script src="config.js"></script>
   <script src="admin.js"></script>
 </body>
