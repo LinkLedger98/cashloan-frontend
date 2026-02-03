@@ -3,86 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Dashboard | LinkLedger</title>
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
-
 <body>
-  <object type="image/svg+xml" data="assets/legacy-icons.svg" style="display:none;"></object>
-  <div class="container">
-    <div class="topbar">
-      <div class="brand">
-        <div class="brand-badge"></div>
-        <h1>LinkLedger</h1>
+
+  <main style="max-width:900px;margin:24px auto;padding:0 16px;">
+    <h1>Lender Dashboard</h1>
+    <p id="who" style="opacity:.8;"></p>
+
+    <hr style="margin:20px 0;"/>
+
+    <h2>Add Borrower</h2>
+    <form id="addForm">
+      <div>
+        <label>Full Name</label><br />
+        <input id="fullName" required />
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="pill" id="userPill">Logged in</span>
-        <a class="btn-ghost" href="index.html">Home</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Search borrower history</h2>
-      <p>Search by National ID to see reported statuses across lenders.</p>
-
-      <div class="row">
-        <div>
-          <label for="searchNationalId">National ID</label>
-          <input id="searchNationalId" placeholder="e.g. 123456789" />
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
-        </div>
+      <div>
+        <label>National ID</label><br />
+        <input id="nationalId" required />
       </div>
 
-      <hr />
-
-      <div id="results" class="results">
-        <!-- Results render here -->
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-      <h2>Add borrower record</h2>
-      <p>Only logged-in lenders can add borrower status records.</p>
-
-      <div class="row">
-        <div>
-          <label for="fullName">Full name</label>
-          <input id="fullName" placeholder="e.g. Thato Molefe" />
-        </div>
-        <div>
-          <label for="nationalId">National ID</label>
-          <input id="nationalId" placeholder="e.g. 123456789" />
-        </div>
+      <div>
+        <label>Status</label><br />
+        <select id="status" required>
+          <option value="owing">owing</option>
+          <option value="overdue">overdue</option>
+          <option value="paid">paid</option>
+        </select>
       </div>
 
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="paid">paid</option>
-            <option value="owing">owing</option>
-            <option value="overdue">overdue</option>
-          </select>
-        </div>
-        <div>
-          <label for="dueDate">Due date (for owing/overdue)</label>
-          <input id="dueDate" type="date" />
-        </div>
+      <div>
+        <label>Due Date (optional)</label><br />
+        <input id="dueDate" type="date" />
       </div>
 
-      <div style="margin-top:12px;">
-        <button class="btn-primary" onclick="addClient()">Save record</button>
+      <div>
+        <label>Paid Date (optional)</label><br />
+        <input id="paidDate" type="date" />
       </div>
-    </div>
 
-  </div>
+      <button type="submit" style="margin-top:10px;">Save Borrower</button>
+      <div id="addMsg" style="margin-top:10px;"></div>
+    </form>
 
-  <!-- MUST be at bottom, in this order -->
-  <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=1"></script>
+    <hr style="margin:28px 0;"/>
+
+    <h2>Search Borrower</h2>
+    <form id="searchForm">
+      <div>
+        <label>National ID</label><br />
+        <input id="searchNationalId" required />
+      </div>
+      <button type="submit" style="margin-top:10px;">Search</button>
+      <div id="searchMsg" style="margin-top:10px;"></div>
+    </form>
+
+    <div id="result" style="margin-top:16px;"></div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="dashboard.js"></script>
 </body>
 </html>
