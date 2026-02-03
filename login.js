@@ -3,11 +3,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var form = document.getElementById("loginForm");
   var msg = document.getElementById("msg");
-  if (!form) return;
+
+  if (!form) {
+    console.error("loginForm not found");
+    return;
+  }
 
   if (!window.APP_CONFIG || !window.APP_CONFIG.API_BASE_URL) {
     console.error("APP_CONFIG missing");
-    if (msg) msg.textContent = "Config not loaded.";
+    if (msg) msg.textContent = "Config not loaded. Please refresh.";
     return;
   }
 
@@ -19,8 +23,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (msg) msg.textContent = "Logging in...";
 
-    var email = document.getElementById("email").value.trim();
-    var password = document.getElementById("password").value;
+    var emailEl = document.getElementById("email");
+    var passEl = document.getElementById("password");
+
+    var email = emailEl ? String(emailEl.value || "").trim() : "";
+    var password = passEl ? String(passEl.value || "") : "";
+
+    if (!email || !password) {
+      if (msg) msg.textContent = "Email and password required.";
+      return;
+    }
 
     fetch(API_BASE_URL + "/api/auth/login", {
       method: "POST",
@@ -28,29 +40,46 @@ document.addEventListener("DOMContentLoaded", function () {
       body: JSON.stringify({ email: email, password: password })
     })
       .then(function (res) {
-        return res.json().then(function (data) {
-          return { status: res.status, data: data };
-        }).catch(function () {
-          return { status: res.status, data: {} };
-        });
+        return res
+          .json()
+          .then(function (data) {
+            return { status: res.status, data: data };
+          })
+          .catch(function () {
+            return { status: res.status, data: {} };
+          });
       })
       .then(function (result) {
         console.log("login response", result);
 
+        // Not successful
         if (result.status !== 200) {
-          if (msg) msg.textContent =
-            (result.data && result.data.message) ? result.data.message : "Login failed.";
+          var m =
+            (result.data && result.data.message)
+              ? result.data.message
+              : "Login failed.";
+          if (msg) msg.textContent = m;
           return;
         }
 
-        localStorage.setItem("authToken", result.data.token);
-        localStorage.setItem("userEmail", (result.data.email || email));
+        // Successful
+        var data = result.data || {};
+        var role = String(data.role || "lender").toLowerCase();
 
-        window.location.href = "welcome.html";
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("userEmail", data.email || email);
+        localStorage.setItem("userRole", role);
+
+        // Redirect based on role
+        if (role === "admin") {
+          window.location.href = "admin.html";
+        } else {
+          window.location.href = "welcome.html";
+        }
       })
       .catch(function (err) {
-        console.error(err);
-        if (msg) msg.textContent = "Network error.";
+        console.error("Login network error:", err);
+        if (msg) msg.textContent = "Network error. Please try again.";
       });
   });
 });
