@@ -46,6 +46,9 @@
       <div class="actions">
         <a class="btn btn-primary" href="dashboard.html">Proceed to Dashboard</a>
         <a class="btn btn-ghost" href="#about">About LinkLedger</a>
+
+        <!-- ✅ Super Admin button (hidden unless admin) -->
+        <a class="btn btn-ghost" id="adminBtn" href="#" style="display:none;">Super Admin</a>
       </div>
 
       <div class="chips">
@@ -65,11 +68,6 @@
         </div>
       </div>
     </section>
-
-    <!-- 👇 Super Admin link (hidden for lenders) -->
-    <div style="margin-top:20px;">
-      <a id="adminLink" href="admin.html" style="display:none;">Super Admin</a>
-    </div>
 
     <section class="card" id="about">
       <h2>Vision</h2>
@@ -116,22 +114,64 @@
 
   </main>
 
+  <!-- ✅ config needed for admin re-auth -->
+  <script src="config.js?v=2"></script>
+
   <script>
+    // Year
     document.getElementById("year").textContent = new Date().getFullYear();
 
+    // Logout clears everything
     document.getElementById("logoutBtn").addEventListener("click", function () {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userEmail");
-      localStorage.removeItem("userRole"); // 👈 important
+      localStorage.removeItem("userRole");
     });
 
-    // 👇 Show admin link only if logged in as admin
+    // Show Super Admin button only for admins (role OR admin emails)
     (function () {
-      var role = (localStorage.getItem("userRole") || "").toLowerCase();
-      if (role === "admin") {
-        var el = document.getElementById("adminLink");
-        if (el) el.style.display = "inline-block";
-      }
+      var email = (localStorage.getItem("userEmail") || "").toLowerCase();
+      var role  = (localStorage.getItem("userRole") || "").toLowerCase();
+      var isAdmin = (role === "admin" || email === "admin@linkledger.co.bw" || email === "admin2@linkledger.co.bw");
+
+      var btn = document.getElementById("adminBtn");
+      if (!btn) return;
+
+      if (isAdmin) btn.style.display = "inline-block";
+
+      btn.addEventListener("click", async function (e) {
+        e.preventDefault();
+
+        var pass = prompt("Enter Super Admin password:");
+        if (!pass) return;
+
+        var api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+        if (!api) { alert("Config missing (config.js not loaded)"); return; }
+
+        try {
+          var res = await fetch(api + "/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: pass })
+          });
+
+          var data = await res.json().catch(() => ({}));
+          if (!res.ok) { alert(data.message || "Admin login failed"); return; }
+
+          var newRole = String(data.role || "").toLowerCase();
+          localStorage.setItem("authToken", data.token);
+          localStorage.setItem("userRole", newRole);
+
+          if (newRole !== "admin") {
+            alert("Not an admin account.");
+            return;
+          }
+
+          window.location.href = "admin.html";
+        } catch (err) {
+          alert("Network error");
+        }
+      });
     })();
   </script>
 
