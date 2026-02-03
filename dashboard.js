@@ -75,6 +75,19 @@ async function addClient() {
 
     const data = await res.json().catch(() => ({}));
 
+    // ✅ NEW: Handle "duplicate borrower for this lender" cleanly
+    if (res.status === 409) {
+      alert(data.message || "This borrower is already recorded by your branch.");
+
+      // Optional but powerful: auto-show existing history immediately
+      const searchInput = document.getElementById("searchNationalId");
+      if (searchInput) searchInput.value = nationalId;
+      if (typeof searchClient === "function") {
+        await searchClient();
+      }
+      return;
+    }
+
     if (!res.ok) {
       alert(data.message || "Failed to save borrower record");
       return;
@@ -209,6 +222,7 @@ async function searchClient() {
 function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail"); // ✅ correct
+  localStorage.removeItem("userRole");  // ✅ NEW: keep role logic clean
   window.location.href = "login.html";
 }
 
