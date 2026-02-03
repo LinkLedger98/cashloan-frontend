@@ -66,6 +66,11 @@
       </div>
     </section>
 
+    <!-- 👇 Super Admin link (hidden for lenders) -->
+    <div style="margin-top:20px;">
+      <a id="adminLink" href="admin.html" style="display:none;">Super Admin</a>
+    </div>
+
     <section class="card" id="about">
       <h2>Vision</h2>
       <p class="muted">
@@ -84,32 +89,12 @@
 
     <section class="card">
       <h2>Values</h2>
-
       <div class="values">
-        <div class="value">
-          <div class="value-title">Integrity</div>
-          <div class="muted">We protect borrower data and lender trust.</div>
-        </div>
-
-        <div class="value">
-          <div class="value-title">Transparency</div>
-          <div class="muted">Clear borrower history, no hidden risk.</div>
-        </div>
-
-        <div class="value">
-          <div class="value-title">Responsibility</div>
-          <div class="muted">We support ethical lending and market discipline.</div>
-        </div>
-
-        <div class="value">
-          <div class="value-title">Security</div>
-          <div class="muted">Strong controls designed for real-world risk.</div>
-        </div>
-
-        <div class="value">
-          <div class="value-title">National Impact</div>
-          <div class="muted">Built for Botswana, by Batswana.</div>
-        </div>
+        <div class="value"><div class="value-title">Integrity</div><div class="muted">We protect borrower data and lender trust.</div></div>
+        <div class="value"><div class="value-title">Transparency</div><div class="muted">Clear borrower history, no hidden risk.</div></div>
+        <div class="value"><div class="value-title">Responsibility</div><div class="muted">We support ethical lending and market discipline.</div></div>
+        <div class="value"><div class="value-title">Security</div><div class="muted">Strong controls designed for real-world risk.</div></div>
+        <div class="value"><div class="value-title">National Impact</div><div class="muted">Built for Botswana, by Batswana.</div></div>
       </div>
     </section>
 
@@ -117,15 +102,8 @@
       <h2>Compliance &amp; Responsibility</h2>
       <p class="muted">
         LinkLedger operates with strict data minimisation principles and accountability controls.
-        Borrower search results provide risk intelligence (paid/owing/overdue) without exposing loan amounts.
+        Borrower search results provide risk intelligence without exposing loan amounts.
       </p>
-
-      <div class="list">
-        <div class="list-item">Audit-ready</div>
-        <div class="list-item">Actions logged for accountability</div>
-        <div class="list-item">Data minimised</div>
-        <div class="list-item">Only what lenders need to decide</div>
-      </div>
     </section>
 
     <footer class="footer">
@@ -133,7 +111,6 @@
       <div class="footer-links">
         <a href="index.html">Home</a>
         <a href="dashboard.html">Dashboard</a>
-        <a href="admin.html">Admin</a>
       </div>
     </footer>
 
@@ -141,11 +118,22 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-    // basic logout behavior (frontend-only)
+
     document.getElementById("logoutBtn").addEventListener("click", function () {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userEmail");
+      localStorage.removeItem("userRole"); // 👈 important
     });
+
+    // 👇 Show admin link only if logged in as admin
+    (function () {
+      var role = (localStorage.getItem("userRole") || "").toLowerCase();
+      if (role === "admin") {
+        var el = document.getElementById("adminLink");
+        if (el) el.style.display = "inline-block";
+      }
+    })();
   </script>
+
 </body>
 </html>
