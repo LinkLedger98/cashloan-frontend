@@ -16,24 +16,18 @@
         <h1>LinkLedger • Super Admin</h1>
       </div>
 
-      <!-- Legacy badge -->
-      <div class="legacy-badge">
-        <span class="legacy-dot legacy-dot-pink"></span>
-        <span class="legacy-lt">&lt;</span>
-        <span class="legacy-dot legacy-dot-blue"></span>
-        <span class="legacy-text">Legacy Mode</span>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <a class="btn-ghost" href="welcome.html">Welcome</a>
+        <a class="btn-ghost" href="dashboard.html">Dashboard</a>
+        <button class="btn-ghost" id="logoutBtn" type="button">Logout</button>
       </div>
     </div>
 
     <div class="card">
       <h2>Create Lender Account</h2>
-      <p>Private admin-only creation (NBIFIRA-ready control). Keep credentials safe.</p>
+      <p>Admin-only creation of lender accounts.</p>
 
       <form id="adminForm">
-
-        <label>ADMIN KEY</label>
-        <input id="adminKey" placeholder="Paste ADMIN_KEY here" autocomplete="off" />
-
         <div class="row">
           <div>
             <label>Business Name</label>
@@ -47,11 +41,11 @@
 
         <div class="row">
           <div>
-            <label>Phone (will show in borrower search)</label>
-            <input id="phone" placeholder="e.g. 490000" required />
+            <label>Phone</label>
+            <input id="phone" placeholder="e.g. 71234567" required />
           </div>
           <div>
-            <label>NBIFIRA License No.</label>
+            <label>License No.</label>
             <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
           </div>
         </div>
@@ -68,17 +62,12 @@
         </div>
 
         <button class="btn-primary" type="submit">Create Lender</button>
-
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
     </div>
 
     <div class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <a href="index.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-      </div>
     </div>
 
   </div>
@@ -87,7 +76,7 @@
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
 
-  <script src="config.js"></script>
-  <script src="admin.js"></script>
+  <script src="config.js?v=3"></script>
+  <script src="admin.js?v=3"></script>
 </body>
 </html>

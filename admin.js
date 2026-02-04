@@ -1,80 +1,76 @@
-document.addEventListener("DOMContentLoaded", function () {
-  var form = document.getElementById("adminForm");
-  var msg = document.getElementById("msg");
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  window.location.href = "login.html";
+}
+
+(function () {
+  const API = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = localStorage.getItem("authToken");
+  const role = (localStorage.getItem("userRole") || "").toLowerCase();
+
+  if (!API) {
+    alert("Config missing (config.js not loaded)");
+    return;
+  }
+
+  // ✅ Protect page
+  if (!token) {
+    alert("Please log in first.");
+    window.location.href = "login.html";
+    return;
+  }
+  if (role !== "admin") {
+    alert("Admins only.");
+    window.location.href = "welcome.html";
+    return;
+  }
+
+  const form = document.getElementById("adminForm");
+  const msg = document.getElementById("msg");
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
   if (!form) return;
 
-  var API_BASE_URL = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ? window.APP_CONFIG.API_BASE_URL : "";
-
-  function setMsg(text, ok) {
-    if (!msg) return;
-    msg.textContent = text;
-    msg.style.color = ok ? "#22c55e" : "#ff4d4d";
-  }
-
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (msg) msg.textContent = "Creating lender...";
 
-    var adminKey = document.getElementById("adminKey").value.trim();
-    var businessName = document.getElementById("businessName").value.trim();
-    var branchName = document.getElementById("branchName").value.trim();
-    var phone = document.getElementById("phone").value.trim();
-    var licenseNo = document.getElementById("licenseNo").value.trim();
-    var email = document.getElementById("email").value.trim();
-    var tempPassword = document.getElementById("tempPassword").value;
+    const payload = {
+      businessName: String(document.getElementById("businessName").value || "").trim(),
+      branchName: String(document.getElementById("branchName").value || "").trim(),
+      phone: String(document.getElementById("phone").value || "").trim(),
+      licenseNo: String(document.getElementById("licenseNo").value || "").trim(),
+      email: String(document.getElementById("email").value || "").toLowerCase().trim(),
+      tempPassword: String(document.getElementById("tempPassword").value || "").trim()
+    };
 
-    if (!adminKey || !businessName || !branchName || !phone || !licenseNo || !email || !tempPassword) {
-      setMsg("Please fill all fields.", false);
-      return;
-    }
-
-    if (!API_BASE_URL) {
-      setMsg("API_BASE_URL missing. Check config.js", false);
-      return;
-    }
-
-    setMsg("Creating lender...", true);
-
-    fetch(API_BASE_URL + "/api/admin/lenders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-key": adminKey
-      },
-      body: JSON.stringify({
-        businessName: businessName,
-        branchName: branchName,
-        phone: phone,
-        licenseNo: licenseNo,
-        email: email,
-        password: tempPassword
-      })
-    })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          return { status: res.status, data: data };
-        });
-      })
-      .then(function (result) {
-        if (result.status !== 201 && result.status !== 200) {
-          var errMsg = (result.data && result.data.message) ? result.data.message : "Failed to create lender";
-          setMsg("❌ " + errMsg + " (status " + result.status + ")", false);
-          return;
-        }
-
-        setMsg("✅ Lender created successfully!", true);
-
-        // Clear fields except admin key
-        document.getElementById("businessName").value = "";
-        document.getElementById("branchName").value = "";
-        document.getElementById("phone").value = "";
-        document.getElementById("licenseNo").value = "";
-        document.getElementById("email").value = "";
-        document.getElementById("tempPassword").value = "";
-      })
-      .catch(function (err) {
-        console.error(err);
-        setMsg("❌ Network/server error. Check backend logs.", false);
+    try {
+      const res = await fetch(API + "/api/admin/lenders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+        body: JSON.stringify(payload)
       });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (msg) msg.textContent = data.message || ("Request failed (" + res.status + ")");
+        return;
+      }
+
+      if (msg) msg.textContent = "✅ Lender created successfully";
+
+      // clear form
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      if (msg) msg.textContent = "Network/server error.";
+    }
   });
-});
+})();
