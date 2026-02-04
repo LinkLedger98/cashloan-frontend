@@ -1,42 +1,21 @@
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userRole");
-  window.location.href = "login.html";
-}
-
 (function () {
-  const API = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const token = localStorage.getItem("authToken");
-  const role = (localStorage.getItem("userRole") || "").toLowerCase();
-
-  if (!API) {
-    alert("Config missing (config.js not loaded)");
-    return;
-  }
-
-  // ✅ Protect page
-  if (!token) {
-    alert("Please log in first.");
-    window.location.href = "login.html";
-    return;
-  }
-  if (role !== "admin") {
-    alert("Admins only.");
-    window.location.href = "welcome.html";
-    return;
-  }
-
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const form = document.getElementById("adminForm");
   const msg = document.getElementById("msg");
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
+  if (!API_BASE_URL) {
+    if (msg) msg.textContent = "Config not loaded (config.js).";
+    return;
+  }
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     if (msg) msg.textContent = "Creating lender...";
+
+    // Keep your admin key field
+    const adminKey = String(document.getElementById("adminKey").value || "").trim();
 
     const payload = {
       businessName: String(document.getElementById("businessName").value || "").trim(),
@@ -47,13 +26,20 @@ function logout() {
       tempPassword: String(document.getElementById("tempPassword").value || "").trim()
     };
 
+    // Build headers
+    const headers = { "Content-Type": "application/json" };
+
+    // ✅ Option A: Admin key (legacy)
+    if (adminKey) headers["x-admin-key"] = adminKey;
+
+    // ✅ Option B: Authorization token (new safety net)
+    const token = localStorage.getItem("authToken");
+    if (token) headers["Authorization"] = token; // works with your middleware that reads raw token
+
     try {
-      const res = await fetch(API + "/api/admin/lenders", {
+      const res = await fetch(API_BASE_URL + "/api/admin/lenders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token
-        },
+        headers,
         body: JSON.stringify(payload)
       });
 
@@ -64,10 +50,15 @@ function logout() {
         return;
       }
 
-      if (msg) msg.textContent = "✅ Lender created successfully";
+      if (msg) msg.textContent = "✅ Lender account created";
 
-      // clear form
-      form.reset();
+      // Clear lender fields (leave adminKey as-is so you don’t re-paste every time)
+      document.getElementById("businessName").value = "";
+      document.getElementById("branchName").value = "";
+      document.getElementById("phone").value = "";
+      document.getElementById("licenseNo").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("tempPassword").value = "";
     } catch (err) {
       console.error(err);
       if (msg) msg.textContent = "Network/server error.";
