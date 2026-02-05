@@ -32,7 +32,10 @@
 
         <div>
           <label for="password">Password</label>
-          <input id="password" type="password" required />
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="password" type="password" required style="flex:1;" />
+            <button class="btn-ghost" type="button" id="togglePwdBtn">Show</button>
+          </div>
         </div>
 
         <button class="btn-primary" type="submit">Login</button>

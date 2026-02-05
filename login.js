@@ -1,20 +1,38 @@
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("login loaded");
+
   var form = document.getElementById("loginForm");
   var msg = document.getElementById("msg");
+
+  // show/hide password button
+  var toggle = document.getElementById("togglePwdBtn");
+  var pwd = document.getElementById("password");
+  if (toggle && pwd) {
+    toggle.addEventListener("click", function () {
+      var isHidden = pwd.type === "password";
+      pwd.type = isHidden ? "text" : "password";
+      toggle.textContent = isHidden ? "Hide" : "Show";
+    });
+  }
+
   if (!form) return;
 
-  var API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  if (!API_BASE_URL) {
+  if (!window.APP_CONFIG || !window.APP_CONFIG.API_BASE_URL) {
+    console.error("APP_CONFIG missing");
     if (msg) msg.textContent = "Config not loaded.";
     return;
   }
 
+  var API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    console.log("submit intercepted");
+
     if (msg) msg.textContent = "Logging in...";
 
-    var email = String((document.getElementById("email").value || "")).trim();
-    var password = String((document.getElementById("password").value || ""));
+    var email = document.getElementById("email").value.trim();
+    var password = document.getElementById("password").value;
 
     fetch(API_BASE_URL + "/api/auth/login", {
       method: "POST",
@@ -23,38 +41,36 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then(function (res) {
         return res.json().then(function (data) {
-          return { ok: res.ok, status: res.status, data: data };
+          return { status: res.status, data: data };
         }).catch(function () {
-          return { ok: res.ok, status: res.status, data: {} };
+          return { status: res.status, data: {} };
         });
       })
       .then(function (result) {
-        if (!result.ok) {
-          if (msg) msg.textContent = (result.data && result.data.message) ? result.data.message : "Login failed.";
+        console.log("login response", result);
+
+        if (result.status !== 200) {
+          if (msg) msg.textContent =
+            (result.data && result.data.message) ? result.data.message : "Login failed.";
           return;
         }
 
-        var data = result.data || {};
-        var role = String(data.role || "").toLowerCase();
+        // save token + identity
+        localStorage.setItem("authToken", result.data.token);
+        localStorage.setItem("userEmail", (result.data.email || email));
+        localStorage.setItem("userRole", String(result.data.role || "lender").toLowerCase());
 
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("userEmail", data.email || email);
-
-        // If backend didn't send role, still allow admin by email
-        if (!role) {
-          if (email.toLowerCase() === "admin@linkledger.co.bw" || email.toLowerCase() === "admin2@linkledger.co.bw") {
-            role = "admin";
-          } else {
-            role = "lender";
-          }
+        // ✅ redirect based on role
+        var role = String(result.data.role || "lender").toLowerCase();
+        if (role === "admin") {
+          window.location.href = "admin.html";
+          return;
         }
 
-        localStorage.setItem("userRole", role);
-
-        if (role === "admin") window.location.href = "admin.html";
-        else window.location.href = "welcome.html";
+        window.location.href = "welcome.html";
       })
-      .catch(function () {
+      .catch(function (err) {
+        console.error(err);
         if (msg) msg.textContent = "Network error.";
       });
   });
