@@ -24,8 +24,8 @@ function fmtDate(isoOrNull) {
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function statusBadgeClass(statusUpper) {
-  const s = String(statusUpper || "").toLowerCase();
+function statusBadgeClass(statusUpperOrLower) {
+  const s = String(statusUpperOrLower || "").toLowerCase();
   if (s === "paid") return "paid";
   if (s === "owing") return "owing";
   if (s === "overdue") return "overdue";
@@ -59,7 +59,6 @@ async function addClient() {
     return;
   }
 
-  // Only send dueDate if filled
   const payload = { fullName, nationalId, status };
   if (dueDate) payload.dueDate = dueDate;
 
@@ -75,31 +74,24 @@ async function addClient() {
 
     const data = await res.json().catch(() => ({}));
 
-    // ✅ NEW: Handle "duplicate borrower for this lender" cleanly
-    if (res.status === 409) {
-      alert(data.message || "This borrower is already recorded by your branch.");
-
-      // Optional but powerful: auto-show existing history immediately
-      const searchInput = document.getElementById("searchNationalId");
-      if (searchInput) searchInput.value = nationalId;
-      if (typeof searchClient === "function") {
-        await searchClient();
-      }
-      return;
-    }
-
     if (!res.ok) {
       alert(data.message || "Failed to save borrower record");
+      // ✅ if duplicate, auto show their own list so they see it immediately
+      if (res.status === 409) {
+        loadMyClients();
+      }
       return;
     }
 
     alert("Borrower record saved ✅");
 
-    // Clear inputs
     document.getElementById("fullName").value = "";
     document.getElementById("nationalId").value = "";
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
+
+    // ✅ refresh my list after adding
+    loadMyClients();
 
   } catch (err) {
     console.error(err);
@@ -142,8 +134,6 @@ async function searchClient() {
       return;
     }
 
-    // Expected backend format:
-    // { nationalId, fullName, risk, riskLabel, activeLoans: [] }
     const fullName = data.fullName || "Unknown";
     const risk = data.risk || "green";
     const riskLabel = data.riskLabel || "🟢 Low Risk Borrower";
@@ -151,7 +141,6 @@ async function searchClient() {
 
     const tone = riskTone(risk);
 
-    // Header card like your example
     let html = `
       <div class="result-item">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -174,7 +163,6 @@ async function searchClient() {
       return;
     }
 
-    // Active loans list section
     html += `
       <div class="result-item">
         <div style="font-weight:700; margin-bottom:8px;">Active Loans</div>
@@ -209,7 +197,6 @@ async function searchClient() {
     });
 
     html += `</div></div>`;
-
     resultsDiv.innerHTML = html;
 
   } catch (err) {
@@ -219,22 +206,142 @@ async function searchClient() {
   }
 }
 
+// ✅ NEW: show only this lender's added clients
+async function loadMyClients() {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+  const box = document.getElementById("myClients");
+
+  if (!API_BASE_URL) { alert("API_BASE_URL missing in config.js"); return; }
+  if (!box) return;
+
+  box.innerHTML = `<p class="small">Loading...</p>`;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/clients/mine`, {
+      headers: { "Authorization": token }
+    });
+
+    const data = await res.json().catch(() => ([]));
+
+    if (!res.ok) {
+      box.innerHTML = "";
+      alert(data.message || "Failed to load your clients");
+      return;
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      box.innerHTML = `<p class="small">No borrowers added yet.</p>`;
+      return;
+    }
+
+    box.innerHTML = data.map(c => {
+      const id = c._id;
+      const name = c.fullName || "";
+      const nid = c.nationalId || "";
+      const st = String(c.status || "").toLowerCase();
+
+      const dueVal = c.dueDate ? String(c.dueDate).slice(0, 10) : "";
+      const paidVal = c.paidDate ? String(c.paidDate).slice(0, 10) : "";
+
+      return `
+        <div class="result-item">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div><b>${name}</b></div>
+              <div class="small">National ID: <b>${nid}</b></div>
+              <div class="small">Current: <span class="badge ${statusBadgeClass(st)}">${st.toUpperCase()}</span></div>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+              <select id="st_${id}">
+                <option value="paid" ${st === "paid" ? "selected" : ""}>paid</option>
+                <option value="owing" ${st === "owing" ? "selected" : ""}>owing</option>
+                <option value="overdue" ${st === "overdue" ? "selected" : ""}>overdue</option>
+              </select>
+
+              <input id="due_${id}" type="date" value="${dueVal}" />
+              <input id="paid_${id}" type="date" value="${paidVal}" />
+
+              <button class="btn-primary" type="button" onclick="updateClient('${id}')">Update</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = "";
+    alert("Server error while loading your clients");
+  }
+}
+
+// ✅ NEW: update your own record only
+async function updateClient(id) {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+
+  const status = document.getElementById(`st_${id}`).value;
+  const dueDate = document.getElementById(`due_${id}`).value;
+  const paidDate = document.getElementById(`paid_${id}`).value;
+
+  const payload = {
+    status: status,
+    dueDate: dueDate ? dueDate : null,
+    paidDate: paidDate ? paidDate : null
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/clients/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.message || "Update failed");
+      return;
+    }
+
+    alert("Updated ✅");
+    loadMyClients();
+  } catch (err) {
+    console.error(err);
+    alert("Network/server error");
+  }
+}
+
 function logout() {
   localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail"); // ✅ correct
-  localStorage.removeItem("userRole");  // ✅ NEW: keep role logic clean
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
   window.location.href = "login.html";
 }
 
-// Make functions available to HTML buttons
 window.addClient = addClient;
 window.searchClient = searchClient;
 window.logout = logout;
+window.loadMyClients = loadMyClients;
+window.updateClient = updateClient;
 
-// Top pill display
 (function () {
   if (!requireLogin()) return;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 })();
+
+// auto load my list when dashboard opens
+document.addEventListener("DOMContentLoaded", function () {
+  loadMyClients();
+});
