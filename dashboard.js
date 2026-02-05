@@ -36,6 +36,113 @@ function riskTone(risk) {
   return { className: "paid" };
 }
 
+// ============================
+// My Clients state + search
+// ============================
+let MY_CLIENTS = [];
+
+function esc(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function normalizePhone(raw) {
+  // Keep digits only, basic cleanup
+  const p = String(raw || "").replace(/[^\d]/g, "");
+  // If they typed 71234567 (BW local), WhatsApp also works with +26771234567
+  // We'll build WhatsApp link with +267 if 8 digits and no country code.
+  if (p.length === 8) return `267${p}`;
+  // If they already typed country code (e.g. 2677...), keep it
+  return p;
+}
+
+function getBorrowerActionsHTML(r) {
+  const lenderPhone = (r.cashloanPhone || "").trim();
+  const phoneDigits = normalizePhone(lenderPhone);
+
+  // WhatsApp “click-to-chat”
+  const waHref = phoneDigits
+    ? `https://wa.me/${phoneDigits}`
+    : null;
+
+  const callHref = phoneDigits
+    ? `tel:+${phoneDigits}`
+    : null;
+
+  // Only show if phone exists
+  const waBtn = waHref
+    ? `<a class="btn-ghost btn-sm" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>`
+    : "";
+
+  const callBtn = callHref
+    ? `<a class="btn-ghost btn-sm" href="${callHref}">Call</a>`
+    : "";
+
+  return `${waBtn}${callBtn}`;
+}
+
+function renderMyClientsTable() {
+  const tbody = document.getElementById("myClientsTbody");
+  const msg = document.getElementById("myClientsMsg");
+  const q = String((document.getElementById("myClientsSearch")?.value || "")).toLowerCase().trim();
+
+  const rows = MY_CLIENTS.filter((r) => {
+    if (!q) return true;
+    const name = String(r.fullName || "").toLowerCase();
+    const nid = String(r.nationalId || "").toLowerCase();
+    return name.includes(q) || nid.includes(q);
+  });
+
+  if (msg) {
+    msg.textContent = q
+      ? `Showing ${rows.length} match(es) from ${MY_CLIENTS.length} record(s).`
+      : `Showing ${MY_CLIENTS.length} record(s).`;
+  }
+
+  if (!tbody) return;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="small">No matches. Try a different name or National ID.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r) => {
+    const statusUpper = String(r.status || "").toUpperCase();
+    const badgeClass = statusBadgeClass(statusUpper);
+
+    return `
+      <tr>
+        <td>${esc(r.fullName)}</td>
+        <td>${esc(r.nationalId)}</td>
+        <td><span class="badge ${badgeClass}">${esc(statusUpper)}</span></td>
+        <td>${r.dueDate ? esc(fmtDate(r.dueDate)) : ""}</td>
+        <td>${r.paidDate ? esc(fmtDate(r.paidDate)) : ""}</td>
+        <td>${r.createdAt ? esc(fmtDate(r.createdAt)) : ""}</td>
+        <td>
+          <div class="btnrow">
+            <button class="btn-ghost btn-sm" onclick="updateClientPrompt('${esc(r._id)}')">Update</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function wireMyClientsSearch() {
+  const input = document.getElementById("myClientsSearch");
+  if (!input) return;
+
+  // live search
+  input.addEventListener("input", () => renderMyClientsTable());
+}
+
+// ============================
+// Add Client
+// ============================
 async function addClient() {
   if (!requireLogin()) return;
 
@@ -63,7 +170,6 @@ async function addClient() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // ✅ duplicate
       if (res.status === 409) {
         alert(data.message || "Borrower already exists in your records.");
         await loadMyClients();
@@ -87,6 +193,9 @@ async function addClient() {
   }
 }
 
+// ============================
+// Search borrower history across lenders
+// ============================
 async function searchClient() {
   if (!requireLogin()) return;
 
@@ -126,10 +235,10 @@ async function searchClient() {
       <div class="result-item">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
           <div>
-            <div class="small">Search Result – National ID: <b>${nationalId}</b></div>
-            <div style="margin-top:6px;"><b>Name:</b> ${fullName}</div>
+            <div class="small">Search Result – National ID: <b>${esc(nationalId)}</b></div>
+            <div style="margin-top:6px;"><b>Name:</b> ${esc(fullName)}</div>
           </div>
-          <div class="badge ${tone.className}">${riskLabel}</div>
+          <div class="badge ${tone.className}">${esc(riskLabel)}</div>
         </div>
       </div>
     `;
@@ -153,13 +262,13 @@ async function searchClient() {
       const paid = r.paidDate ? fmtDate(r.paidDate) : "";
 
       let dateLine = "";
-      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${paid}</div>`;
-      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${due}</div>`;
+      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${esc(paid)}</div>`;
+      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${esc(due)}</div>`;
 
       html += `
         <div class="result-item" style="margin:0;">
-          <div><b>${lenderName}${branch}${phone}</b></div>
-          <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
+          <div><b>${esc(lenderName)}${esc(branch)}${esc(phone)}</b></div>
+          <div class="small">Status: <span class="badge ${badgeClass}">${esc(statusUpper)}</span></div>
           ${dateLine}
         </div>
       `;
@@ -175,13 +284,14 @@ async function searchClient() {
   }
 }
 
-// ✅ NEW: My Clients
+// ============================
+// My Clients load + Update
+// ============================
 async function loadMyClients() {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
-
   const msg = document.getElementById("myClientsMsg");
   const tbody = document.getElementById("myClientsTbody");
 
@@ -203,40 +313,15 @@ async function loadMyClients() {
       return;
     }
 
-    const rows = Array.isArray(data) ? data : [];
-    if (rows.length === 0) {
+    MY_CLIENTS = Array.isArray(data) ? data : [];
+
+    if (MY_CLIENTS.length === 0) {
       if (msg) msg.textContent = "No clients yet. Add your first borrower record above.";
+      renderMyClientsTable();
       return;
     }
 
-    if (msg) msg.textContent = `Showing ${rows.length} record(s).`;
-
-    const esc = (s) =>
-      String(s || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-    tbody.innerHTML = rows.map((r) => {
-      const statusUpper = String(r.status || "").toUpperCase();
-      const badgeClass = statusBadgeClass(statusUpper);
-
-      return `
-        <tr>
-          <td>${esc(r.fullName)}</td>
-          <td>${esc(r.nationalId)}</td>
-          <td><span class="badge ${badgeClass}">${esc(statusUpper)}</span></td>
-          <td>${r.dueDate ? esc(fmtDate(r.dueDate)) : ""}</td>
-          <td>${r.paidDate ? esc(fmtDate(r.paidDate)) : ""}</td>
-          <td>${r.createdAt ? esc(fmtDate(r.createdAt)) : ""}</td>
-          <td>
-            <button class="btn-ghost btn-sm" onclick="updateClientPrompt('${esc(r._id)}')">Update</button>
-          </td>
-        </tr>
-      `;
-    }).join("");
+    renderMyClientsTable();
   } catch (err) {
     console.error(err);
     if (msg) msg.textContent = "";
@@ -244,13 +329,11 @@ async function loadMyClients() {
   }
 }
 
-// ✅ NEW: Update flow (simple prompts so no layout changes)
 async function updateClientPrompt(id) {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
-
   if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
 
   const status = prompt("Enter new status: paid / owing / overdue");
@@ -266,7 +349,6 @@ async function updateClientPrompt(id) {
   let paidDate = null;
 
   if (s === "paid") {
-    // optional paid date
     paidDate = prompt("Paid date (optional, YYYY-MM-DD). Leave blank for today:");
     if (paidDate) paidDate = paidDate.trim();
   } else {
@@ -302,6 +384,9 @@ async function updateClientPrompt(id) {
   }
 }
 
+// ============================
+// Logout
+// ============================
 function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
@@ -317,8 +402,11 @@ window.logout = logout;
 
 (function () {
   if (!requireLogin()) return;
+
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
+
+  wireMyClientsSearch();
   loadMyClients();
 })();

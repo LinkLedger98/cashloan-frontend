@@ -81,8 +81,17 @@
 
       <hr style="margin-top:16px;" />
 
-      <h3 style="margin-top:0;">My Clients</h3>
-      <p class="small">These are borrower records created by your business.</p>
+      <div class="myclients-head">
+        <div>
+          <h3 style="margin:0;">My Clients</h3>
+          <p class="small" style="margin:6px 0 0;">Search by name or National ID then update fast.</p>
+        </div>
+
+        <div style="min-width:260px;">
+          <label for="myClientsSearch" class="small">Search</label>
+          <input id="myClientsSearch" placeholder="Type Popo / Lesedi / 123..." />
+        </div>
+      </div>
 
       <div id="myClientsMsg" class="small" style="margin:8px 0;"></div>
 
@@ -106,6 +115,6 @@
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=3"></script>
+  <script src="dashboard.js?v=4"></script>
 </body>
 </html>
