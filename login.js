@@ -1,77 +1,59 @@
-document.addEventListener("DOMContentLoaded", function () {
-  console.log("login loaded");
+(function () {
+  const form = document.getElementById("loginForm");
+  const msg = document.getElementById("msg");
 
-  var form = document.getElementById("loginForm");
-  var msg = document.getElementById("msg");
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
 
-  // show/hide password button
-  var toggle = document.getElementById("togglePwdBtn");
-  var pwd = document.getElementById("password");
-  if (toggle && pwd) {
-    toggle.addEventListener("click", function () {
-      var isHidden = pwd.type === "password";
-      pwd.type = isHidden ? "text" : "password";
-      toggle.textContent = isHidden ? "Hide" : "Show";
-    });
-  }
-
-  if (!form) return;
-
-  if (!window.APP_CONFIG || !window.APP_CONFIG.API_BASE_URL) {
-    console.error("APP_CONFIG missing");
-    if (msg) msg.textContent = "Config not loaded.";
+  if (!API_BASE_URL) {
+    if (msg) msg.textContent = "Config missing (API_BASE_URL).";
     return;
   }
 
-  var API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+  function setMsg(t) {
+    if (msg) msg.textContent = t || "";
+  }
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log("submit intercepted");
+    setMsg("");
 
-    if (msg) msg.textContent = "Logging in...";
+    const email = String(document.getElementById("email").value || "").trim();
+    const password = String(document.getElementById("password").value || "").trim();
 
-    var email = document.getElementById("email").value.trim();
-    var password = document.getElementById("password").value;
+    if (!email || !password) {
+      setMsg("Email and password required.");
+      return;
+    }
 
-    fetch(API_BASE_URL + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, password: password })
-    })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          return { status: res.status, data: data };
-        }).catch(function () {
-          return { status: res.status, data: {} };
-        });
-      })
-      .then(function (result) {
-        console.log("login response", result);
-
-        if (result.status !== 200) {
-          if (msg) msg.textContent =
-            (result.data && result.data.message) ? result.data.message : "Login failed.";
-          return;
-        }
-
-        // save token + identity
-        localStorage.setItem("authToken", result.data.token);
-        localStorage.setItem("userEmail", (result.data.email || email));
-        localStorage.setItem("userRole", String(result.data.role || "lender").toLowerCase());
-
-        // ✅ redirect based on role
-        var role = String(result.data.role || "lender").toLowerCase();
-        if (role === "admin") {
-          window.location.href = "admin.html";
-          return;
-        }
-
-        window.location.href = "welcome.html";
-      })
-      .catch(function (err) {
-        console.error(err);
-        if (msg) msg.textContent = "Network error.";
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
       });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMsg(data.message || "Login failed.");
+        return;
+      }
+
+      // Save session
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("userEmail", data.email || email);
+      localStorage.setItem("userRole", String(data.role || "lender").toLowerCase());
+
+      // Redirect by role
+      const role = String(data.role || "lender").toLowerCase();
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "welcome.html";
+      }
+    } catch (err) {
+      console.error(err);
+      setMsg("Network error. Try again.");
+    }
   });
-});
+})();

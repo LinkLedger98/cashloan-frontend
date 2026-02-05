@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body>
@@ -25,6 +24,7 @@
       </div>
     </div>
 
+    <!-- SEARCH BORROWER -->
     <div class="card">
       <h2>Search borrower history</h2>
       <p>Search by National ID to see reported statuses across lenders.</p>
@@ -44,6 +44,7 @@
       <div id="results" class="results"></div>
     </div>
 
+    <!-- ADD BORROWER -->
     <div class="card" style="margin-top:16px;">
       <h2>Add borrower record</h2>
       <p>Only logged-in lenders can add borrower status records.</p>
@@ -74,47 +75,38 @@
         </div>
       </div>
 
-      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <div style="margin-top:12px;">
         <button class="btn-primary" onclick="addClient()">Save record</button>
-        <button class="btn-ghost" onclick="loadMyClients()">Refresh My Clients</button>
-      </div>
-
-      <hr style="margin-top:16px;" />
-
-      <div class="myclients-head">
-        <div>
-          <h3 style="margin:0;">My Clients</h3>
-          <p class="small" style="margin:6px 0 0;">Search by name or National ID then update fast.</p>
-        </div>
-
-        <div style="min-width:260px;">
-          <label for="myClientsSearch" class="small">Search</label>
-          <input id="myClientsSearch" placeholder="Type Popo / Lesedi / 123..." />
-        </div>
-      </div>
-
-      <div id="myClientsMsg" class="small" style="margin:8px 0;"></div>
-
-      <div style="overflow:auto;">
-        <table class="dark-table">
-          <thead>
-            <tr>
-              <th>Full Name</th>
-              <th>National ID</th>
-              <th>Status</th>
-              <th>Due Date</th>
-              <th>Paid Date</th>
-              <th>Created</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="myClientsTbody"></tbody>
-        </table>
       </div>
     </div>
+
+    <!-- MY CLIENTS -->
+    <div class="card" style="margin-top:16px;">
+      <h2>My clients</h2>
+      <p>All borrowers you added. Search and update status fast.</p>
+
+      <div class="row">
+        <div>
+          <label for="myQ">Search my clients (name or ID)</label>
+          <input id="myQ" placeholder="e.g. Popo or 123456789" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" onclick="loadMyClients()">Search</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn-ghost" onclick="loadMyClients()">Reload list</button>
+      </div>
+
+      <hr />
+
+      <div id="myClients" class="results"></div>
+    </div>
+
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=4"></script>
+  <script src="dashboard.js?v=3"></script>
 </body>
 </html>

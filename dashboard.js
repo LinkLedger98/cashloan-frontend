@@ -1,9 +1,11 @@
 function getToken() {
   return localStorage.getItem("authToken");
 }
+
 function getEmail() {
   return localStorage.getItem("userEmail");
 }
+
 function requireLogin() {
   const token = getToken();
   if (!token) {
@@ -36,113 +38,19 @@ function riskTone(risk) {
   return { className: "paid" };
 }
 
-// ============================
-// My Clients state + search
-// ============================
-let MY_CLIENTS = [];
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function normalizePhone(raw) {
-  // Keep digits only, basic cleanup
-  const p = String(raw || "").replace(/[^\d]/g, "");
-  // If they typed 71234567 (BW local), WhatsApp also works with +26771234567
-  // We'll build WhatsApp link with +267 if 8 digits and no country code.
-  if (p.length === 8) return `267${p}`;
-  // If they already typed country code (e.g. 2677...), keep it
+/* WhatsApp helpers */
+function cleanPhoneForWhatsApp(phone) {
+  let p = String(phone || "").replace(/[^\d]/g, "");
+  if (p.length === 8) p = "267" + p;
   return p;
 }
-
-function getBorrowerActionsHTML(r) {
-  const lenderPhone = (r.cashloanPhone || "").trim();
-  const phoneDigits = normalizePhone(lenderPhone);
-
-  // WhatsApp “click-to-chat”
-  const waHref = phoneDigits
-    ? `https://wa.me/${phoneDigits}`
-    : null;
-
-  const callHref = phoneDigits
-    ? `tel:+${phoneDigits}`
-    : null;
-
-  // Only show if phone exists
-  const waBtn = waHref
-    ? `<a class="btn-ghost btn-sm" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>`
-    : "";
-
-  const callBtn = callHref
-    ? `<a class="btn-ghost btn-sm" href="${callHref}">Call</a>`
-    : "";
-
-  return `${waBtn}${callBtn}`;
+function whatsAppLink(phone, borrowerName, borrowerId) {
+  const p = cleanPhoneForWhatsApp(phone);
+  if (!p) return null;
+  const text = `Hi, this is regarding borrower ${borrowerName || "Unknown"} (National ID: ${borrowerId || "-"}) from LinkLedger.`;
+  return `https://wa.me/${encodeURIComponent(p)}?text=${encodeURIComponent(text)}`;
 }
 
-function renderMyClientsTable() {
-  const tbody = document.getElementById("myClientsTbody");
-  const msg = document.getElementById("myClientsMsg");
-  const q = String((document.getElementById("myClientsSearch")?.value || "")).toLowerCase().trim();
-
-  const rows = MY_CLIENTS.filter((r) => {
-    if (!q) return true;
-    const name = String(r.fullName || "").toLowerCase();
-    const nid = String(r.nationalId || "").toLowerCase();
-    return name.includes(q) || nid.includes(q);
-  });
-
-  if (msg) {
-    msg.textContent = q
-      ? `Showing ${rows.length} match(es) from ${MY_CLIENTS.length} record(s).`
-      : `Showing ${MY_CLIENTS.length} record(s).`;
-  }
-
-  if (!tbody) return;
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="small">No matches. Try a different name or National ID.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = rows.map((r) => {
-    const statusUpper = String(r.status || "").toUpperCase();
-    const badgeClass = statusBadgeClass(statusUpper);
-
-    return `
-      <tr>
-        <td>${esc(r.fullName)}</td>
-        <td>${esc(r.nationalId)}</td>
-        <td><span class="badge ${badgeClass}">${esc(statusUpper)}</span></td>
-        <td>${r.dueDate ? esc(fmtDate(r.dueDate)) : ""}</td>
-        <td>${r.paidDate ? esc(fmtDate(r.paidDate)) : ""}</td>
-        <td>${r.createdAt ? esc(fmtDate(r.createdAt)) : ""}</td>
-        <td>
-          <div class="btnrow">
-            <button class="btn-ghost btn-sm" onclick="updateClientPrompt('${esc(r._id)}')">Update</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function wireMyClientsSearch() {
-  const input = document.getElementById("myClientsSearch");
-  if (!input) return;
-
-  // live search
-  input.addEventListener("input", () => renderMyClientsTable());
-}
-
-// ============================
-// Add Client
-// ============================
 async function addClient() {
   if (!requireLogin()) return;
 
@@ -163,15 +71,22 @@ async function addClient() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": token },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token
+      },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      if (res.status === 409) {
-        alert(data.message || "Borrower already exists in your records.");
+      // ✅ duplicate message
+      if (res.status === 409 && data.existing) {
+        alert("This borrower already exists in YOUR records ✅");
+        // auto show your list filtered by this ID
+        const myQ = document.getElementById("myQ");
+        if (myQ) myQ.value = nationalId;
         await loadMyClients();
         return;
       }
@@ -186,6 +101,7 @@ async function addClient() {
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
 
+    // Refresh my list
     await loadMyClients();
   } catch (err) {
     console.error(err);
@@ -193,9 +109,6 @@ async function addClient() {
   }
 }
 
-// ============================
-// Search borrower history across lenders
-// ============================
 async function searchClient() {
   if (!requireLogin()) return;
 
@@ -235,10 +148,10 @@ async function searchClient() {
       <div class="result-item">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
           <div>
-            <div class="small">Search Result – National ID: <b>${esc(nationalId)}</b></div>
-            <div style="margin-top:6px;"><b>Name:</b> ${esc(fullName)}</div>
+            <div class="small">Search Result – National ID: <b>${nationalId}</b></div>
+            <div style="margin-top:6px;"><b>Name:</b> ${fullName}</div>
           </div>
-          <div class="badge ${tone.className}">${esc(riskLabel)}</div>
+          <div class="badge ${tone.className}" title="Risk level">${riskLabel}</div>
         </div>
       </div>
     `;
@@ -249,12 +162,12 @@ async function searchClient() {
       return;
     }
 
-    html += `<div class="result-item"><div style="font-weight:700; margin-bottom:8px;">Loan History</div><div class="results" style="gap:10px;">`;
+    html += `<div class="result-item"><div style="font-weight:700; margin-bottom:8px;">Active Loans</div><div class="results" style="gap:10px;">`;
 
     activeLoans.forEach((r) => {
       const lenderName = r.cashloanName || "Unknown Lender";
       const branch = r.cashloanBranch ? ` – ${r.cashloanBranch}` : "";
-      const phone = r.cashloanPhone ? ` no:${r.cashloanPhone}` : "";
+      const phoneRaw = r.cashloanPhone || "";
       const statusUpper = r.status || "";
       const badgeClass = statusBadgeClass(statusUpper);
 
@@ -262,14 +175,25 @@ async function searchClient() {
       const paid = r.paidDate ? fmtDate(r.paidDate) : "";
 
       let dateLine = "";
-      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${esc(paid)}</div>`;
-      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${esc(due)}</div>`;
+      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${paid}</div>`;
+      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${due}</div>`;
+
+      const wa = whatsAppLink(phoneRaw, fullName, nationalId);
+      const waBtn = wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : "";
+      const callBtn = phoneRaw ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(phoneRaw)}">Call</a>` : "";
 
       html += `
         <div class="result-item" style="margin:0;">
-          <div><b>${esc(lenderName)}${esc(branch)}${esc(phone)}</b></div>
-          <div class="small">Status: <span class="badge ${badgeClass}">${esc(statusUpper)}</span></div>
-          ${dateLine}
+          <div>
+            <div><b>${lenderName}${branch}</b></div>
+            <div class="small">Phone: <b>${phoneRaw || "-"}</b></div>
+            <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
+            ${dateLine}
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+              ${callBtn}
+              ${waBtn}
+            </div>
+          </div>
         </div>
       `;
     });
@@ -284,89 +208,112 @@ async function searchClient() {
   }
 }
 
-// ============================
-// My Clients load + Update
-// ============================
+/* ===== MY CLIENTS (list + update) ===== */
 async function loadMyClients() {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
-  const msg = document.getElementById("myClientsMsg");
-  const tbody = document.getElementById("myClientsTbody");
+  const myDiv = document.getElementById("myClients");
+  const q = String((document.getElementById("myQ") && document.getElementById("myQ").value) || "").trim();
 
   if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
 
-  if (msg) msg.textContent = "Loading your clients...";
-  if (tbody) tbody.innerHTML = "";
+  myDiv.innerHTML = `<p class="small">Loading your clients...</p>`;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/clients/mine`, {
-      headers: { "Authorization": token }
-    });
-
-    const data = await res.json().catch(() => ([]));
+    const url = q ? `${API_BASE_URL}/api/clients/mine?q=${encodeURIComponent(q)}` : `${API_BASE_URL}/api/clients/mine`;
+    const res = await fetch(url, { headers: { "Authorization": token } });
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      if (msg) msg.textContent = "";
-      alert((data && data.message) ? data.message : "Failed to load your clients");
+      myDiv.innerHTML = "";
+      alert(data.message || "Failed to load your clients");
       return;
     }
 
-    MY_CLIENTS = Array.isArray(data) ? data : [];
-
-    if (MY_CLIENTS.length === 0) {
-      if (msg) msg.textContent = "No clients yet. Add your first borrower record above.";
-      renderMyClientsTable();
+    const rows = Array.isArray(data.clients) ? data.clients : [];
+    if (rows.length === 0) {
+      myDiv.innerHTML = `<div class="result-item"><div class="small">No clients found.</div></div>`;
       return;
     }
 
-    renderMyClientsTable();
+    let html = "";
+    rows.forEach((c) => {
+      const id = c._id;
+      const name = c.fullName || "";
+      const nid = c.nationalId || "";
+      const st = String(c.status || "").toLowerCase();
+
+      const due = c.dueDate ? String(c.dueDate).slice(0, 10) : "";
+      const paid = c.paidDate ? String(c.paidDate).slice(0, 10) : "";
+
+      html += `
+        <div class="result-item">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div><b>${name}</b> <span class="small">(${nid})</span></div>
+              <div class="small">Status: <b>${st.toUpperCase()}</b></div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label>Status</label>
+              <select id="st_${id}">
+                <option value="paid" ${st==="paid"?"selected":""}>paid</option>
+                <option value="owing" ${st==="owing"?"selected":""}>owing</option>
+                <option value="overdue" ${st==="overdue"?"selected":""}>overdue</option>
+              </select>
+            </div>
+            <div>
+              <label>Due date</label>
+              <input id="due_${id}" type="date" value="${due}" />
+            </div>
+            <div>
+              <label>Paid date</label>
+              <input id="paid_${id}" type="date" value="${paid}" />
+            </div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-primary" onclick="updateMyClient('${id}')">Update</button>
+          </div>
+        </div>
+      `;
+    });
+
+    myDiv.innerHTML = html;
   } catch (err) {
     console.error(err);
-    if (msg) msg.textContent = "";
+    myDiv.innerHTML = "";
     alert("Server error while loading your clients");
   }
 }
 
-async function updateClientPrompt(id) {
+async function updateMyClient(id) {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
-  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
 
-  const status = prompt("Enter new status: paid / owing / overdue");
-  if (!status) return;
+  const status = document.getElementById(`st_${id}`).value;
+  const dueDate = document.getElementById(`due_${id}`).value;
+  const paidDate = document.getElementById(`paid_${id}`).value;
 
-  const s = String(status).toLowerCase().trim();
-  if (!["paid", "owing", "overdue"].includes(s)) {
-    alert("Invalid status. Use: paid / owing / overdue");
-    return;
-  }
-
-  let dueDate = null;
-  let paidDate = null;
-
-  if (s === "paid") {
-    paidDate = prompt("Paid date (optional, YYYY-MM-DD). Leave blank for today:");
-    if (paidDate) paidDate = paidDate.trim();
-  } else {
-    dueDate = prompt("Due date (optional, YYYY-MM-DD). Leave blank to keep current:");
-    if (dueDate) dueDate = dueDate.trim();
-  }
-
-  const payload = { status: s };
-  if (s === "paid") {
-    if (paidDate) payload.paidDate = paidDate;
-  } else {
-    if (dueDate) payload.dueDate = dueDate;
-  }
+  const payload = {
+    status,
+    dueDate: dueDate || null,
+    paidDate: paidDate || null
+  };
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", "Authorization": token },
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token
+      },
       body: JSON.stringify(payload)
     });
 
@@ -380,13 +327,10 @@ async function updateClientPrompt(id) {
     await loadMyClients();
   } catch (err) {
     console.error(err);
-    alert("Network/server error while updating");
+    alert("Server error while updating");
   }
 }
 
-// ============================
-// Logout
-// ============================
 function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
@@ -397,16 +341,14 @@ function logout() {
 window.addClient = addClient;
 window.searchClient = searchClient;
 window.loadMyClients = loadMyClients;
-window.updateClientPrompt = updateClientPrompt;
+window.updateMyClient = updateMyClient;
 window.logout = logout;
 
 (function () {
   if (!requireLogin()) return;
-
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
-
-  wireMyClientsSearch();
+  // Load list once on entry
   loadMyClients();
 })();
