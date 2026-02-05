@@ -75,23 +75,34 @@
         </div>
       </div>
 
-      <div style="margin-top:12px;">
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn-primary" onclick="addClient()">Save record</button>
-      </div>
-    </div>
-
-    <!-- ✅ NEW: My Added Borrowers -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
-        <div>
-          <h2>My added borrowers</h2>
-          <p class="small">Only records added by your business.</p>
-        </div>
-        <button class="btn-ghost" type="button" onclick="loadMyClients()">Refresh</button>
+        <button class="btn-ghost" onclick="loadMyClients()">Refresh My Clients</button>
       </div>
 
-      <div id="myClients" class="results" style="margin-top:12px;">
-        <!-- My clients render here -->
+      <hr style="margin-top:16px;" />
+
+      <h3 style="margin-top:0;">My Clients</h3>
+      <p class="small">These are the borrower records your business has created.</p>
+
+      <div id="myClientsMsg" class="small" style="margin:8px 0;"></div>
+
+      <div style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:10px;">Full Name</th>
+              <th style="text-align:left; padding:10px;">National ID</th>
+              <th style="text-align:left; padding:10px;">Status</th>
+              <th style="text-align:left; padding:10px;">Due Date</th>
+              <th style="text-align:left; padding:10px;">Paid Date</th>
+              <th style="text-align:left; padding:10px;">Created</th>
+            </tr>
+          </thead>
+          <tbody id="myClientsTbody">
+            <!-- rows injected -->
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -99,6 +110,6 @@
 
   <!-- MUST be at bottom, in this order -->
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=1"></script>
+  <script src="dashboard.js?v=2"></script>
 </body>
 </html>

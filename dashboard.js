@@ -24,8 +24,8 @@ function fmtDate(isoOrNull) {
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function statusBadgeClass(statusUpperOrLower) {
-  const s = String(statusUpperOrLower || "").toLowerCase();
+function statusBadgeClass(statusUpper) {
+  const s = String(statusUpper || "").toLowerCase();
   if (s === "paid") return "paid";
   if (s === "owing") return "owing";
   if (s === "overdue") return "overdue";
@@ -76,9 +76,9 @@ async function addClient() {
 
     if (!res.ok) {
       alert(data.message || "Failed to save borrower record");
-      // ✅ if duplicate, auto show their own list so they see it immediately
+      // if duplicate, auto-refresh list
       if (res.status === 409) {
-        loadMyClients();
+        await loadMyClients();
       }
       return;
     }
@@ -90,8 +90,8 @@ async function addClient() {
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
 
-    // ✅ refresh my list after adding
-    loadMyClients();
+    // ✅ refresh My Clients after adding
+    await loadMyClients();
 
   } catch (err) {
     console.error(err);
@@ -206,18 +206,33 @@ async function searchClient() {
   }
 }
 
-// ✅ NEW: show only this lender's added clients
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  window.location.href = "login.html";
+}
+
+/**
+ * ✅ NEW: My Clients List
+ * GET /api/clients/mine
+ */
 async function loadMyClients() {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
-  const box = document.getElementById("myClients");
 
-  if (!API_BASE_URL) { alert("API_BASE_URL missing in config.js"); return; }
-  if (!box) return;
+  const msg = document.getElementById("myClientsMsg");
+  const tbody = document.getElementById("myClientsTbody");
 
-  box.innerHTML = `<p class="small">Loading...</p>`;
+  if (!API_BASE_URL) {
+    alert("API_BASE_URL missing in config.js");
+    return;
+  }
+
+  if (msg) msg.textContent = "Loading your clients...";
+  if (tbody) tbody.innerHTML = "";
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients/mine`, {
@@ -227,121 +242,65 @@ async function loadMyClients() {
     const data = await res.json().catch(() => ([]));
 
     if (!res.ok) {
-      box.innerHTML = "";
-      alert(data.message || "Failed to load your clients");
+      if (msg) msg.textContent = "";
+      alert((data && data.message) ? data.message : "Failed to load your clients");
       return;
     }
 
-    if (!Array.isArray(data) || data.length === 0) {
-      box.innerHTML = `<p class="small">No borrowers added yet.</p>`;
+    const rows = Array.isArray(data) ? data : [];
+
+    if (rows.length === 0) {
+      if (msg) msg.textContent = "No clients yet. Add your first borrower record above.";
       return;
     }
 
-    box.innerHTML = data.map(c => {
-      const id = c._id;
-      const name = c.fullName || "";
-      const nid = c.nationalId || "";
-      const st = String(c.status || "").toLowerCase();
+    if (msg) msg.textContent = `Showing ${rows.length} client record(s).`;
 
-      const dueVal = c.dueDate ? String(c.dueDate).slice(0, 10) : "";
-      const paidVal = c.paidDate ? String(c.paidDate).slice(0, 10) : "";
+    const escapeHtml = (s) =>
+      String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    tbody.innerHTML = rows.map((r) => {
+      const statusUpper = String(r.status || "").toUpperCase();
+      const badgeClass = statusBadgeClass(statusUpper);
 
       return `
-        <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div>
-              <div><b>${name}</b></div>
-              <div class="small">National ID: <b>${nid}</b></div>
-              <div class="small">Current: <span class="badge ${statusBadgeClass(st)}">${st.toUpperCase()}</span></div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              <select id="st_${id}">
-                <option value="paid" ${st === "paid" ? "selected" : ""}>paid</option>
-                <option value="owing" ${st === "owing" ? "selected" : ""}>owing</option>
-                <option value="overdue" ${st === "overdue" ? "selected" : ""}>overdue</option>
-              </select>
-
-              <input id="due_${id}" type="date" value="${dueVal}" />
-              <input id="paid_${id}" type="date" value="${paidVal}" />
-
-              <button class="btn-primary" type="button" onclick="updateClient('${id}')">Update</button>
-            </div>
-          </div>
-        </div>
+        <tr>
+          <td style="padding:10px;">${escapeHtml(r.fullName)}</td>
+          <td style="padding:10px;">${escapeHtml(r.nationalId)}</td>
+          <td style="padding:10px;">
+            <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span>
+          </td>
+          <td style="padding:10px;">${r.dueDate ? escapeHtml(fmtDate(r.dueDate)) : ""}</td>
+          <td style="padding:10px;">${r.paidDate ? escapeHtml(fmtDate(r.paidDate)) : ""}</td>
+          <td style="padding:10px;">${r.createdAt ? escapeHtml(fmtDate(r.createdAt)) : ""}</td>
+        </tr>
       `;
     }).join("");
 
   } catch (err) {
     console.error(err);
-    box.innerHTML = "";
+    if (msg) msg.textContent = "";
     alert("Server error while loading your clients");
   }
 }
 
-// ✅ NEW: update your own record only
-async function updateClient(id) {
-  if (!requireLogin()) return;
-
-  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const token = getToken();
-
-  const status = document.getElementById(`st_${id}`).value;
-  const dueDate = document.getElementById(`due_${id}`).value;
-  const paidDate = document.getElementById(`paid_${id}`).value;
-
-  const payload = {
-    status: status,
-    dueDate: dueDate ? dueDate : null,
-    paidDate: paidDate ? paidDate : null
-  };
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/clients/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(data.message || "Update failed");
-      return;
-    }
-
-    alert("Updated ✅");
-    loadMyClients();
-  } catch (err) {
-    console.error(err);
-    alert("Network/server error");
-  }
-}
-
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userRole");
-  window.location.href = "login.html";
-}
-
+// Make functions available to HTML buttons
 window.addClient = addClient;
 window.searchClient = searchClient;
-window.logout = logout;
 window.loadMyClients = loadMyClients;
-window.updateClient = updateClient;
+window.logout = logout;
 
+// Top pill display + auto-load list on page open
 (function () {
   if (!requireLogin()) return;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
-})();
-
-// auto load my list when dashboard opens
-document.addEventListener("DOMContentLoaded", function () {
+  // ✅ auto-load list
   loadMyClients();
-});
+})();
