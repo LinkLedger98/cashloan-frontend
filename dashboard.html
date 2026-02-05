@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body>
@@ -40,9 +41,7 @@
 
       <hr />
 
-      <div id="results" class="results">
-        <!-- Results render here -->
-      </div>
+      <div id="results" class="results"></div>
     </div>
 
     <div class="card" style="margin-top:16px;">
@@ -83,33 +82,30 @@
       <hr style="margin-top:16px;" />
 
       <h3 style="margin-top:0;">My Clients</h3>
-      <p class="small">These are the borrower records your business has created.</p>
+      <p class="small">These are borrower records created by your business.</p>
 
       <div id="myClientsMsg" class="small" style="margin:8px 0;"></div>
 
       <div style="overflow:auto;">
-        <table style="width:100%; border-collapse:collapse;">
+        <table class="dark-table">
           <thead>
             <tr>
-              <th style="text-align:left; padding:10px;">Full Name</th>
-              <th style="text-align:left; padding:10px;">National ID</th>
-              <th style="text-align:left; padding:10px;">Status</th>
-              <th style="text-align:left; padding:10px;">Due Date</th>
-              <th style="text-align:left; padding:10px;">Paid Date</th>
-              <th style="text-align:left; padding:10px;">Created</th>
+              <th>Full Name</th>
+              <th>National ID</th>
+              <th>Status</th>
+              <th>Due Date</th>
+              <th>Paid Date</th>
+              <th>Created</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody id="myClientsTbody">
-            <!-- rows injected -->
-          </tbody>
+          <tbody id="myClientsTbody"></tbody>
         </table>
       </div>
     </div>
-
   </div>
 
-  <!-- MUST be at bottom, in this order -->
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=2"></script>
+  <script src="dashboard.js?v=3"></script>
 </body>
 </html>

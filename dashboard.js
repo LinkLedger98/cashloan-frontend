@@ -1,11 +1,9 @@
 function getToken() {
   return localStorage.getItem("authToken");
 }
-
 function getEmail() {
   return localStorage.getItem("userEmail");
 }
-
 function requireLogin() {
   const token = getToken();
   if (!token) {
@@ -33,9 +31,9 @@ function statusBadgeClass(statusUpper) {
 }
 
 function riskTone(risk) {
-  if (risk === "red") return { pill: "OVERDUE / HIGH RISK", emoji: "🔴", className: "overdue" };
-  if (risk === "yellow") return { pill: "OWING / MEDIUM RISK", emoji: "🟡", className: "owing" };
-  return { pill: "LOW RISK", emoji: "🟢", className: "paid" };
+  if (risk === "red") return { className: "overdue" };
+  if (risk === "yellow") return { className: "owing" };
+  return { className: "paid" };
 }
 
 async function addClient() {
@@ -49,15 +47,8 @@ async function addClient() {
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
 
-  if (!API_BASE_URL) {
-    alert("API_BASE_URL missing in config.js");
-    return;
-  }
-
-  if (!fullName || !nationalId || !status) {
-    alert("Please fill Full name, National ID and Status");
-    return;
-  }
+  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
+  if (!fullName || !nationalId || !status) return alert("Please fill Full name, National ID and Status");
 
   const payload = { fullName, nationalId, status };
   if (dueDate) payload.dueDate = dueDate;
@@ -65,21 +56,20 @@ async function addClient() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": token },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      alert(data.message || "Failed to save borrower record");
-      // if duplicate, auto-refresh list
+      // ✅ duplicate
       if (res.status === 409) {
+        alert(data.message || "Borrower already exists in your records.");
         await loadMyClients();
+        return;
       }
+      alert(data.message || "Failed to save borrower record");
       return;
     }
 
@@ -90,9 +80,7 @@ async function addClient() {
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
 
-    // ✅ refresh My Clients after adding
     await loadMyClients();
-
   } catch (err) {
     console.error(err);
     alert("Server error while saving borrower record");
@@ -108,15 +96,8 @@ async function searchClient() {
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
 
-  if (!API_BASE_URL) {
-    alert("API_BASE_URL missing in config.js");
-    return;
-  }
-
-  if (!nationalId) {
-    alert("Enter National ID");
-    return;
-  }
+  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
+  if (!nationalId) return alert("Enter National ID");
 
   resultsDiv.innerHTML = `<p class="small">Searching...</p>`;
 
@@ -148,26 +129,18 @@ async function searchClient() {
             <div class="small">Search Result – National ID: <b>${nationalId}</b></div>
             <div style="margin-top:6px;"><b>Name:</b> ${fullName}</div>
           </div>
-          <div class="badge ${tone.className}" title="Risk level">${riskLabel}</div>
+          <div class="badge ${tone.className}">${riskLabel}</div>
         </div>
       </div>
     `;
 
     if (activeLoans.length === 0) {
-      html += `
-        <div class="result-item">
-          <div class="small">No records found across lenders for this National ID.</div>
-        </div>
-      `;
+      html += `<div class="result-item"><div class="small">No records found across lenders for this National ID.</div></div>`;
       resultsDiv.innerHTML = html;
       return;
     }
 
-    html += `
-      <div class="result-item">
-        <div style="font-weight:700; margin-bottom:8px;">Active Loans</div>
-        <div class="results" style="gap:10px;">
-    `;
+    html += `<div class="result-item"><div style="font-weight:700; margin-bottom:8px;">Loan History</div><div class="results" style="gap:10px;">`;
 
     activeLoans.forEach((r) => {
       const lenderName = r.cashloanName || "Unknown Lender";
@@ -185,13 +158,9 @@ async function searchClient() {
 
       html += `
         <div class="result-item" style="margin:0;">
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-            <div>
-              <div><b>${lenderName}${branch}${phone}</b></div>
-              <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
-              ${dateLine}
-            </div>
-          </div>
+          <div><b>${lenderName}${branch}${phone}</b></div>
+          <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
+          ${dateLine}
         </div>
       `;
     });
@@ -206,17 +175,7 @@ async function searchClient() {
   }
 }
 
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userRole");
-  window.location.href = "login.html";
-}
-
-/**
- * ✅ NEW: My Clients List
- * GET /api/clients/mine
- */
+// ✅ NEW: My Clients
 async function loadMyClients() {
   if (!requireLogin()) return;
 
@@ -226,10 +185,7 @@ async function loadMyClients() {
   const msg = document.getElementById("myClientsMsg");
   const tbody = document.getElementById("myClientsTbody");
 
-  if (!API_BASE_URL) {
-    alert("API_BASE_URL missing in config.js");
-    return;
-  }
+  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
 
   if (msg) msg.textContent = "Loading your clients...";
   if (tbody) tbody.innerHTML = "";
@@ -248,15 +204,14 @@ async function loadMyClients() {
     }
 
     const rows = Array.isArray(data) ? data : [];
-
     if (rows.length === 0) {
       if (msg) msg.textContent = "No clients yet. Add your first borrower record above.";
       return;
     }
 
-    if (msg) msg.textContent = `Showing ${rows.length} client record(s).`;
+    if (msg) msg.textContent = `Showing ${rows.length} record(s).`;
 
-    const escapeHtml = (s) =>
+    const esc = (s) =>
       String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -270,18 +225,18 @@ async function loadMyClients() {
 
       return `
         <tr>
-          <td style="padding:10px;">${escapeHtml(r.fullName)}</td>
-          <td style="padding:10px;">${escapeHtml(r.nationalId)}</td>
-          <td style="padding:10px;">
-            <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span>
+          <td>${esc(r.fullName)}</td>
+          <td>${esc(r.nationalId)}</td>
+          <td><span class="badge ${badgeClass}">${esc(statusUpper)}</span></td>
+          <td>${r.dueDate ? esc(fmtDate(r.dueDate)) : ""}</td>
+          <td>${r.paidDate ? esc(fmtDate(r.paidDate)) : ""}</td>
+          <td>${r.createdAt ? esc(fmtDate(r.createdAt)) : ""}</td>
+          <td>
+            <button class="btn-ghost btn-sm" onclick="updateClientPrompt('${esc(r._id)}')">Update</button>
           </td>
-          <td style="padding:10px;">${r.dueDate ? escapeHtml(fmtDate(r.dueDate)) : ""}</td>
-          <td style="padding:10px;">${r.paidDate ? escapeHtml(fmtDate(r.paidDate)) : ""}</td>
-          <td style="padding:10px;">${r.createdAt ? escapeHtml(fmtDate(r.createdAt)) : ""}</td>
         </tr>
       `;
     }).join("");
-
   } catch (err) {
     console.error(err);
     if (msg) msg.textContent = "";
@@ -289,18 +244,81 @@ async function loadMyClients() {
   }
 }
 
-// Make functions available to HTML buttons
+// ✅ NEW: Update flow (simple prompts so no layout changes)
+async function updateClientPrompt(id) {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+
+  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
+
+  const status = prompt("Enter new status: paid / owing / overdue");
+  if (!status) return;
+
+  const s = String(status).toLowerCase().trim();
+  if (!["paid", "owing", "overdue"].includes(s)) {
+    alert("Invalid status. Use: paid / owing / overdue");
+    return;
+  }
+
+  let dueDate = null;
+  let paidDate = null;
+
+  if (s === "paid") {
+    // optional paid date
+    paidDate = prompt("Paid date (optional, YYYY-MM-DD). Leave blank for today:");
+    if (paidDate) paidDate = paidDate.trim();
+  } else {
+    dueDate = prompt("Due date (optional, YYYY-MM-DD). Leave blank to keep current:");
+    if (dueDate) dueDate = dueDate.trim();
+  }
+
+  const payload = { status: s };
+  if (s === "paid") {
+    if (paidDate) payload.paidDate = paidDate;
+  } else {
+    if (dueDate) payload.dueDate = dueDate;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/clients/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": token },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Update failed");
+      return;
+    }
+
+    alert("Updated ✅");
+    await loadMyClients();
+  } catch (err) {
+    console.error(err);
+    alert("Network/server error while updating");
+  }
+}
+
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  window.location.href = "login.html";
+}
+
 window.addClient = addClient;
 window.searchClient = searchClient;
 window.loadMyClients = loadMyClients;
+window.updateClientPrompt = updateClientPrompt;
 window.logout = logout;
 
-// Top pill display + auto-load list on page open
 (function () {
   if (!requireLogin()) return;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
-  // ✅ auto-load list
   loadMyClients();
 })();

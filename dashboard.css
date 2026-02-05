@@ -1,0 +1,68 @@
+/* Strong dark background + readable text */
+body {
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(255, 0, 170, 0.15), transparent 50%),
+              radial-gradient(1000px 700px at 80% 20%, rgba(0, 170, 255, 0.12), transparent 55%),
+              #0b0c10 !important;
+  color: #f3f4f6;
+}
+
+.container {
+  max-width: 980px;
+}
+
+.card {
+  background: rgba(18, 18, 22, 0.75) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: 0 18px 55px rgba(0,0,0,0.45) !important;
+  backdrop-filter: blur(10px);
+}
+
+h1, h2, h3, label, p {
+  color: #f3f4f6 !important;
+}
+
+p.small, .small, .muted {
+  color: rgba(243,244,246,0.75) !important;
+}
+
+input, select {
+  background: rgba(0,0,0,0.35) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: #f3f4f6 !important;
+}
+
+input::placeholder {
+  color: rgba(243,244,246,0.45);
+}
+
+hr {
+  border-color: rgba(255,255,255,0.10) !important;
+}
+
+.dark-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.dark-table th,
+.dark-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #f3f4f6;
+}
+
+.dark-table thead th {
+  font-weight: 700;
+  color: rgba(243,244,246,0.9);
+  background: rgba(0,0,0,0.22);
+}
+
+.badge.paid { background: rgba(0, 200, 120, 0.18) !important; }
+.badge.owing { background: rgba(255, 200, 0, 0.18) !important; }
+.badge.overdue { background: rgba(255, 60, 90, 0.18) !important; }
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+}
