@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Request Sign up • LinkLedger</title>
+  <title>Request Access • LinkLedger</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -21,50 +21,54 @@
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <h2>Request an account</h2>
-      <p>Submit your details. Admin reviews and activates your account after payment.</p>
+      <h2>Request a Lender Account</h2>
+      <p>Submit your details. Admin will approve after verification + payment.</p>
 
-      <form id="requestForm">
+      <form id="signupRequestForm" autocomplete="on">
+
         <div class="row">
           <div>
-            <label>Business Name</label>
-            <input id="businessName" required placeholder="e.g. Golden Finance" />
+            <label for="businessName">Business Name *</label>
+            <input id="businessName" required placeholder="e.g. Golden Cashloans" />
           </div>
           <div>
-            <label>Branch</label>
+            <label for="branchName">Branch *</label>
             <input id="branchName" required placeholder="e.g. Palapye" />
           </div>
         </div>
 
-        <div class="row">
+        <div class="row" style="margin-top:12px;">
           <div>
-            <label>Phone</label>
-            <input id="phone" required placeholder="e.g. 71234567" />
+            <label for="phone">Phone / Landline *</label>
+            <input id="phone" required placeholder="e.g. 490000 / 71xxxxxx" />
           </div>
           <div>
-            <label>NBIFIRA License No.</label>
+            <label for="licenseNo">NBIFIRA License No. *</label>
             <input id="licenseNo" required placeholder="e.g. NBIFIRA-12345" />
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Email (login)</label>
-            <input id="email" type="email" required placeholder="e.g. info@company.co.bw" />
-          </div>
-          <div>
-            <label>Notes (optional)</label>
-            <input id="notes" placeholder="Anything admin should know..." />
-          </div>
+        <div style="margin-top:12px;">
+          <label for="email">Email *</label>
+          <input id="email" type="email" required placeholder="e.g. info@business.co.bw" />
         </div>
 
-        <button class="btn-primary" type="submit">Send Request</button>
+        <div style="margin-top:12px;">
+          <label for="notes">Notes (optional)</label>
+          <input id="notes" placeholder="Anything you want admin to know..." />
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-primary" type="submit">Submit Request</button>
+          <a class="btn-ghost" href="login.html">Back to Login</a>
+        </div>
+
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
     </div>
   </main>
 
   <script src="config.js?v=1"></script>
-  <script src="signup.js?v=2"></script>
+  <script src="signuprequest.js?v=1"></script>
 </body>
 </html>
