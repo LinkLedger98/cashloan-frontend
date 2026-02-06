@@ -1,251 +1,297 @@
-function getToken(){ return localStorage.getItem("authToken"); }
-function getEmail(){ return localStorage.getItem("userEmail"); }
-function getRole(){ return (localStorage.getItem("userRole") || "").toLowerCase(); }
+function getToken() {
+  return localStorage.getItem("authToken") || "";
+}
+function getRole() {
+  return (localStorage.getItem("userRole") || "").toLowerCase();
+}
+function getEmail() {
+  return (localStorage.getItem("userEmail") || "").toLowerCase();
+}
 
-function requireAdmin(){
+function requireAdminPage() {
   const token = getToken();
   const role = getRole();
-  if (!token || role !== "admin") {
-    alert("Admin access only. Please login as admin.");
-    window.location.href = "login.html";
-    return false;
-  }
+
+  // allow if admin role OR they have admin key (legacy) typed in
+  if (role === "admin" && token) return true;
+
+  // still allow page to load (they might use ADMIN_KEY)
   return true;
 }
 
-function escapeHtml(s){
-  return String(s || "")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+function authHeaders() {
+  const h = { "Content-Type": "application/json" };
+  const token = getToken();
+  const adminKey = (document.getElementById("adminKey")?.value || "").trim();
+
+  // backend supports either x-admin-key OR token
+  if (adminKey) h["x-admin-key"] = adminKey;
+  if (token) h["Authorization"] = token;
+  return h;
 }
 
-function logout(){
+function fmtDate(d) {
+  if (!d) return "";
+  const x = new Date(d);
+  if (isNaN(x.getTime())) return "";
+  return x.toISOString().slice(0, 10);
+}
+
+function setMsg(text, isOk) {
+  const el = document.getElementById("msg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.style.color = isOk ? "#5CFFB0" : "#FF7A7A";
+}
+
+function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
   localStorage.removeItem("userRole");
   window.location.href = "login.html";
 }
+
 window.logout = logout;
 
-function toggleAccounts(){
-  const p = document.getElementById("accountsPanel");
-  if (!p) return;
-  const showing = p.style.display !== "none";
-  p.style.display = showing ? "none" : "block";
-  if (!showing) loadAccounts();
-}
-window.toggleAccounts = toggleAccounts;
+(function init() {
+  requireAdminPage();
 
-const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const pill = document.getElementById("adminPill");
+  if (pill) {
+    const email = getEmail();
+    pill.textContent = email ? `Logged in: ${email}` : "Logged in";
+  }
 
-const adminPill = document.getElementById("adminPill");
-if (adminPill) adminPill.textContent = getEmail() ? `Logged in: ${getEmail()}` : "Admin";
+  // ▲/▼ collapse
+  const btn = document.getElementById("toggleAccountsBtn");
+  const wrap = document.getElementById("accountsWrap");
+  if (btn && wrap) {
+    btn.addEventListener("click", function () {
+      const isHidden = wrap.style.display === "none";
+      wrap.style.display = isHidden ? "block" : "none";
+      btn.textContent = isHidden ? "▲" : "▼";
+    });
+  }
 
-function buildAdminHeaders(){
-  const headers = { "Content-Type":"application/json" };
+  // search box
+  const searchBox = document.getElementById("searchBox");
+  if (searchBox) {
+    let t = null;
+    searchBox.addEventListener("input", function () {
+      clearTimeout(t);
+      t = setTimeout(() => reloadAccounts(), 250);
+    });
+  }
 
-  const token = getToken();
-  if (token) headers["Authorization"] = token;
+  // create lender
+  const form = document.getElementById("adminForm");
+  if (form) {
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      setMsg("", true);
 
-  const adminKey = String((document.getElementById("adminKey")?.value || "")).trim();
-  if (adminKey) headers["x-admin-key"] = adminKey;
+      const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+      if (!api) return setMsg("API_BASE_URL missing in config.js", false);
 
-  return headers;
-}
+      const payload = {
+        businessName: document.getElementById("businessName").value.trim(),
+        branchName: document.getElementById("branchName").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        licenseNo: document.getElementById("licenseNo").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        tempPassword: document.getElementById("tempPassword").value.trim()
+      };
 
-function setMsg(t){
-  const msg = document.getElementById("msg");
-  if (msg) msg.textContent = t || "";
-}
+      try {
+        const res = await fetch(`${api}/api/admin/lenders`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload)
+        });
 
-/* -------------------- CREATE LENDER -------------------- */
-document.getElementById("adminForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
-  if (!requireAdmin()) return;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return setMsg(data.message || "Failed to create lender", false);
 
-  setMsg("");
+        setMsg("Lender created ✅", true);
 
-  const payload = {
-    businessName: document.getElementById("businessName").value.trim(),
-    branchName: document.getElementById("branchName").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    licenseNo: document.getElementById("licenseNo").value.trim(),
-    email: document.getElementById("email").value.trim().toLowerCase(),
-    tempPassword: document.getElementById("tempPassword").value.trim(),
-    paidUntil: document.getElementById("paidUntil").value || null
-  };
+        // clear
+        ["businessName","branchName","phone","licenseNo","email","tempPassword"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+
+        await reloadAccounts();
+      } catch (err) {
+        console.error(err);
+        setMsg("Network error", false);
+      }
+    });
+  }
+
+  // load accounts on open
+  reloadAccounts();
+})();
+
+async function reloadAccounts() {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
+
+  const q = (document.getElementById("searchBox")?.value || "").trim();
+
+  const body = document.getElementById("accountsBody");
+  const countLine = document.getElementById("countLine");
+  if (body) body.innerHTML = `<tr><td colspan="10" class="small">Loading...</td></tr>`;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/admin/lenders`, {
-      method:"POST",
-      headers: buildAdminHeaders(),
-      body: JSON.stringify(payload)
-    });
+    const url = q ? `${api}/api/admin/lenders?q=${encodeURIComponent(q)}` : `${api}/api/admin/lenders`;
+    const res = await fetch(url, { headers: authHeaders() });
+    const data = await res.json().catch(() => ([]));
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { setMsg(data.message || "Failed"); return; }
+    if (!res.ok) {
+      if (body) body.innerHTML = "";
+      alert((data && data.message) ? data.message : "Failed to load accounts");
+      return;
+    }
 
-    setMsg("Lender created ✅");
-    document.getElementById("adminForm").reset();
-    loadAccounts();
+    const rows = Array.isArray(data) ? data : [];
+    if (countLine) countLine.textContent = `Showing ${rows.length} account(s).`;
+
+    if (!body) return;
+
+    body.innerHTML = rows.map(u => {
+      const id = u._id;
+      const role = String(u.role || "lender").toUpperCase();
+      const status = String(u.status || "active").toUpperCase();
+      const billing = String(u.billingStatus || "paid").toUpperCase();
+      const paidUntil = fmtDate(u.paidUntil);
+
+      const suspendLabel = (String(u.status || "").toLowerCase() === "suspended") ? "Activate" : "Suspend";
+      const suspendNextStatus = (String(u.status || "").toLowerCase() === "suspended") ? "active" : "suspended";
+
+      return `
+        <tr>
+          <td>${u.businessName || ""}</td>
+          <td>${u.email || ""}</td>
+          <td>${role}</td>
+          <td>${status}</td>
+          <td>${billing}</td>
+          <td>${paidUntil || "-"}</td>
+          <td>${u.branchName || ""}</td>
+          <td>${u.phone || ""}</td>
+          <td>${u.licenseNo || ""}</td>
+          <td style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-ghost btn-sm" onclick="setStatus('${id}','${suspendNextStatus}')">${suspendLabel}</button>
+            <button class="btn-ghost btn-sm" onclick="markPaid('${id}')">Mark Paid</button>
+            <button class="btn-ghost btn-sm" onclick="setDue('${id}')">Set Due</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
   } catch (err) {
     console.error(err);
-    setMsg("Network error");
+    if (body) body.innerHTML = "";
+    alert("Network error while loading accounts");
   }
-});
+}
 
-/* -------------------- ACCOUNTS LIST -------------------- */
-async function loadAccounts(){
-  if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
-  if (!requireAdmin()) return;
+window.reloadAccounts = reloadAccounts;
 
-  const accountsDiv = document.getElementById("accounts");
-  const acctCount = document.getElementById("acctCount");
-  const q = String(document.getElementById("acctQ")?.value || "").trim().toLowerCase();
-
-  if (accountsDiv) accountsDiv.innerHTML = `<p class="small">Loading accounts...</p>`;
+async function setStatus(userId, newStatus) {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/admin/lenders`, {
-      method:"GET",
-      headers: buildAdminHeaders()
+    const res = await fetch(`${api}/api/admin/users/${encodeURIComponent(userId)}/status`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ status: newStatus })
     });
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      if (accountsDiv) accountsDiv.innerHTML = "";
-      alert(data.message || "Failed to load accounts");
+      alert(data.message || "Failed to update status");
       return;
     }
-
-    let rows = Array.isArray(data) ? data : [];
-    if (q) {
-      rows = rows.filter(r => {
-        const blob = [r.businessName,r.email,r.licenseNo,r.branchName,r.phone,r.status,r.role]
-          .map(x => String(x || "").toLowerCase()).join(" ");
-        return blob.includes(q);
-      });
-    }
-
-    if (acctCount) acctCount.textContent = `Showing ${rows.length} accounts.`;
-
-    let html = `
-      <div class="table">
-        <div class="thead">
-          <div>Business</div>
-          <div>Email</div>
-          <div>Role</div>
-          <div>Status</div>
-          <div>Paid Until</div>
-          <div>Last Payment</div>
-          <div>Action</div>
-        </div>
-    `;
-
-    rows.forEach(r => {
-      const id = r._id;
-      const status = String(r.status || "active").toLowerCase();
-      const paidUntil = r.paidUntil ? String(r.paidUntil).slice(0,10) : "";
-      const lastPay = r.lastPaymentAt ? String(r.lastPaymentAt).slice(0,10) : "";
-
-      html += `
-        <div class="trow">
-          <div><b>${escapeHtml(r.businessName || "-")}</b></div>
-          <div>${escapeHtml(r.email || "-")}</div>
-          <div>${escapeHtml((r.role || "lender").toUpperCase())}</div>
-          <div>${escapeHtml(status.toUpperCase())}</div>
-          <div>${escapeHtml(paidUntil || "-")}</div>
-          <div>${escapeHtml(lastPay || "-")}</div>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            ${
-              status === "active"
-                ? `<button class="btn-ghost btn-sm" onclick="setStatus('${id}','suspended')">Suspend</button>`
-                : `<button class="btn-ghost btn-sm" onclick="setStatus('${id}','active')">Activate</button>`
-            }
-
-            <button class="btn-primary btn-sm" onclick="markPaid('${id}')">Mark Paid</button>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    if (accountsDiv) accountsDiv.innerHTML = html;
+    await reloadAccounts();
   } catch (err) {
     console.error(err);
-    if (accountsDiv) accountsDiv.innerHTML = "";
     alert("Network error");
   }
 }
-window.loadAccounts = loadAccounts;
 
-document.getElementById("acctQ")?.addEventListener("input", () => loadAccounts());
-
-async function setStatus(userId, newStatus){
-  if (!requireAdmin()) return;
-  const res = await fetch(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(userId)}/status`, {
-    method:"PATCH",
-    headers: buildAdminHeaders(),
-    body: JSON.stringify({ status: newStatus })
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) return alert(data.message || "Failed");
-  loadAccounts();
-}
 window.setStatus = setStatus;
 
-async function markPaid(userId){
-  if (!requireAdmin()) return;
-  const paidUntil = prompt("Paid until date (YYYY-MM-DD). Leave blank for today only:");
-  const payload = { paidUntil: paidUntil || null };
+async function markPaid(userId) {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
 
-  const res = await fetch(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(userId)}/payment`, {
-    method:"PATCH",
-    headers: buildAdminHeaders(),
-    body: JSON.stringify(payload)
-  });
+  // simple prompts (fast + safe)
+  const paidUntil = prompt("Paid until date (YYYY-MM-DD). Leave blank for none:", "");
+  if (paidUntil === null) return;
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) return alert(data.message || "Failed");
-  loadAccounts();
+  const amount = prompt("Payment amount (number, optional):", "");
+  if (amount === null) return;
+
+  const ref = prompt("Payment reference (optional):", "");
+  if (ref === null) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const res = await fetch(`${api}/api/admin/users/${encodeURIComponent(userId)}/billing`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        billingStatus: "paid",
+        paidUntil: paidUntil.trim() ? paidUntil.trim() : null,
+        lastPaymentAt: today,
+        lastPaymentAmount: amount.trim() ? Number(amount.trim()) : null,
+        lastPaymentRef: ref.trim()
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Failed to mark paid");
+      return;
+    }
+    await reloadAccounts();
+  } catch (err) {
+    console.error(err);
+    alert("Network error");
+  }
 }
+
 window.markPaid = markPaid;
 
-/* -------------------- SIGNUP REQUESTS -------------------- */
-async function loadRequests(){
-  if (!requireAdmin()) return;
-  const div = document.getElementById("requests");
-  if (div) div.innerHTML = `<p class="small">Loading requests...</p>`;
+async function setDue(userId) {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
 
-  const res = await fetch(`${API_BASE_URL}/api/admin/signup-requests`, {
-    method:"GET",
-    headers: buildAdminHeaders()
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) { if(div) div.innerHTML=""; return alert(data.message || "Failed"); }
+  const note = prompt("Reason / note (optional):", "");
+  if (note === null) return;
 
-  const rows = Array.isArray(data) ? data : [];
-  if (!rows.length) { if(div) div.innerHTML = `<div class="small">No requests right now.</div>`; return; }
+  try {
+    const res = await fetch(`${api}/api/admin/users/${encodeURIComponent(userId)}/billing`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        billingStatus: "due",
+        notes: note.trim()
+      })
+    });
 
-  let html = `<div class="results">`;
-  rows.forEach(r => {
-    html += `
-      <div class="result-item">
-        <div><b>${escapeHtml(r.businessName)}</b> • ${escapeHtml(r.email)}</div>
-        <div class="small">Branch: ${escapeHtml(r.branchName)} • Phone: ${escapeHtml(r.phone)} • License: ${escapeHtml(r.licenseNo)}</div>
-        <div class="small">Notes: ${escapeHtml(r.notes || "-")}</div>
-      </div>
-    `;
-  });
-  html += `</div>`;
-  if (div) div.innerHTML = html;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Failed to set due");
+      return;
+    }
+    await reloadAccounts();
+  } catch (err) {
+    console.error(err);
+    alert("Network error");
+  }
 }
-window.loadRequests = loadRequests;
 
-(function(){
-  if (!requireAdmin()) return;
-  loadRequests();
-})();
+window.setDue = setDue;
