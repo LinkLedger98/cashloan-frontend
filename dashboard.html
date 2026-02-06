@@ -1,11 +1,10 @@
-<!-- dashboard.html (FULL) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -16,25 +15,25 @@
         <h1>LinkLedger</h1>
       </div>
 
-      <div class="top-actions">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <span class="pill" id="userPill">Logged in</span>
         <a class="btn-ghost" href="index.html">Home</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <!-- SEARCH BORROWER -->
+    <!-- Search borrower history -->
     <div class="card">
       <h2>Search borrower history</h2>
-      <p class="muted">Search by National ID to see reported statuses across lenders.</p>
+      <p>Search by National ID to see reported statuses across lenders.</p>
 
       <div class="row">
         <div>
           <label for="searchNationalId">National ID</label>
           <input id="searchNationalId" placeholder="e.g. 123456789" />
         </div>
-        <div class="row-btn">
-          <button class="btn-primary" onclick="searchClient()">Search</button>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
         </div>
       </div>
 
@@ -43,10 +42,32 @@
       <div id="results" class="results"></div>
     </div>
 
-    <!-- ADD BORROWER -->
+    <!-- My Clients -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <h2 style="margin-bottom:4px;">My Clients</h2>
+          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div>
+            <label class="small" for="myClientsSearch">Search</label>
+            <input id="myClientsSearch" placeholder="Name or National ID" />
+          </div>
+          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0;" />
+
+      <div id="myClientsList" class="results"></div>
+    </div>
+
+    <!-- Add borrower record -->
     <div class="card" style="margin-top:16px;">
       <h2>Add borrower record</h2>
-      <p class="muted">Only logged-in lenders can add borrower status records.</p>
+      <p>Only logged-in lenders can add borrower status records.</p>
 
       <div class="row">
         <div>
@@ -79,32 +100,9 @@
       </div>
     </div>
 
-    <!-- MY CLIENTS -->
-    <div class="card" style="margin-top:16px;">
-      <h2>My clients</h2>
-      <p class="muted">All borrowers you added. Search and update status fast.</p>
-
-      <div class="row">
-        <div>
-          <label for="myQ">Search my clients (name or ID)</label>
-          <input id="myQ" placeholder="e.g. Popo or 123456789" />
-        </div>
-        <div class="row-btn">
-          <button class="btn-primary" onclick="loadMyClients()">Search</button>
-        </div>
-      </div>
-
-      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn-ghost" onclick="loadMyClients()">Reload list</button>
-      </div>
-
-      <hr />
-
-      <div id="myClients" class="results"></div>
-    </div>
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=5"></script>
+  <script src="dashboard.js?v=1"></script>
 </body>
 </html>
