@@ -17,7 +17,15 @@
         <h1>LinkLedger</h1>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <!-- ✅ Legacy badge (kids) -->
+      <div class="legacy-badge">
+        <span class="legacy-dot legacy-dot-pink"></span>
+        <span class="legacy-lt">&lt;</span>
+        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-text">Legacy Mode</span>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-left:auto;">
         <span class="pill" id="userPill">Logged in</span>
         <a class="btn-ghost" href="index.html">Home</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
@@ -103,10 +111,9 @@
 
       <div id="myClients" class="results"></div>
     </div>
-
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=3"></script>
+  <script src="dashboard.js?v=4"></script>
 </body>
 </html>

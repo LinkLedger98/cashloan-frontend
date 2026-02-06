@@ -38,17 +38,27 @@ function riskTone(risk) {
   return { className: "paid" };
 }
 
-/* WhatsApp helpers */
+/* ✅ WhatsApp + Call */
 function cleanPhoneForWhatsApp(phone) {
   let p = String(phone || "").replace(/[^\d]/g, "");
+  // Botswana: if 8 digits, add 267
   if (p.length === 8) p = "267" + p;
   return p;
 }
-function whatsAppLink(phone, borrowerName, borrowerId) {
+
+function buildWhatsAppLink(phone, message) {
   const p = cleanPhoneForWhatsApp(phone);
   if (!p) return null;
-  const text = `Hi, this is regarding borrower ${borrowerName || "Unknown"} (National ID: ${borrowerId || "-"}) from LinkLedger.`;
-  return `https://wa.me/${encodeURIComponent(p)}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${encodeURIComponent(p)}?text=${encodeURIComponent(message || "")}`;
+}
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 async function addClient() {
@@ -81,10 +91,8 @@ async function addClient() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // ✅ duplicate message
       if (res.status === 409 && data.existing) {
         alert("This borrower already exists in YOUR records ✅");
-        // auto show your list filtered by this ID
         const myQ = document.getElementById("myQ");
         if (myQ) myQ.value = nationalId;
         await loadMyClients();
@@ -101,7 +109,6 @@ async function addClient() {
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
 
-    // Refresh my list
     await loadMyClients();
   } catch (err) {
     console.error(err);
@@ -148,10 +155,10 @@ async function searchClient() {
       <div class="result-item">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
           <div>
-            <div class="small">Search Result – National ID: <b>${nationalId}</b></div>
-            <div style="margin-top:6px;"><b>Name:</b> ${fullName}</div>
+            <div class="small">Search Result – National ID: <b>${escapeHtml(nationalId)}</b></div>
+            <div style="margin-top:6px;"><b>Name:</b> ${escapeHtml(fullName)}</div>
           </div>
-          <div class="badge ${tone.className}" title="Risk level">${riskLabel}</div>
+          <div class="badge ${tone.className}" title="Risk level">${escapeHtml(riskLabel)}</div>
         </div>
       </div>
     `;
@@ -175,19 +182,26 @@ async function searchClient() {
       const paid = r.paidDate ? fmtDate(r.paidDate) : "";
 
       let dateLine = "";
-      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${paid}</div>`;
-      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${due}</div>`;
+      if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${escapeHtml(paid)}</div>`;
+      if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${escapeHtml(due)}</div>`;
 
-      const wa = whatsAppLink(phoneRaw, fullName, nationalId);
-      const waBtn = wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : "";
-      const callBtn = phoneRaw ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(phoneRaw)}">Call</a>` : "";
+      const msg = `Hi, this is regarding borrower ${fullName} (National ID: ${nationalId}) from LinkLedger.`;
+      const wa = buildWhatsAppLink(phoneRaw, msg);
+
+      const waBtn = wa
+        ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>`
+        : "";
+
+      const callBtn = phoneRaw
+        ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(phoneRaw)}">Call</a>`
+        : "";
 
       html += `
         <div class="result-item" style="margin:0;">
           <div>
-            <div><b>${lenderName}${branch}</b></div>
-            <div class="small">Phone: <b>${phoneRaw || "-"}</b></div>
-            <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
+            <div><b>${escapeHtml(lenderName)}${escapeHtml(branch)}</b></div>
+            <div class="small">Phone: <b>${escapeHtml(phoneRaw || "-")}</b></div>
+            <div class="small">Status: <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span></div>
             ${dateLine}
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
               ${callBtn}
@@ -208,7 +222,7 @@ async function searchClient() {
   }
 }
 
-/* ===== MY CLIENTS (list + update) ===== */
+/* ===== MY CLIENTS (list + update + WhatsApp) ===== */
 async function loadMyClients() {
   if (!requireLogin()) return;
 
@@ -222,7 +236,10 @@ async function loadMyClients() {
   myDiv.innerHTML = `<p class="small">Loading your clients...</p>`;
 
   try {
-    const url = q ? `${API_BASE_URL}/api/clients/mine?q=${encodeURIComponent(q)}` : `${API_BASE_URL}/api/clients/mine`;
+    const url = q
+      ? `${API_BASE_URL}/api/clients/mine?q=${encodeURIComponent(q)}`
+      : `${API_BASE_URL}/api/clients/mine`;
+
     const res = await fetch(url, { headers: { "Authorization": token } });
     const data = await res.json().catch(() => ({}));
 
@@ -248,12 +265,18 @@ async function loadMyClients() {
       const due = c.dueDate ? String(c.dueDate).slice(0, 10) : "";
       const paid = c.paidDate ? String(c.paidDate).slice(0, 10) : "";
 
+      // NOTE: for YOUR clients, WhatsApp uses YOUR business phone (cashloanPhone)
+      // You can later add borrower phone field if you want texting the borrower directly.
+      const myBizPhone = c.cashloanPhone || "";
+      const msg = `Hi, this is regarding borrower ${name} (National ID: ${nid}) from LinkLedger records.`;
+      const wa = buildWhatsAppLink(myBizPhone, msg);
+
       html += `
         <div class="result-item">
           <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
             <div>
-              <div><b>${name}</b> <span class="small">(${nid})</span></div>
-              <div class="small">Status: <b>${st.toUpperCase()}</b></div>
+              <div><b>${escapeHtml(name)}</b> <span class="small">(${escapeHtml(nid)})</span></div>
+              <div class="small">Status: <b>${escapeHtml(st.toUpperCase())}</b></div>
             </div>
           </div>
 
@@ -268,16 +291,23 @@ async function loadMyClients() {
             </div>
             <div>
               <label>Due date</label>
-              <input id="due_${id}" type="date" value="${due}" />
+              <input id="due_${id}" type="date" value="${escapeHtml(due)}" />
             </div>
             <div>
               <label>Paid date</label>
-              <input id="paid_${id}" type="date" value="${paid}" />
+              <input id="paid_${id}" type="date" value="${escapeHtml(paid)}" />
             </div>
           </div>
 
-          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <button class="btn-primary" onclick="updateMyClient('${id}')">Update</button>
+
+            ${myBizPhone ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(myBizPhone)}">Call</a>` : ""}
+            ${wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : ""}
+
+            <span class="small" style="opacity:.8;">
+              (WhatsApp uses your business phone for now. We can add borrower phone later.)
+            </span>
           </div>
         </div>
       `;
@@ -349,6 +379,5 @@ window.logout = logout;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
-  // Load list once on entry
   loadMyClients();
 })();
