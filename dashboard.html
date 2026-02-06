@@ -1,15 +1,14 @@
+<!-- dashboard.html (FULL) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body>
-  <object type="image/svg+xml" data="assets/legacy-icons.svg" style="display:none;"></object>
-
   <div class="container">
     <div class="topbar">
       <div class="brand">
@@ -17,15 +16,7 @@
         <h1>LinkLedger</h1>
       </div>
 
-      <!-- ✅ Legacy badge (kids) -->
-      <div class="legacy-badge">
-        <span class="legacy-dot legacy-dot-pink"></span>
-        <span class="legacy-lt">&lt;</span>
-        <span class="legacy-dot legacy-dot-blue"></span>
-        <span class="legacy-text">Legacy Mode</span>
-      </div>
-
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+      <div class="top-actions">
         <span class="pill" id="userPill">Logged in</span>
         <a class="btn-ghost" href="index.html">Home</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
@@ -35,15 +26,15 @@
     <!-- SEARCH BORROWER -->
     <div class="card">
       <h2>Search borrower history</h2>
-      <p>Search by National ID to see reported statuses across lenders.</p>
+      <p class="muted">Search by National ID to see reported statuses across lenders.</p>
 
       <div class="row">
         <div>
           <label for="searchNationalId">National ID</label>
           <input id="searchNationalId" placeholder="e.g. 123456789" />
         </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
+        <div class="row-btn">
+          <button class="btn-primary" onclick="searchClient()">Search</button>
         </div>
       </div>
 
@@ -55,7 +46,7 @@
     <!-- ADD BORROWER -->
     <div class="card" style="margin-top:16px;">
       <h2>Add borrower record</h2>
-      <p>Only logged-in lenders can add borrower status records.</p>
+      <p class="muted">Only logged-in lenders can add borrower status records.</p>
 
       <div class="row">
         <div>
@@ -91,15 +82,15 @@
     <!-- MY CLIENTS -->
     <div class="card" style="margin-top:16px;">
       <h2>My clients</h2>
-      <p>All borrowers you added. Search and update status fast.</p>
+      <p class="muted">All borrowers you added. Search and update status fast.</p>
 
       <div class="row">
         <div>
           <label for="myQ">Search my clients (name or ID)</label>
           <input id="myQ" placeholder="e.g. Popo or 123456789" />
         </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="loadMyClients()">Search</button>
+        <div class="row-btn">
+          <button class="btn-primary" onclick="loadMyClients()">Search</button>
         </div>
       </div>
 
@@ -114,6 +105,6 @@
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=4"></script>
+  <script src="dashboard.js?v=5"></script>
 </body>
 </html>

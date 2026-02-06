@@ -1,18 +1,10 @@
-function getToken() {
-  return localStorage.getItem("authToken");
-}
-
-function getEmail() {
-  return localStorage.getItem("userEmail");
-}
+// dashboard.js (FULL) — WhatsApp works, “Call” = copy number (no tel handler prompts)
+function getToken() { return localStorage.getItem("authToken"); }
+function getEmail() { return localStorage.getItem("userEmail"); }
 
 function requireLogin() {
   const token = getToken();
-  if (!token) {
-    alert("Please log in first");
-    window.location.href = "login.html";
-    return false;
-  }
+  if (!token) { alert("Please log in first"); window.location.href = "login.html"; return false; }
   return true;
 }
 
@@ -38,27 +30,32 @@ function riskTone(risk) {
   return { className: "paid" };
 }
 
-/* ✅ WhatsApp + Call */
-function cleanPhoneForWhatsApp(phone) {
-  let p = String(phone || "").replace(/[^\d]/g, "");
-  // Botswana: if 8 digits, add 267
+function cleanPhone(phone) {
+  return String(phone || "").replace(/[^\d]/g, "");
+}
+function phoneWithBW(phone) {
+  let p = cleanPhone(phone);
   if (p.length === 8) p = "267" + p;
   return p;
 }
-
 function buildWhatsAppLink(phone, message) {
-  const p = cleanPhoneForWhatsApp(phone);
+  const p = phoneWithBW(phone);
   if (!p) return null;
   return `https://wa.me/${encodeURIComponent(p)}?text=${encodeURIComponent(message || "")}`;
 }
-
 function escapeHtml(s) {
   return String(s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+async function copyText(txt) {
+  try {
+    await navigator.clipboard.writeText(String(txt || ""));
+    alert("Copied ✅ " + txt);
+  } catch {
+    prompt("Copy this number:", txt);
+  }
 }
 
 async function addClient() {
@@ -81,10 +78,7 @@ async function addClient() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": token },
       body: JSON.stringify(payload)
     });
 
@@ -131,10 +125,9 @@ async function searchClient() {
   resultsDiv.innerHTML = `<p class="small">Searching...</p>`;
 
   try {
-    const res = await fetch(
-      `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
-      { headers: { "Authorization": token } }
-    );
+    const res = await fetch(`${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`, {
+      headers: { "Authorization": token }
+    });
 
     const data = await res.json().catch(() => ({}));
 
@@ -158,7 +151,7 @@ async function searchClient() {
             <div class="small">Search Result – National ID: <b>${escapeHtml(nationalId)}</b></div>
             <div style="margin-top:6px;"><b>Name:</b> ${escapeHtml(fullName)}</div>
           </div>
-          <div class="badge ${tone.className}" title="Risk level">${escapeHtml(riskLabel)}</div>
+          <div class="badge ${tone.className}">${escapeHtml(riskLabel)}</div>
         </div>
       </div>
     `;
@@ -188,14 +181,6 @@ async function searchClient() {
       const msg = `Hi, this is regarding borrower ${fullName} (National ID: ${nationalId}) from LinkLedger.`;
       const wa = buildWhatsAppLink(phoneRaw, msg);
 
-      const waBtn = wa
-        ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>`
-        : "";
-
-      const callBtn = phoneRaw
-        ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(phoneRaw)}">Call</a>`
-        : "";
-
       html += `
         <div class="result-item" style="margin:0;">
           <div>
@@ -204,8 +189,8 @@ async function searchClient() {
             <div class="small">Status: <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span></div>
             ${dateLine}
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-              ${callBtn}
-              ${waBtn}
+              ${phoneRaw ? `<button class="btn-ghost btn-sm" onclick="copyPhone('${escapeHtml(phoneRaw)}')">Copy phone</button>` : ""}
+              ${wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : ""}
             </div>
           </div>
         </div>
@@ -222,7 +207,6 @@ async function searchClient() {
   }
 }
 
-/* ===== MY CLIENTS (list + update + WhatsApp) ===== */
 async function loadMyClients() {
   if (!requireLogin()) return;
 
@@ -236,9 +220,7 @@ async function loadMyClients() {
   myDiv.innerHTML = `<p class="small">Loading your clients...</p>`;
 
   try {
-    const url = q
-      ? `${API_BASE_URL}/api/clients/mine?q=${encodeURIComponent(q)}`
-      : `${API_BASE_URL}/api/clients/mine`;
+    const url = q ? `${API_BASE_URL}/api/clients/mine?q=${encodeURIComponent(q)}` : `${API_BASE_URL}/api/clients/mine`;
 
     const res = await fetch(url, { headers: { "Authorization": token } });
     const data = await res.json().catch(() => ({}));
@@ -265,20 +247,10 @@ async function loadMyClients() {
       const due = c.dueDate ? String(c.dueDate).slice(0, 10) : "";
       const paid = c.paidDate ? String(c.paidDate).slice(0, 10) : "";
 
-      // NOTE: for YOUR clients, WhatsApp uses YOUR business phone (cashloanPhone)
-      // You can later add borrower phone field if you want texting the borrower directly.
-      const myBizPhone = c.cashloanPhone || "";
-      const msg = `Hi, this is regarding borrower ${name} (National ID: ${nid}) from LinkLedger records.`;
-      const wa = buildWhatsAppLink(myBizPhone, msg);
-
       html += `
         <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div>
-              <div><b>${escapeHtml(name)}</b> <span class="small">(${escapeHtml(nid)})</span></div>
-              <div class="small">Status: <b>${escapeHtml(st.toUpperCase())}</b></div>
-            </div>
-          </div>
+          <div><b>${escapeHtml(name)}</b> <span class="small">(${escapeHtml(nid)})</span></div>
+          <div class="small" style="margin-top:4px;">Status: <b>${escapeHtml(st.toUpperCase())}</b></div>
 
           <div class="row" style="margin-top:10px;">
             <div>
@@ -293,21 +265,10 @@ async function loadMyClients() {
               <label>Due date</label>
               <input id="due_${id}" type="date" value="${escapeHtml(due)}" />
             </div>
-            <div>
-              <label>Paid date</label>
-              <input id="paid_${id}" type="date" value="${escapeHtml(paid)}" />
-            </div>
           </div>
 
           <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <button class="btn-primary" onclick="updateMyClient('${id}')">Update</button>
-
-            ${myBizPhone ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(myBizPhone)}">Call</a>` : ""}
-            ${wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : ""}
-
-            <span class="small" style="opacity:.8;">
-              (WhatsApp uses your business phone for now. We can add borrower phone later.)
-            </span>
           </div>
         </div>
       `;
@@ -329,29 +290,18 @@ async function updateMyClient(id) {
 
   const status = document.getElementById(`st_${id}`).value;
   const dueDate = document.getElementById(`due_${id}`).value;
-  const paidDate = document.getElementById(`paid_${id}`).value;
 
-  const payload = {
-    status,
-    dueDate: dueDate || null,
-    paidDate: paidDate || null
-  };
+  const payload = { status, dueDate: dueDate || null };
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients/${encodeURIComponent(id)}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": token },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      alert(data.message || "Update failed");
-      return;
-    }
+    if (!res.ok) { alert(data.message || "Update failed"); return; }
 
     alert("Updated ✅");
     await loadMyClients();
@@ -373,6 +323,8 @@ window.searchClient = searchClient;
 window.loadMyClients = loadMyClients;
 window.updateMyClient = updateMyClient;
 window.logout = logout;
+
+window.copyPhone = function (p) { copyText(p); };
 
 (function () {
   if (!requireLogin()) return;

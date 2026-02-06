@@ -1,14 +1,9 @@
-function getToken() {
-  return localStorage.getItem("authToken");
-}
-function getEmail() {
-  return localStorage.getItem("userEmail");
-}
-function getRole() {
-  return (localStorage.getItem("userRole") || "").toLowerCase();
-}
+// admin.js (FULL) — no tel: “call handler” popups; Copy phone + WhatsApp only
+function getToken(){ return localStorage.getItem("authToken"); }
+function getEmail(){ return localStorage.getItem("userEmail"); }
+function getRole(){ return (localStorage.getItem("userRole") || "").toLowerCase(); }
 
-function requireAdmin() {
+function requireAdmin(){
   const token = getToken();
   const role = getRole();
   if (!token || role !== "admin") {
@@ -19,26 +14,34 @@ function requireAdmin() {
   return true;
 }
 
-function cleanPhoneForWhatsApp(phone) {
-  let p = String(phone || "").replace(/[^\d]/g, "");
+function cleanPhone(phone){ return String(phone || "").replace(/[^\d]/g, ""); }
+function phoneWithBW(phone){
+  let p = cleanPhone(phone);
   if (p.length === 8) p = "267" + p;
   return p;
 }
-function buildWhatsAppLink(phone, message) {
-  const p = cleanPhoneForWhatsApp(phone);
+function buildWhatsAppLink(phone, message){
+  const p = phoneWithBW(phone);
   if (!p) return null;
   return `https://wa.me/${encodeURIComponent(p)}?text=${encodeURIComponent(message || "")}`;
 }
-function escapeHtml(s) {
+function escapeHtml(s){
   return String(s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
-function logout() {
+async function copyText(txt){
+  try {
+    await navigator.clipboard.writeText(String(txt || ""));
+    alert("Copied ✅ " + txt);
+  } catch {
+    prompt("Copy this number:", txt);
+  }
+}
+window.copyPhone = (p) => copyText(p);
+
+function logout(){
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
   localStorage.removeItem("userRole");
@@ -47,6 +50,7 @@ function logout() {
 window.logout = logout;
 
 const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+
 const form = document.getElementById("adminForm");
 const msg = document.getElementById("msg");
 const accountsDiv = document.getElementById("accounts");
@@ -59,11 +63,9 @@ if (adminPill) {
   adminPill.textContent = e ? `Logged in: ${e}` : "Admin";
 }
 
-function setMsg(t) {
-  if (msg) msg.textContent = t || "";
-}
+function setMsg(t){ if (msg) msg.textContent = t || ""; }
 
-function buildAdminHeaders() {
+function buildAdminHeaders(){
   const headers = { "Content-Type": "application/json" };
 
   const token = getToken();
@@ -76,7 +78,7 @@ function buildAdminHeaders() {
   return headers;
 }
 
-async function loadAccounts() {
+async function loadAccounts(){
   if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
   if (!requireAdmin()) return;
 
@@ -100,15 +102,13 @@ async function loadAccounts() {
 
     if (q) {
       rows = rows.filter(r => {
-        const blob = [
-          r.businessName, r.email, r.licenseNo, r.branchName, r.phone, r.status, r.role
-        ].map(x => String(x || "").toLowerCase()).join(" ");
+        const blob = [r.businessName,r.email,r.licenseNo,r.branchName,r.phone,r.status,r.role]
+          .map(x => String(x || "").toLowerCase()).join(" ");
         return blob.includes(q);
       });
     }
 
     if (acctCount) acctCount.textContent = `Showing ${rows.length} accounts.`;
-
     if (!rows.length) {
       accountsDiv.innerHTML = `<div class="small">No accounts match your search.</div>`;
       return;
@@ -137,12 +137,9 @@ async function loadAccounts() {
       const phone = r.phone || "";
       const license = r.licenseNo || "-";
 
-      const call = phone ? `<a class="btn-ghost btn-sm" href="tel:${cleanPhoneForWhatsApp(phone)}">Call</a>` : "";
       const wa = phone
         ? buildWhatsAppLink(phone, `Hi ${business}. This is LinkLedger Admin regarding your account (${email}).`)
         : null;
-
-      const waBtn = wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : "";
 
       html += `
         <div class="trow">
@@ -154,8 +151,8 @@ async function loadAccounts() {
           <div>${escapeHtml(phone || "-")}</div>
           <div>${escapeHtml(license)}</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            ${call}
-            ${waBtn}
+            ${phone ? `<button class="btn-ghost btn-sm" onclick="copyPhone('${escapeHtml(phone)}')">Copy phone</button>` : ""}
+            ${wa ? `<a class="btn-ghost btn-sm" target="_blank" rel="noopener" href="${wa}">WhatsApp</a>` : ""}
           </div>
         </div>
       `;
@@ -172,11 +169,8 @@ async function loadAccounts() {
 }
 
 window.loadAccounts = loadAccounts;
-
-// live search filter (no reload)
 acctQ && acctQ.addEventListener("input", () => loadAccounts());
 
-// Create lender
 form && form.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!API_BASE_URL) return alert("API_BASE_URL missing in config.js");
@@ -201,11 +195,7 @@ form && form.addEventListener("submit", async (e) => {
     });
 
     const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      setMsg(data.message || "Failed to create lender.");
-      return;
-    }
+    if (!res.ok) { setMsg(data.message || "Failed to create lender."); return; }
 
     setMsg("Lender created ✅");
     form.reset();
@@ -216,8 +206,7 @@ form && form.addEventListener("submit", async (e) => {
   }
 });
 
-// initial load
-(function () {
+(function(){
   if (!requireAdmin()) return;
   loadAccounts();
 })();
