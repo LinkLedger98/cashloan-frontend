@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Super Admin | LinkLedger</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
 </head>
 
 <body>
   <div class="container">
 
+    <!-- Topbar -->
     <div class="topbar">
       <div class="brand">
         <div class="brand-badge"></div>
         <h1>LinkLedger • Super Admin</h1>
       </div>
 
-      <!-- ✅ Legacy Mode (kept) -->
-      <div class="legacy-badge" title="Legacy Mode">
+      <!-- Legacy Mode badge (KEEP) -->
+      <div class="legacy-badge">
         <span class="legacy-dot legacy-dot-pink"></span>
         <span class="legacy-lt">&lt;</span>
         <span class="legacy-dot legacy-dot-blue"></span>
@@ -26,122 +26,112 @@
       </div>
 
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="pill" id="adminPill">Logged in</span>
-        <a class="btn-ghost" href="welcome.html">Home</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
+        <a class="btn-ghost" href="welcome.html">Welcome</a>
+        <a class="btn-ghost" href="dashboard.html">Dashboard</a>
+        <a class="btn-ghost" href="index.html">Home</a>
+        <button class="btn-ghost" onclick="(function(){ localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userRole'); window.location.href='login.html'; })()">Logout</button>
       </div>
     </div>
 
-    <!-- ✅ Create Lender (TOP, clean) -->
-    <div class="card" style="margin-top:16px;">
-      <h2>Create Lender Account</h2>
-      <p>Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
+    <!-- MAIN CONTENT (full width, no side scroll) -->
+    <main style="width:100%; max-width:100%;">
 
-      <form id="adminForm">
-        <label>ADMIN KEY (optional if logged in as admin)</label>
-        <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
+      <!-- Add Lender (TOP) -->
+      <section class="card" style="width:100%; max-width:100%;">
+        <h2>Create Lender Account</h2>
+        <p class="small">
+          Admin-only creation. You can use either the legacy <b>ADMIN_KEY</b> OR your admin login token.
+        </p>
 
-        <div class="row">
-          <div>
-            <label>Business Name</label>
-            <input id="businessName" placeholder="e.g. Golden Finance" required />
+        <form id="adminForm" autocomplete="off">
+
+          <label for="adminKey">ADMIN KEY (optional if you are logged in as admin)</label>
+          <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" />
+
+          <div class="row">
+            <div>
+              <label for="businessName">Business Name</label>
+              <input id="businessName" placeholder="e.g. Golden Finance" required />
+            </div>
+            <div>
+              <label for="branchName">Branch</label>
+              <input id="branchName" placeholder="e.g. Palapye" required />
+            </div>
           </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label for="phone">Phone (will show in borrower search)</label>
+              <input id="phone" placeholder="e.g. 490000 / 71xxxxxx" required />
+            </div>
+            <div>
+              <label for="licenseNo">NBIFIRA License No.</label>
+              <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label for="email">Email (login)</label>
+              <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
+            </div>
+            <div>
+              <label for="tempPassword">Temporary Password</label>
+              <input id="tempPassword" placeholder="Set temp password" required />
+            </div>
+          </div>
+
+          <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-primary" type="submit">Create Lender</button>
+            <button class="btn-ghost" id="loadAccountsBtn" type="button">Refresh Accounts List</button>
+          </div>
+
+          <p id="msg" class="small" style="margin-top:10px;"></p>
+        </form>
+      </section>
+
+      <!-- Accounts list (BOTTOM) -->
+      <section class="card" style="width:100%; max-width:100%; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap;">
           <div>
-            <label>Branch</label>
-            <input id="branchName" placeholder="e.g. Palapye" required />
+            <h2 style="margin-bottom:4px;">Registered Accounts</h2>
+            <p class="small" style="margin:0;">
+              Shows admins + lenders. Password hashes are hidden.
+            </p>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-ghost" id="loadAccountsBtn2" type="button">Refresh</button>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Phone (shows in borrower search)</label>
-            <input id="phone" placeholder="e.g. 71234567" required />
-          </div>
-          <div>
-            <label>NBIFIRA License No.</label>
-            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
-          </div>
+        <hr style="margin:14px 0;" />
+
+        <!-- IMPORTANT: full width list container -->
+        <div id="accountsList" class="results" style="width:100%; max-width:100%; overflow-x:hidden;">
+          <!-- admin.js renders cards here -->
         </div>
+      </section>
 
-        <div class="row">
-          <div>
-            <label>Email (login)</label>
-            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
-          </div>
-          <div>
-            <label>Temporary Password</label>
-            <input id="tempPassword" placeholder="Set temporary password" required />
-          </div>
-        </div>
+    </main>
 
-        <button class="btn-primary" type="submit">Create Lender</button>
-        <p id="msg" class="small" style="margin-top:10px;"></p>
-      </form>
-    </div>
-
-    <!-- ✅ Accounts list with ▲/▼ -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
-        <div>
-          <h2 style="margin:0;">Registered accounts</h2>
-          <p class="small" style="margin:6px 0 0 0;">Suspend unpaid accounts, mark payments, and search fast.</p>
-        </div>
-
-        <button class="btn-ghost" id="toggleAccountsBtn" type="button" title="Collapse/Expand">
-          ▲
-        </button>
-      </div>
-
-      <div id="accountsWrap">
-        <div class="row" style="margin-top:12px;">
-          <div>
-            <label>Search</label>
-            <input id="searchBox" placeholder="Search business / email / license / status / paid..." />
-          </div>
-          <div style="display:flex; align-items:flex-end; gap:10px;">
-            <button class="btn-primary" type="button" onclick="reloadAccounts()">Reload</button>
-          </div>
-        </div>
-
-        <div class="small" id="countLine" style="margin-top:10px;"></div>
-
-        <div style="overflow:auto; margin-top:12px;">
-          <table class="table" style="min-width:1000px;">
-            <thead>
-              <tr>
-                <th>Business</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Billing</th>
-                <th>Paid Until</th>
-                <th>Branch</th>
-                <th>Phone</th>
-                <th>License</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="accountsBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
+    <footer class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <a href="welcome.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-      </div>
-    </div>
+    </footer>
 
   </div>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+    // second refresh button wired to the same handler in admin.js
+    document.getElementById("loadAccountsBtn2").addEventListener("click", function () {
+      const btn = document.getElementById("loadAccountsBtn");
+      if (btn) btn.click();
+    });
   </script>
 
-  <script src="config.js"></script>
-  <script src="admin.js"></script>
+  <!-- MUST be at bottom, in this order -->
+  <script src="config.js?v=1"></script>
+  <script src="admin.js?v=1"></script>
 </body>
 </html>
