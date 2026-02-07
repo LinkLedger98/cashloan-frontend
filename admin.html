@@ -77,6 +77,12 @@
         <button class="btn-primary" type="submit">Create Lender</button>
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
+
+      <!-- ✅ Signup Requests (NOT inside the form) -->
+      <div style="margin-top:18px;">
+        <h2 style="margin:0 0 8px 0;">Signup Requests</h2>
+        <div id="requestsList"></div>
+      </div>
     </div>
 
     <!-- ✅ Accounts list with ▲/▼ -->
@@ -87,9 +93,7 @@
           <p class="small" style="margin:6px 0 0 0;">Suspend unpaid accounts, mark payments, and search fast.</p>
         </div>
 
-        <button class="btn-ghost" id="toggleAccountsBtn" type="button" title="Collapse/Expand">
-          ▲
-        </button>
+        <button class="btn-ghost" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
       </div>
 
       <div id="accountsWrap">
@@ -105,8 +109,9 @@
 
         <div class="small" id="countLine" style="margin-top:10px;"></div>
 
-        <div style="overflow:auto; margin-top:12px;">
-          <table class="table" style="min-width:1000px;">
+        <!-- ✅ No forced min-width + no overflow auto -->
+        <div style="margin-top:12px;">
+          <table class="table">
             <thead>
               <tr>
                 <th>Business</th>

@@ -189,3 +189,12 @@ input::placeholder{ color: rgba(185,188,198,.65); }
   .grid-admin{ grid-template-columns: 1fr; }
   .thead, .trow{ grid-template-columns: 1fr; }
 }
+
+table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+td, th {
+  word-break: break-word;
+}
