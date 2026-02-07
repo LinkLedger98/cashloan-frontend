@@ -1,4 +1,5 @@
-/* admin.css (FULL) — dark, NO ombre, roomy layout */
+/* admin.css (FULL) — dark, NO ombre, wide, table-friendly */
+
 :root{
   --bg:#0b0c10;
   --panel:#14151b;
@@ -21,18 +22,20 @@ body{
   color: var(--text);
 }
 
+/* ✅ make it wide */
 .container{
-  width:min(1200px, 92vw);
-  margin: 28px auto 60px;
+  width: min(1500px, 96vw);
+  margin: 22px auto 60px;
 }
 
+/* Top bar */
 .topbar{
   display:flex;
   align-items:center;
   gap:16px;
   padding: 14px 16px;
   border:1px solid var(--line);
-  background: rgba(20,21,27,.75);
+  background: rgba(20,21,27,.80);
   backdrop-filter: blur(10px);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -51,6 +54,7 @@ body{
 }
 .brand h1{ margin:0; font-size:18px; }
 
+/* you can optionally wrap your right-side buttons in a div.top-actions */
 .top-actions{
   margin-left:auto;
   display:flex;
@@ -68,6 +72,7 @@ body{
   color: var(--muted);
 }
 
+/* Legacy badge */
 .legacy-badge{
   display:flex;
   align-items:center;
@@ -85,13 +90,7 @@ body{
 .legacy-lt{ opacity:.9; font-weight:800; }
 .legacy-text{ font-size:12px; color: var(--muted); }
 
-.grid-admin{
-  margin-top: 16px;
-  display:grid;
-  grid-template-columns: 420px 1fr;
-  gap: 16px;
-}
-
+/* Cards */
 .card{
   padding: 18px;
   border-radius: var(--radius);
@@ -122,20 +121,17 @@ input, select{
 }
 input::placeholder{ color: rgba(185,188,198,.65); }
 
+/* Form rows */
 .row{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
-.header-row{
-  display:flex;
-  justify-content:space-between;
-  gap: 12px;
-  align-items:center;
-  flex-wrap:wrap;
+@media (max-width: 800px){
+  .row{ grid-template-columns: 1fr; }
 }
 
+/* Buttons */
 .btn-primary{
   border:0;
   cursor:pointer;
@@ -162,39 +158,82 @@ input::placeholder{ color: rgba(185,188,198,.65); }
   font-size: 12px;
 }
 
+/* ✅ REAL TABLE styling (this matches your <table class="table"> in admin.html) */
 .table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0;
   border:1px solid rgba(255,255,255,.10);
   border-radius: 14px;
-  overflow:hidden;
+  overflow: hidden;
 }
-.thead, .trow{
-  display:grid;
-  grid-template-columns: 1.2fr 1.3fr .6fr .6fr .9fr .8fr 1fr 1.1fr;
-  gap: 10px;
-  padding: 12px;
-  align-items:center;
-}
-.thead{
+
+/* header */
+.table thead th{
+  text-align:left;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text);
   background: rgba(255,255,255,.06);
   border-bottom:1px solid rgba(255,255,255,.10);
-  font-weight: 800;
+  padding: 12px 12px;
+  vertical-align: top;
 }
-.trow{
-  background: rgba(0,0,0,.18);
+
+/* body cells */
+.table tbody td{
+  padding: 12px 12px;
+  font-size: 13px;
+  color: var(--text);
   border-bottom:1px solid rgba(255,255,255,.08);
-}
-.trow:last-child{ border-bottom:0; }
-
-@media (max-width: 1050px){
-  .grid-admin{ grid-template-columns: 1fr; }
-  .thead, .trow{ grid-template-columns: 1fr; }
+  vertical-align: top;
+  background: rgba(0,0,0,.18);
 }
 
-table {
-  width: 100%;
-  table-layout: fixed;
+.table tbody tr:last-child td{ border-bottom: 0; }
+
+/* ✅ prevent ugly forced wrapping */
+.table td, .table th{
+  word-break: normal;
+  overflow-wrap: anywhere; /* wrap only when necessary */
 }
 
-td, th {
-  word-break: break-word;
+/* ✅ make action buttons not stack too ugly */
+.table td:last-child{
+  white-space: nowrap;
+}
+.table td:last-child button{
+  margin-right: 8px;
+  margin-bottom: 6px;
+}
+
+/* ✅ badges you can use in admin.js rendering */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+}
+
+/* status */
+.badge-active{ border-color: rgba(92,255,176,.35); background: rgba(92,255,176,.10); color:#5CFFB0; }
+.badge-suspended{ border-color: rgba(255,122,122,.35); background: rgba(255,122,122,.10); color:#FF7A7A; }
+
+/* billing */
+.badge-paid{ border-color: rgba(255,58,167,.35); background: rgba(255,58,167,.12); color: var(--pink2); }
+.badge-due{ border-color: rgba(255,210,90,.30); background: rgba(255,210,90,.10); color:#FFD25A; }
+.badge-overdue{ border-color: rgba(255,122,122,.35); background: rgba(255,122,122,.10); color:#FF7A7A; }
+
+/* ✅ mobile: allow horizontal scroll ONLY on very small screens */
+@media (max-width: 900px){
+  .table{
+    display:block;
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
