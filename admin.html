@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <div class="container admin-wide">
+  <div class="container">
 
     <div class="topbar">
       <div class="brand">
@@ -25,14 +25,14 @@
         <span class="legacy-text">Legacy Mode</span>
       </div>
 
-      <div class="top-actions">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <span class="pill" id="adminPill">Logged in</span>
         <a class="btn-ghost" href="welcome.html">Home</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <!-- TOP: Create lender -->
+    <!-- ✅ Create Lender -->
     <div class="card" style="margin-top:16px;">
       <h2>Create Lender Account</h2>
       <p class="small">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
@@ -54,7 +54,7 @@
 
         <div class="row">
           <div>
-            <label>Phone</label>
+            <label>Phone (shows in borrower search)</label>
             <input id="phone" placeholder="e.g. 71234567" required />
           </div>
           <div>
@@ -78,25 +78,28 @@
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
 
-      <!-- Signup Requests -->
-      <div class="section-slim" style="margin-top:18px;">
-        <div class="section-head">
+      <!-- ✅ Signup Requests -->
+      <div style="margin-top:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
           <h2 style="margin:0;">Signup Requests</h2>
-          <button class="btn-ghost btn-sm" type="button" onclick="reloadRequests()">Reload</button>
+          <button class="btn-ghost btn-sm" id="loadRequestsBtn" type="button">Reload Requests</button>
         </div>
-        <div id="requestsList" class="requests-grid"></div>
+        <div id="requestsList" style="margin-top:10px;"></div>
       </div>
     </div>
 
-    <!-- Accounts list with ▲/▼ -->
+    <!-- ✅ Registered accounts -->
     <div class="card" style="margin-top:16px;">
-      <div class="section-head">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
         <div>
           <h2 style="margin:0;">Registered accounts</h2>
-          <p class="small" style="margin:6px 0 0 0;">Active = green • Suspended = red • Approved = pink.</p>
+          <p class="small" style="margin:6px 0 0 0;">Search, suspend, and update billing.</p>
         </div>
 
-        <button class="btn-ghost" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-ghost btn-sm" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
+          <button class="btn-ghost btn-sm" id="loadAccountsBtn" type="button">Reload Accounts</button>
+        </div>
       </div>
 
       <div id="accountsWrap">
@@ -105,15 +108,16 @@
             <label>Search</label>
             <input id="searchBox" placeholder="Search business / email / license / status / paid..." />
           </div>
-          <div style="display:flex; align-items:flex-end; gap:10px;">
-            <button class="btn-primary" type="button" onclick="reloadAccounts()">Reload</button>
+          <div>
+            <label class="small" style="opacity:.9;">Tip</label>
+            <div class="small">Type to auto-search.</div>
           </div>
         </div>
 
         <div class="small" id="countLine" style="margin-top:10px;"></div>
 
-        <!-- ✅ wide, no left-right scrolling: cards instead of table -->
-        <div id="accountsList" class="accounts-grid"></div>
+        <!-- ✅ list goes here -->
+        <div id="accountsList" style="margin-top:12px;"></div>
       </div>
     </div>
 
