@@ -6,7 +6,7 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: #0b0f14;
+  background: #07080c;            /* deeper black */
   color: #e8eef7;
 }
 
@@ -23,6 +23,11 @@ body {
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .brand {
@@ -36,7 +41,7 @@ body {
   height: 14px;
   border-radius: 999px;
   background: #ff4fd8;
-  box-shadow: 0 0 0 6px rgba(255, 79, 216, 0.12);
+  box-shadow: 0 0 0 7px rgba(255, 79, 216, 0.14), 0 0 32px rgba(255,79,216,0.12);
 }
 
 h1, h2 {
@@ -44,15 +49,15 @@ h1, h2 {
 }
 
 .card {
-  background: #121a24;
+  background: rgba(255,255,255,0.035); /* less blue */
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .small {
-  opacity: 0.8;
+  opacity: 0.82;
   font-size: 13px;
 }
 
@@ -69,7 +74,7 @@ h1, h2 {
 label {
   display: block;
   font-size: 13px;
-  opacity: 0.85;
+  opacity: 0.88;
   margin-bottom: 6px;
 }
 
@@ -79,9 +84,14 @@ input, select {
   padding: 11px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.045);
   color: #e8eef7;
   outline: none;
+}
+
+input:focus, select:focus {
+  border-color: rgba(255,79,216,0.45);
+  box-shadow: 0 0 0 4px rgba(255,79,216,0.10);
 }
 
 input::placeholder { color: rgba(232,238,247,0.55); }
@@ -96,13 +106,18 @@ hr {
   border-radius: 12px;
   padding: 10px 12px;
   cursor: pointer;
-  font-weight: 650;
+  font-weight: 700;
   border: 1px solid transparent;
 }
 
 .btn-primary {
   background: #ff4fd8;
-  color: #0b0f14;
+  color: #07080c;
+  box-shadow: 0 10px 24px rgba(255,79,216,0.16);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
 }
 
 .btn-ghost {
@@ -115,8 +130,8 @@ hr {
   display: inline-block;
   padding: 7px 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,79,216,0.08);
+  border: 1px solid rgba(255,79,216,0.18);
   font-size: 13px;
 }
 
@@ -126,7 +141,7 @@ hr {
 }
 
 .result-item {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 14px;
   padding: 12px;

@@ -32,7 +32,8 @@ body{
 a{ color:rgba(20,19,26,0.78); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 
-.page{
+/* ✅ Your HTML uses .container, so define it */
+.container{
   max-width:1100px;
   margin:0 auto;
   padding:26px 20px 30px;
@@ -58,13 +59,15 @@ a:hover{ text-decoration:underline; }
 .brand{
   display:flex;
   align-items:center;
+  gap:10px;
 }
 
-.brand-logo{
-  height:46px;
-  width:auto;
-  display:block;
-  filter: drop-shadow(0 10px 18px rgba(255,46,166,0.16));
+.brand-badge{
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  background: linear-gradient(90deg, var(--pink), var(--pink2));
+  box-shadow:0 0 0 6px rgba(255,46,166,0.12);
 }
 
 .nav{
@@ -111,17 +114,12 @@ a:hover{ text-decoration:underline; }
 }
 .btn-ghost:hover{ transform: translateY(-1px); background: rgba(20,19,26,0.06); }
 
-.full{ width:100%; }
-
-.wrap{
-  position:relative;
-  margin-top:18px;
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:32px 0;
-  overflow:hidden;
+/* ✅ you use btn-sm in login.html but it wasn't defined */
+.btn-sm{
+  padding: 10px 12px;     /* bigger tap target */
+  border-radius: 12px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .card{
@@ -132,48 +130,18 @@ a:hover{ text-decoration:underline; }
   padding: 22px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
-  position:relative;
-  z-index:2;
+  margin: 18px auto 0;   /* ✅ centers nicely */
 }
 
-.card-head{ margin-bottom:14px; }
-
-.card h1{
-  font-size:26px;
-  letter-spacing:-0.4px;
-  margin-bottom:8px;
-}
-
-.secure-line{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:12.5px;
-  font-weight:800;
-  letter-spacing:0.18px;
-  color: rgba(20,19,26,0.62);
-}
-
-.lock-dot{
-  width:10px;
-  height:10px;
-  border-radius:999px;
-  background: rgba(255,46,166,0.22);
-  box-shadow:0 0 0 3px rgba(255,46,166,0.10);
-}
-
-.form{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.field{ display:flex; flex-direction:column; gap:6px; }
+h1{ font-size:20px; }
+h2{ font-size:24px; margin-bottom:8px; }
 
 label{
+  display:block;
   font-size:13px;
   color:rgba(20,19,26,0.72);
   font-weight:700;
+  margin: 10px 0 6px;
 }
 
 input{
@@ -191,81 +159,10 @@ input:focus{
   box-shadow:0 0 0 3px rgba(255,46,166,0.16);
 }
 
-.muted{ color:var(--muted); }
-.fine{ font-size:12.5px; margin-top:2px; }
-.center{ text-align:center; }
-
-.divider{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin:8px 0;
-}
-.divider::before,
-.divider::after{
-  content:"";
-  height:1px;
-  flex:1;
-  background: rgba(20,19,26,0.10);
-}
-.divider span{
-  font-size:12px;
-  color: rgba(20,19,26,0.55);
-  font-weight:800;
-}
-
-/* Softer signature blob (toned down) */
-.brand-shape{
-  position:absolute;
-  top:-150px;
-  left:-220px;
-  width:540px;
-  height:440px;
-  pointer-events:none;
-  z-index:1;
-  animation: floatBlob 10.5s ease-in-out infinite;
-  opacity:0.35;              /* ✅ toned down */
-  filter:saturate(0.90);     /* ✅ more professional */
-}
-
-.brand-shape span{
-  position:absolute;
-  filter: blur(14px);        /* ✅ softer */
-  opacity: 0.90;
-  mix-blend-mode: multiply;
-}
-
-.shape-m1{
-  width: 300px; height: 280px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,91,192,0.70), rgba(255,46,166,0.58));
-  border-radius: 38% 62% 55% 45% / 45% 40% 60% 55%;
-  top: 80px; left: 0;
-}
-.shape-mid{
-  width: 220px; height: 250px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,91,192,0.62), rgba(255,46,166,0.52));
-  border-radius: 65% 35% 60% 40% / 40% 65% 35% 60%;
-  top: 160px; left: 185px;
-  transform: rotate(-18deg);
-}
-.shape-m2{
-  width: 290px; height: 290px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,91,192,0.66), rgba(255,46,166,0.56));
-  border-radius: 55% 45% 38% 62% / 50% 55% 45% 50%;
-  top: 20px; left: 310px;
-}
-
-@keyframes floatBlob{
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  50%  { transform: translate(14px, 12px) rotate(0.8deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-
-.auth-footer{
-  margin-top:18px;
-  text-align:center;
-  font-size:12.5px;
-  color: rgba(20,19,26,0.55);
+.small{
+  font-size: 13px;
+  color: rgba(20,19,26,0.70);
+  margin-top: 6px;
 }
 
 @media (max-width: 740px){

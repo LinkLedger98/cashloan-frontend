@@ -13,18 +13,27 @@ function authHeaders() {
   const token = getToken();
   const adminKey = (document.getElementById("adminKey")?.value || "").trim();
 
-  // backend allows either x-admin-key OR token
   if (adminKey) h["x-admin-key"] = adminKey;
   if (token) h["Authorization"] = token;
-
   return h;
 }
 
-function setMsg(text, isOk) {
+function setMsg(text, ok) {
   const el = document.getElementById("msg");
   if (!el) return;
   el.textContent = text || "";
-  el.style.color = isOk ? "#5CFFB0" : "#FF7A7A";
+  el.style.color = ok ? "#5CFFB0" : "#FF7A7A";
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  const x = new Date(d);
+  if (isNaN(x.getTime())) return "";
+  return x.toISOString().slice(0, 10);
+}
+
+function pill(html, cls) {
+  return `<span class="pill ${cls || ""}">${html}</span>`;
 }
 
 function logout() {
@@ -35,124 +44,166 @@ function logout() {
 }
 window.logout = logout;
 
-function fmtDate(d) {
-  if (!d) return "";
-  const x = new Date(d);
-  if (isNaN(x.getTime())) return "";
-  return x.toISOString().slice(0, 10);
+function setAdminPill() {
+  const pillEl = document.getElementById("adminPill");
+  if (!pillEl) return;
+  const email = getEmail();
+  pillEl.textContent = email ? `Logged in: ${email}` : "Logged in";
 }
 
-function esc(s) {
-  return String(s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function badge(text, cls) {
-  return `<span class="badge ${cls}">${esc(text)}</span>`;
-}
-
-function statusBadge(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase();
-  if (s === "suspended") return badge("SUSPENDED", "badge-red");
-  return badge("ACTIVE", "badge-green");
-}
-
-function billingBadge(billingRaw) {
-  const b = String(billingRaw || "paid").toLowerCase();
-  if (b === "overdue") return badge("OVERDUE", "badge-red");
-  if (b === "due") return badge("DUE", "badge-yellow");
-  return badge("PAID", "badge-pink"); // approved = pink vibe
-}
-
-function roleBadge(roleRaw) {
-  const r = String(roleRaw || "lender").toLowerCase();
-  if (r === "admin") return badge("ADMIN", "badge-blue");
-  return badge("LENDER", "badge-gray");
-}
-
-(function init() {
-  const pill = document.getElementById("adminPill");
-  if (pill) {
-    const email = getEmail();
-    pill.textContent = email ? `Logged in: ${email}` : "Logged in";
-  }
-
-  // collapse
+function setupCollapse() {
   const btn = document.getElementById("toggleAccountsBtn");
   const wrap = document.getElementById("accountsWrap");
-  if (btn && wrap) {
-    btn.addEventListener("click", function () {
-      const isHidden = wrap.style.display === "none";
-      wrap.style.display = isHidden ? "block" : "none";
-      btn.textContent = isHidden ? "▲" : "▼";
-    });
-  }
+  if (!btn || !wrap) return;
 
-  // reload buttons
-  document.getElementById("loadAccountsBtn")?.addEventListener("click", reloadAccounts);
-  document.getElementById("loadRequestsBtn")?.addEventListener("click", loadRequests);
+  btn.addEventListener("click", function () {
+    const hidden = wrap.style.display === "none";
+    wrap.style.display = hidden ? "block" : "none";
+    btn.textContent = hidden ? "▲" : "▼";
+  });
+}
 
-  // search box auto
+function setupSearchDebounce() {
   const searchBox = document.getElementById("searchBox");
-  if (searchBox) {
-    let t = null;
-    searchBox.addEventListener("input", function () {
-      clearTimeout(t);
-      t = setTimeout(() => reloadAccounts(), 250);
-    });
-  }
+  if (!searchBox) return;
 
-  // create lender
+  let t = null;
+  searchBox.addEventListener("input", function () {
+    clearTimeout(t);
+    t = setTimeout(() => reloadAccounts(), 250);
+  });
+}
+
+async function createLenderHandler() {
   const form = document.getElementById("adminForm");
-  if (form) {
-    form.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      setMsg("", true);
+  if (!form) return;
 
-      const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-      if (!api) return setMsg("API_BASE_URL missing in config.js", false);
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    setMsg("", true);
 
-      const payload = {
-        businessName: document.getElementById("businessName").value.trim(),
-        branchName: document.getElementById("branchName").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        licenseNo: document.getElementById("licenseNo").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        tempPassword: document.getElementById("tempPassword").value.trim()
-      };
+    const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+    if (!api) return setMsg("API_BASE_URL missing in config.js", false);
 
-      try {
-        const res = await fetch(`${api}/api/admin/lenders`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify(payload)
-        });
+    const payload = {
+      businessName: document.getElementById("businessName").value.trim(),
+      branchName: document.getElementById("branchName").value.trim(),
+      phone: document.getElementById("phone").value.trim(),
+      licenseNo: document.getElementById("licenseNo").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      tempPassword: document.getElementById("tempPassword").value.trim()
+    };
 
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) return setMsg(data.message || "Failed to create lender", false);
+    try {
+      const res = await fetch(`${api}/api/admin/lenders`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload)
+      });
 
-        setMsg("Lender created ✅", true);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setMsg(data.message || "Failed to create lender", false);
 
-        ["businessName","branchName","phone","licenseNo","email","tempPassword"].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = "";
-        });
+      setMsg("Lender created ✅", true);
 
-        await reloadAccounts();
-      } catch (err) {
-        console.error(err);
-        setMsg("Network error", false);
-      }
-    });
+      ["businessName","branchName","phone","licenseNo","email","tempPassword"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      await reloadAccounts();
+    } catch (err) {
+      console.error(err);
+      setMsg("Network error", false);
+    }
+  });
+}
+
+async function reloadRequests() {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
+
+  const box = document.getElementById("requestsList");
+  if (!box) return;
+
+  box.innerHTML = `<div class="small">Loading requests...</div>`;
+
+  try {
+    const res = await fetch(`${api}/api/admin/requests`, { headers: authHeaders() });
+    const data = await res.json().catch(() => ([]));
+
+    if (!res.ok) {
+      box.innerHTML = "";
+      alert((data && data.message) ? data.message : "Failed to load requests");
+      return;
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    if (rows.length === 0) {
+      box.innerHTML = `<div class="small">No signup requests.</div>`;
+      return;
+    }
+
+    box.innerHTML = rows.map(r => {
+      const status = String(r.status || "pending").toLowerCase();
+      const statusPill =
+        status === "approved" ? pill("APPROVED", "pill-approved") :
+        status === "rejected" ? pill("REJECTED", "pill-suspended") :
+        pill("PENDING", "pill-due");
+
+      return `
+        <div class="card" style="padding:14px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div style="font-weight:800;">${r.businessName || ""}</div>
+            <div>${statusPill}</div>
+          </div>
+
+          <div class="small" style="margin-top:8px;">
+            <div><b>Email:</b> ${r.email || ""}</div>
+            <div><b>Branch:</b> ${r.branchName || ""}</div>
+            <div><b>Phone:</b> ${r.phone || ""}</div>
+            <div><b>NBIFIRA:</b> ${r.licenseNo || ""}</div>
+            ${r.notes ? `<div><b>Notes:</b> ${r.notes}</div>` : ``}
+            <div style="opacity:.85; margin-top:6px;">${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+            <button class="btn-ghost btn-sm" onclick="deleteRequest('${r._id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = "";
+    alert("Network error while loading requests");
   }
+}
 
-  // initial load
-  loadRequests();
-  reloadAccounts();
-})();
+window.deleteRequest = async function (id) {
+  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!api) return;
+
+  if (!confirm("Delete this signup request?")) return;
+
+  try {
+    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Failed to delete request");
+      return;
+    }
+    await reloadRequests();
+  } catch (err) {
+    console.error(err);
+    alert("Network error");
+  }
+};
 
 async function reloadAccounts() {
   const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
@@ -162,7 +213,9 @@ async function reloadAccounts() {
   const list = document.getElementById("accountsList");
   const countLine = document.getElementById("countLine");
 
-  if (list) list.innerHTML = `<div class="small">Loading accounts...</div>`;
+  if (!list) return;
+
+  list.innerHTML = `<div class="small">Loading accounts...</div>`;
 
   try {
     const url = q ? `${api}/api/admin/lenders?q=${encodeURIComponent(q)}` : `${api}/api/admin/lenders`;
@@ -170,71 +223,81 @@ async function reloadAccounts() {
     const data = await res.json().catch(() => ([]));
 
     if (!res.ok) {
-      if (list) list.innerHTML = "";
-      alert((data && data.message) ? data.message : "Failed to load accounts (Forbidden?)");
+      list.innerHTML = "";
+      alert((data && data.message) ? data.message : "Failed to load accounts");
       return;
     }
 
-    let rows = Array.isArray(data) ? data : [];
-
-    // hide junk legacy record that has "password" instead of passwordHash
-    rows = rows.filter(u => !(u.email === "admin@cashloan.com"));
-
+    const rows = Array.isArray(data) ? data : [];
     if (countLine) countLine.textContent = `Showing ${rows.length} account(s).`;
 
-    if (!list) return;
+    if (rows.length === 0) {
+      list.innerHTML = `<div class="small">No accounts found.</div>`;
+      return;
+    }
 
-    // clean wide table (no side scroll)
-    const html = `
-      <div class="accounts-table">
-        <div class="a-head">
-          <div>Business</div>
-          <div>Email</div>
-          <div>Role</div>
-          <div>Status</div>
-          <div>Billing</div>
-          <div>Paid Until</div>
-          <div>Branch</div>
-          <div>Phone</div>
-          <div>License</div>
-          <div>Actions</div>
-        </div>
-        ${rows.map(u => {
-          const id = u._id;
-          const isSusp = String(u.status || "").toLowerCase() === "suspended";
-          const suspendLabel = isSusp ? "Activate" : "Suspend";
-          const nextStatus = isSusp ? "active" : "suspended";
+    list.innerHTML = rows.map(u => {
+      const id = u._id;
 
-          return `
-            <div class="a-row">
-              <div>${esc(u.businessName || "")}</div>
-              <div>${esc(u.email || "")}</div>
-              <div>${roleBadge(u.role)}</div>
-              <div>${statusBadge(u.status)}</div>
-              <div>${billingBadge(u.billingStatus)}</div>
-              <div>${esc(fmtDate(u.paidUntil) || "-")}</div>
-              <div>${esc(u.branchName || "")}</div>
-              <div>${esc(u.phone || "")}</div>
-              <div>${esc(u.licenseNo || "")}</div>
-              <div class="a-actions">
-                <button class="btn-ghost btn-sm" onclick="setStatus('${id}','${nextStatus}')">${suspendLabel}</button>
-                <button class="btn-ghost btn-sm" onclick="markPaid('${id}')">Mark Paid</button>
-                <button class="btn-ghost btn-sm" onclick="setDue('${id}')">Set Due</button>
+      const role = String(u.role || "lender").toUpperCase();
+      const status = String(u.status || "active").toLowerCase();
+      const billing = String(u.billingStatus || "paid").toLowerCase();
+
+      const statusPill = status === "suspended"
+        ? pill("SUSPENDED", "pill-suspended")
+        : pill("ACTIVE", "pill-active");
+
+      // “approved should be pink highlight”
+      // Your backend stores billingStatus: paid/due/overdue
+      // We’ll show PAID as APPROVED (pink)
+      const billingPill =
+        billing === "paid" ? pill("APPROVED", "pill-approved") :
+        billing === "overdue" ? pill("OVERDUE", "pill-suspended") :
+        pill("DUE", "pill-due");
+
+      const paidUntil = fmtDate(u.paidUntil);
+
+      const suspendLabel = status === "suspended" ? "Activate" : "Suspend";
+      const suspendNext = status === "suspended" ? "active" : "suspended";
+
+      return `
+        <div class="card" style="padding:14px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <div style="min-width:240px;">
+              <div style="font-weight:900;">${u.businessName || ""}</div>
+              <div class="small" style="margin-top:4px;">
+                <div><b>Email:</b> ${u.email || ""}</div>
+                <div><b>Branch:</b> ${u.branchName || ""}</div>
+                <div><b>Phone:</b> ${u.phone || ""}</div>
+                <div><b>License:</b> ${u.licenseNo || ""}</div>
               </div>
             </div>
-          `;
-        }).join("")}
-      </div>
-    `;
 
-    list.innerHTML = html;
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+              ${pill(role, "pill-role")}
+              ${statusPill}
+              ${billingPill}
+              ${paidUntil ? pill("Paid until: " + paidUntil, "pill-soft") : ""}
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+            <button class="btn-ghost btn-sm" onclick="setStatus('${id}','${suspendNext}')">${suspendLabel}</button>
+            <button class="btn-ghost btn-sm" onclick="editBilling('${id}')">Edit Billing</button>
+            <button class="btn-ghost btn-sm" onclick="markPaid('${id}')">Mark Paid</button>
+            <button class="btn-ghost btn-sm" onclick="setDue('${id}')">Set Due</button>
+          </div>
+        </div>
+      `;
+    }).join("");
 
   } catch (err) {
     console.error(err);
-    if (list) list.innerHTML = "";
+    list.innerHTML = "";
     alert("Network error while loading accounts");
   }
 }
+
 window.reloadAccounts = reloadAccounts;
 
 async function setStatus(userId, newStatus) {
@@ -249,8 +312,10 @@ async function setStatus(userId, newStatus) {
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.message || "Failed to update status");
-
+    if (!res.ok) {
+      alert(data.message || "Failed to update status");
+      return;
+    }
     await reloadAccounts();
   } catch (err) {
     console.error(err);
@@ -266,7 +331,7 @@ async function markPaid(userId) {
   const paidUntil = prompt("Paid until date (YYYY-MM-DD). Leave blank for none:", "");
   if (paidUntil === null) return;
 
-  const amount = prompt("Payment amount (optional):", "");
+  const amount = prompt("Payment amount (number, optional):", "");
   if (amount === null) return;
 
   const ref = prompt("Payment reference (optional):", "");
@@ -288,8 +353,10 @@ async function markPaid(userId) {
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.message || "Failed to mark paid");
-
+    if (!res.ok) {
+      alert(data.message || "Failed to mark paid");
+      return;
+    }
     await reloadAccounts();
   } catch (err) {
     console.error(err);
@@ -316,8 +383,10 @@ async function setDue(userId) {
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.message || "Failed to set due");
-
+    if (!res.ok) {
+      alert(data.message || "Failed to set due");
+      return;
+    }
     await reloadAccounts();
   } catch (err) {
     console.error(err);
@@ -326,82 +395,68 @@ async function setDue(userId) {
 }
 window.setDue = setDue;
 
-/* ---------------------------
-   Signup requests
----------------------------- */
-async function loadRequests() {
-  const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const box = document.getElementById("requestsList");
-  if (!api || !box) return;
-
-  box.innerHTML = `<div class="small">Loading requests...</div>`;
-
-  try {
-    const res = await fetch(`${api}/api/admin/requests`, { headers: authHeaders() });
-    const data = await res.json().catch(() => ([]));
-
-    if (!res.ok) {
-      box.innerHTML = "";
-      return;
-    }
-
-    const rows = Array.isArray(data) ? data : [];
-    if (rows.length === 0) {
-      box.innerHTML = `<div class="small">No signup requests yet.</div>`;
-      return;
-    }
-
-    box.innerHTML = rows.map(r => {
-      const id = r._id;
-      const b = esc(r.businessName || "");
-      const e = esc(r.email || "");
-      const p = esc(r.phone || "");
-      return `
-        <div class="request-card">
-          <div><b>${b}</b></div>
-          <div class="small">${e} • ${p}</div>
-          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn-ghost btn-sm" onclick="prefillFromRequest('${id}','${b}','${e}','${p}')">Use in Create Form</button>
-            <button class="btn-ghost btn-sm" onclick="deleteRequest('${id}')">Delete</button>
-          </div>
-        </div>
-      `;
-    }).join("");
-  } catch (err) {
-    console.error(err);
-    box.innerHTML = "";
-  }
-}
-
-function prefillFromRequest(id, businessName, email, phone) {
-  const bn = document.getElementById("businessName");
-  const em = document.getElementById("email");
-  const ph = document.getElementById("phone");
-  if (bn) bn.value = businessName;
-  if (em) em.value = email;
-  if (ph) ph.value = phone;
-  setMsg("Prefilled from request ✅ (fill branch/license/password, then Create).", true);
-}
-window.prefillFromRequest = prefillFromRequest;
-
-async function deleteRequest(requestId) {
+window.editBilling = async function (userId) {
   const api = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   if (!api) return;
 
-  if (!confirm("Delete this signup request?")) return;
+  // quick + safe (no layout break): prompts
+  const billingStatus = prompt("billingStatus: paid / due / overdue", "paid");
+  if (billingStatus === null) return;
+
+  const paidUntil = prompt("paidUntil (YYYY-MM-DD) or blank", "");
+  if (paidUntil === null) return;
+
+  const lastPaymentAt = prompt("lastPaymentAt (YYYY-MM-DD) or blank", "");
+  if (lastPaymentAt === null) return;
+
+  const lastPaymentAmount = prompt("lastPaymentAmount (number) or blank", "");
+  if (lastPaymentAmount === null) return;
+
+  const lastPaymentRef = prompt("lastPaymentRef or blank", "");
+  if (lastPaymentRef === null) return;
+
+  const notes = prompt("notes or blank", "");
+  if (notes === null) return;
+
+  const payload = {
+    billingStatus: String(billingStatus || "").trim().toLowerCase()
+  };
+
+  payload.paidUntil = paidUntil.trim() ? paidUntil.trim() : null;
+  payload.lastPaymentAt = lastPaymentAt.trim() ? lastPaymentAt.trim() : null;
+  payload.lastPaymentAmount = lastPaymentAmount.trim() ? Number(lastPaymentAmount.trim()) : null;
+  payload.lastPaymentRef = lastPaymentRef.trim();
+  payload.notes = notes.trim();
 
   try {
-    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(requestId)}`, {
-      method: "DELETE",
-      headers: authHeaders()
+    const res = await fetch(`${api}/api/admin/users/${encodeURIComponent(userId)}/billing`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.message || "Failed to delete request");
 
-    await loadRequests();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Failed to update billing");
+      return;
+    }
+    await reloadAccounts();
   } catch (err) {
     console.error(err);
     alert("Network error");
   }
-}
-window.deleteRequest = deleteRequest;
+};
+
+(function init() {
+  setAdminPill();
+  setupCollapse();
+  setupSearchDebounce();
+  createLenderHandler();
+
+  document.getElementById("loadRequestsBtn")?.addEventListener("click", reloadRequests);
+  document.getElementById("loadAccountsBtn")?.addEventListener("click", reloadAccounts);
+
+  // load on open
+  reloadRequests();
+  reloadAccounts();
+})();

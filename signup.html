@@ -66,7 +66,16 @@
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
     </div>
+
+    <div class="footer" style="margin-top:16px;">
+      <div>© <span id="year"></span> LinkLedger • Botswana</div>
+      <div class="small" style="margin-top:6px;">Support: <b>73132277</b></div>
+    </div>
   </main>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 
   <script src="config.js?v=1"></script>
   <script src="signuprequest.js?v=1"></script>
