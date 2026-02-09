@@ -16,12 +16,56 @@ function requireLogin() {
   return true;
 }
 
+// ✅ Always send Bearer token (matches backend requireAuth reliably)
+function authHeader() {
+  const t = getToken();
+  return t ? `Bearer ${t}` : "";
+}
+
+// ✅ auto-logout helper for suspended/invalid sessions
+async function handleAuthFailure(res, data) {
+  const msg = (data && data.message) ? String(data.message) : "";
+
+  // Suspended (once backend enforces it in middleware/auth.js too)
+  if (res && res.status === 403) {
+    if (msg.toLowerCase().includes("suspended")) {
+      alert("Your account has been suspended. You will be logged out.");
+      logout();
+      return true;
+    }
+  }
+
+  // Missing/invalid/expired token
+  if (res && res.status === 401) {
+    alert("Session expired. Please login again.");
+    logout();
+    return true;
+  }
+
+  // Sometimes backend returns 403/401 with generic invalid token
+  if (msg.toLowerCase().includes("invalid token") || msg.toLowerCase().includes("missing token")) {
+    alert("Session expired. Please login again.");
+    logout();
+    return true;
+  }
+
+  return false;
+}
+
 function fmtDate(isoOrNull) {
   if (!isoOrNull) return "";
   const d = new Date(isoOrNull);
   if (isNaN(d.getTime())) return "";
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// ✅ for input type="date" values
+function fmtDateInput(isoOrNull) {
+  if (!isoOrNull) return "";
+  const d = new Date(isoOrNull);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
 }
 
 function statusBadgeClass(statusUpper) {
@@ -47,7 +91,6 @@ async function addClient() {
   const dueDate = document.getElementById("dueDate").value;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const token = getToken();
 
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
@@ -67,17 +110,17 @@ async function addClient() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token
+        "Authorization": authHeader()
       },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
 
-    // ✅ Duplicate on same lender
+    if (await handleAuthFailure(res, data)) return;
+
     if (res.status === 409) {
       alert(data.message || "Borrower already exists on your dashboard.");
-      // auto refresh list + show search results
       await loadMyClients();
       document.getElementById("searchNationalId").value = nationalId;
       await searchClient();
@@ -110,7 +153,6 @@ async function searchClient() {
   const resultsDiv = document.getElementById("results");
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const token = getToken();
 
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
@@ -127,10 +169,12 @@ async function searchClient() {
   try {
     const res = await fetch(
       `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
-      { headers: { "Authorization": token } }
+      { headers: { "Authorization": authHeader() } }
     );
 
     const data = await res.json().catch(() => ({}));
+
+    if (await handleAuthFailure(res, data)) return;
 
     if (!res.ok) {
       resultsDiv.innerHTML = "";
@@ -208,11 +252,81 @@ async function searchClient() {
   }
 }
 
+// ✅ inline edit helpers
+function escapeHtml(x) {
+  return String(x || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function toggleEdit(clientId) {
+  const panel = document.getElementById(`edit-${clientId}`);
+  if (!panel) return;
+  const isHidden = panel.style.display === "none" || panel.style.display === "";
+  panel.style.display = isHidden ? "block" : "none";
+}
+
+async function updateClient(clientId) {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  if (!API_BASE_URL) {
+    alert("API_BASE_URL missing in config.js");
+    return;
+  }
+
+  const statusEl = document.getElementById(`uStatus-${clientId}`);
+  const dueEl = document.getElementById(`uDue-${clientId}`);
+  const paidEl = document.getElementById(`uPaid-${clientId}`);
+
+  const status = statusEl ? statusEl.value : "";
+  const dueDate = dueEl ? dueEl.value : "";
+  const paidDate = paidEl ? paidEl.value : "";
+
+  const payload = {};
+  if (status) payload.status = status;
+
+  if (status === "paid") {
+    payload.dueDate = null;
+    payload.paidDate = paidDate ? paidDate : new Date().toISOString().slice(0, 10);
+  } else {
+    payload.dueDate = dueDate ? dueDate : null;
+    payload.paidDate = paidDate ? paidDate : null;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/clients/${encodeURIComponent(clientId)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader()
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (await handleAuthFailure(res, data)) return;
+
+    if (!res.ok) {
+      alert(data.message || "Failed to update borrower");
+      return;
+    }
+
+    alert("Borrower updated ✅");
+    await loadMyClients();
+  } catch (err) {
+    console.error(err);
+    alert("Server error while updating borrower");
+  }
+}
+
 async function loadMyClients() {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-  const token = getToken();
   const list = document.getElementById("myClientsList");
   const q = (document.getElementById("myClientsSearch") && document.getElementById("myClientsSearch").value || "").trim();
 
@@ -226,8 +340,10 @@ async function loadMyClients() {
 
   try {
     const url = `${API_BASE_URL}/api/clients/mine${q ? `?q=${encodeURIComponent(q)}` : ""}`;
-    const res = await fetch(url, { headers: { "Authorization": token } });
+    const res = await fetch(url, { headers: { "Authorization": authHeader() } });
     const data = await res.json().catch(() => ([]));
+
+    if (await handleAuthFailure(res, data)) return;
 
     if (!res.ok) {
       list.innerHTML = "";
@@ -243,26 +359,68 @@ async function loadMyClients() {
 
     let html = "";
     rows.forEach((r) => {
-      const st = String(r.status || "").toUpperCase();
-      const badgeClass = statusBadgeClass(st);
+      const id = r._id;
+      const stUpper = String(r.status || "").toUpperCase();
+      const badgeClass = statusBadgeClass(stUpper);
+
       const due = r.dueDate ? fmtDate(r.dueDate) : "";
       const paid = r.paidDate ? fmtDate(r.paidDate) : "";
 
       let dates = "";
-      if (st === "PAID" && paid) dates = `<div class="small">Paid: ${paid}</div>`;
-      if ((st === "OWING" || st === "OVERDUE") && due) dates = `<div class="small">Due: ${due}</div>`;
+      if (stUpper === "PAID" && paid) dates = `<div class="small">Paid: ${paid}</div>`;
+      if ((stUpper === "OWING" || stUpper === "OVERDUE") && due) dates = `<div class="small">Due: ${due}</div>`;
+
+      const dueInput = fmtDateInput(r.dueDate);
+      const paidInput = fmtDateInput(r.paidDate);
+      const currentStatus = String(r.status || "owing").toLowerCase();
 
       html += `
         <div class="result-item">
           <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
             <div>
-              <div><b>${r.fullName || "Unknown"}</b></div>
-              <div class="small">National ID: <b>${r.nationalId || ""}</b></div>
-              <div class="small">Status: <span class="badge ${badgeClass}">${st}</span></div>
+              <div><b>${escapeHtml(r.fullName || "Unknown")}</b></div>
+              <div class="small">National ID: <b>${escapeHtml(r.nationalId || "")}</b></div>
+              <div class="small">Status: <span class="badge ${badgeClass}">${stUpper}</span></div>
               ${dates}
               <div class="small">Added: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</div>
             </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-ghost btn-sm" onclick="toggleEdit('${id}')">Update</button>
+            </div>
           </div>
+
+          <div id="edit-${id}" style="display:none; margin-top:12px;">
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label class="small">Status</label>
+                <select id="uStatus-${id}">
+                  <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>paid</option>
+                  <option value="owing" ${currentStatus === "owing" ? "selected" : ""}>owing</option>
+                  <option value="overdue" ${currentStatus === "overdue" ? "selected" : ""}>overdue</option>
+                </select>
+              </div>
+              <div>
+                <label class="small">Due date</label>
+                <input id="uDue-${id}" type="date" value="${dueInput}" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label class="small">Paid date (optional)</label>
+                <input id="uPaid-${id}" type="date" value="${paidInput}" />
+              </div>
+              <div style="display:flex; align-items:flex-end;">
+                <button class="btn-primary" style="width:100%;" onclick="updateClient('${id}')">Save Update</button>
+              </div>
+            </div>
+
+            <div class="small" style="margin-top:8px; opacity:.8;">
+              Tip: If you set status to <b>paid</b> we will clear Due Date automatically.
+            </div>
+          </div>
+
         </div>
       `;
     });
@@ -287,16 +445,17 @@ window.searchClient = searchClient;
 window.loadMyClients = loadMyClients;
 window.logout = logout;
 
+window.toggleEdit = toggleEdit;
+window.updateClient = updateClient;
+
 (function () {
   if (!requireLogin()) return;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 
-  // auto load "My Clients"
   loadMyClients();
 
-  // live search (press Enter)
   const input = document.getElementById("myClientsSearch");
   if (input) {
     input.addEventListener("keydown", function (e) {
