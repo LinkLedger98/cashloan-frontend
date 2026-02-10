@@ -299,3 +299,28 @@ input::placeholder{ color: rgba(185,188,198,.65); }
   }
 }
 
+.admin-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+
+.billing-panel{
+  border:1px dashed rgba(255,255,255,0.14);
+  border-radius:12px;
+  padding:12px;
+  background: rgba(255,255,255,0.03);
+}
+
+.input-warn{
+  border-color: rgba(255,70,70,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(255,70,70,0.12);
+}
+
+.btn-sm{
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:13px;
+}
