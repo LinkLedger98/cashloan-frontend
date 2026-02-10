@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=2" />
+  <link rel="stylesheet" href="dashboard.css?v=3" />
 </head>
 
 <body>
@@ -30,7 +30,7 @@
       <div class="row">
         <div>
           <label for="searchNationalId">National ID</label>
-          <input id="searchNationalId" placeholder="e.g. 123456789" />
+          <input id="searchNationalId" placeholder="e.g. 123456789" inputmode="numeric" maxlength="9" />
         </div>
         <div style="display:flex; align-items:flex-end;">
           <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
@@ -75,8 +75,9 @@
           <input id="fullName" placeholder="e.g. Thato Molefe" />
         </div>
         <div>
-          <label for="nationalId">National ID</label>
-          <input id="nationalId" placeholder="e.g. 123456789" />
+          <label for="nationalId">National ID (9 digits)</label>
+          <input id="nationalId" placeholder="e.g. 123456789" inputmode="numeric" maxlength="9" />
+          <div class="small" style="margin-top:6px; opacity:.85;">Must be exactly 9 digits.</div>
         </div>
       </div>
 
@@ -95,14 +96,40 @@
         </div>
       </div>
 
+      <!-- ✅ Consent evidence block -->
+      <div class="consent-box" style="margin-top:14px;">
+        <div class="consent-row">
+          <label class="consent-check">
+            <input id="consentGiven" type="checkbox" />
+            <span><b>Borrower Consent</b> — I confirm the borrower signed the consent form.</span>
+          </label>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label for="consentFile">Upload signed consent form (required)</label>
+          <input id="consentFile" type="file" accept="image/*" capture="environment" />
+          <div class="small" style="margin-top:6px; opacity:.85;">
+            Tip: Use phone camera. Keep photo small/clear (under ~1.5MB).
+          </div>
+          <div id="consentPreviewWrap" style="margin-top:10px; display:none;">
+            <div class="small" style="margin-bottom:6px;">Preview</div>
+            <img id="consentPreview" alt="Consent preview" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.10);" />
+          </div>
+        </div>
+      </div>
+
       <div style="margin-top:12px;">
         <button class="btn-primary" onclick="addClient()">Save record</button>
       </div>
+
+      <p class="small" style="margin-top:10px; opacity:.9;">
+        By saving, you confirm consent evidence is accurate and stored for compliance.
+      </p>
     </div>
 
   </div>
 
   <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=1"></script>
+  <script src="dashboard.js?v=2"></script>
 </body>
 </html>

@@ -16,39 +16,21 @@ function requireLogin() {
   return true;
 }
 
-// ✅ Always send Bearer token (matches backend requireAuth reliably)
-function authHeader() {
-  const t = getToken();
-  return t ? `Bearer ${t}` : "";
-}
-
 // ✅ auto-logout helper for suspended/invalid sessions
 async function handleAuthFailure(res, data) {
-  const msg = (data && data.message) ? String(data.message) : "";
-
-  // Suspended (once backend enforces it in middleware/auth.js too)
   if (res && res.status === 403) {
+    const msg = (data && data.message) ? String(data.message) : "Access forbidden";
     if (msg.toLowerCase().includes("suspended")) {
       alert("Your account has been suspended. You will be logged out.");
       logout();
       return true;
     }
   }
-
-  // Missing/invalid/expired token
   if (res && res.status === 401) {
     alert("Session expired. Please login again.");
     logout();
     return true;
   }
-
-  // Sometimes backend returns 403/401 with generic invalid token
-  if (msg.toLowerCase().includes("invalid token") || msg.toLowerCase().includes("missing token")) {
-    alert("Session expired. Please login again.");
-    logout();
-    return true;
-  }
-
   return false;
 }
 
@@ -60,7 +42,6 @@ function fmtDate(isoOrNull) {
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// ✅ for input type="date" values
 function fmtDateInput(isoOrNull) {
   if (!isoOrNull) return "";
   const d = new Date(isoOrNull);
@@ -82,6 +63,68 @@ function riskTone(risk) {
   return { pill: "LOW RISK", emoji: "🟢", className: "paid" };
 }
 
+function escapeHtml(x) {
+  return String(x || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// ✅ Dispute button action (5-day dispute loop starter)
+async function openDispute(nationalId, clientRecordId) {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+  if (!API_BASE_URL) {
+    alert("API_BASE_URL missing in config.js");
+    return;
+  }
+
+  if (!/^\d{9}$/.test(String(nationalId || "").trim())) {
+    alert("National ID must be exactly 9 digits.");
+    return;
+  }
+
+  const notes = prompt("Dispute reason (optional):") || "";
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/disputes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token
+      },
+      body: JSON.stringify({
+        nationalId: String(nationalId).trim(),
+        clientRecordId: String(clientRecordId || "").trim(),
+        notes: String(notes || "").trim()
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (await handleAuthFailure(res, data)) return;
+
+    if (!res.ok) {
+      alert(data.message || "Failed to open dispute");
+      return;
+    }
+
+    alert("Dispute opened ✅ Record marked Under Dispute (for admin review).");
+
+    // Refresh search view to reflect changes (if user wants)
+    const input = document.getElementById("searchNationalId");
+    if (input && input.value && input.value.trim() === String(nationalId).trim()) {
+      await searchClient();
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error while opening dispute");
+  }
+}
+
 async function addClient() {
   if (!requireLogin()) return;
 
@@ -91,6 +134,7 @@ async function addClient() {
   const dueDate = document.getElementById("dueDate").value;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
 
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
@@ -102,6 +146,12 @@ async function addClient() {
     return;
   }
 
+  // ✅ Strict 9-digit Omang validation
+  if (!/^\d{9}$/.test(nationalId)) {
+    alert("National ID must be exactly 9 digits.");
+    return;
+  }
+
   const payload = { fullName, nationalId, status };
   if (dueDate) payload.dueDate = dueDate;
 
@@ -110,13 +160,12 @@ async function addClient() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": authHeader()
+        "Authorization": token
       },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json().catch(() => ({}));
-
     if (await handleAuthFailure(res, data)) return;
 
     if (res.status === 409) {
@@ -153,6 +202,7 @@ async function searchClient() {
   const resultsDiv = document.getElementById("results");
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
 
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
@@ -164,16 +214,21 @@ async function searchClient() {
     return;
   }
 
+  // ✅ Strict 9-digit
+  if (!/^\d{9}$/.test(nationalId)) {
+    alert("National ID must be exactly 9 digits.");
+    return;
+  }
+
   resultsDiv.innerHTML = `<p class="small">Searching...</p>`;
 
   try {
     const res = await fetch(
       `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
-      { headers: { "Authorization": authHeader() } }
+      { headers: { "Authorization": token } }
     );
 
     const data = await res.json().catch(() => ({}));
-
     if (await handleAuthFailure(res, data)) return;
 
     if (!res.ok) {
@@ -193,8 +248,8 @@ async function searchClient() {
       <div class="result-item">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
           <div>
-            <div class="small">Search Result – National ID: <b>${nationalId}</b></div>
-            <div style="margin-top:6px;"><b>Name:</b> ${fullName}</div>
+            <div class="small">Search Result – National ID: <b>${escapeHtml(nationalId)}</b></div>
+            <div style="margin-top:6px;"><b>Name:</b> ${escapeHtml(fullName)}</div>
           </div>
           <div class="badge ${tone.className}" title="Risk level">${riskLabel}</div>
         </div>
@@ -231,12 +286,26 @@ async function searchClient() {
       if (statusUpper === "PAID" && paid) dateLine = `<div class="small">Paid: ${paid}</div>`;
       if ((statusUpper === "OWING" || statusUpper === "OVERDUE") && due) dateLine = `<div class="small">Due: ${due}</div>`;
 
+      const recordId = r.id || "";
+
       html += `
         <div class="result-item" style="margin:0;">
-          <div>
-            <div><b>${lenderName}${branch}${phone}</b></div>
-            <div class="small">Status: <span class="badge ${badgeClass}">${statusUpper}</span></div>
-            ${dateLine}
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div><b>${escapeHtml(lenderName)}${escapeHtml(branch)}${escapeHtml(phone)}</b></div>
+              <div class="small">Status: <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span></div>
+              ${dateLine}
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-ghost btn-sm" onclick="openDispute('${escapeHtml(nationalId)}','${escapeHtml(recordId)}')">
+                Dispute
+              </button>
+            </div>
+          </div>
+
+          <div class="small" style="margin-top:8px; opacity:.8;">
+            Disputes must be resolved within <b>5 business days</b>.
           </div>
         </div>
       `;
@@ -252,16 +321,6 @@ async function searchClient() {
   }
 }
 
-// ✅ inline edit helpers
-function escapeHtml(x) {
-  return String(x || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function toggleEdit(clientId) {
   const panel = document.getElementById(`edit-${clientId}`);
   if (!panel) return;
@@ -273,6 +332,7 @@ async function updateClient(clientId) {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
     return;
@@ -302,7 +362,7 @@ async function updateClient(clientId) {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": authHeader()
+        "Authorization": token
       },
       body: JSON.stringify(payload)
     });
@@ -327,6 +387,7 @@ async function loadMyClients() {
   if (!requireLogin()) return;
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
   const list = document.getElementById("myClientsList");
   const q = (document.getElementById("myClientsSearch") && document.getElementById("myClientsSearch").value || "").trim();
 
@@ -340,7 +401,7 @@ async function loadMyClients() {
 
   try {
     const url = `${API_BASE_URL}/api/clients/mine${q ? `?q=${encodeURIComponent(q)}` : ""}`;
-    const res = await fetch(url, { headers: { "Authorization": authHeader() } });
+    const res = await fetch(url, { headers: { "Authorization": token } });
     const data = await res.json().catch(() => ([]));
 
     if (await handleAuthFailure(res, data)) return;
@@ -420,7 +481,6 @@ async function loadMyClients() {
               Tip: If you set status to <b>paid</b> we will clear Due Date automatically.
             </div>
           </div>
-
         </div>
       `;
     });
@@ -447,6 +507,9 @@ window.logout = logout;
 
 window.toggleEdit = toggleEdit;
 window.updateClient = updateClient;
+
+// ✅ expose dispute
+window.openDispute = openDispute;
 
 (function () {
   if (!requireLogin()) return;
