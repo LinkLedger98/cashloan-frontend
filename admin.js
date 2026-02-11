@@ -142,9 +142,6 @@
   window.deleteRequest = deleteRequest;
 
   // ✅ NEW: Fill the create-lender form from a request (button)
-  // We already have the request data on screen, but easiest/most reliable:
-  // just reload and find it in the last fetched list by id.
-  // To avoid extra global state, we’ll store the last list.
   let _lastRequests = [];
   window.useRequestToFillForm = function (requestId) {
     const row = _lastRequests.find(r => String(r._id) === String(requestId));
@@ -153,22 +150,17 @@
       return;
     }
 
-    // fill form inputs
     if ($("businessName")) $("businessName").value = row.businessName || "";
     if ($("branchName")) $("branchName").value = row.branchName || "";
     if ($("phone")) $("phone").value = row.phone || "";
     if ($("licenseNo")) $("licenseNo").value = row.licenseNo || "";
     if ($("email")) $("email").value = row.email || "";
-
-    // do NOT auto-set temp password (admin decides)
     if ($("tempPassword")) $("tempPassword").value = "";
 
-    // scroll to top form
     const form = $("adminForm");
     if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Wrap loadRequests so it also stores memory
   async function loadRequestsAndCache() {
     const r = await fetchJson("/api/admin/requests", { method: "GET" });
     if (!requestsList) return;
@@ -321,6 +313,9 @@
                 ${status === "suspended" ? "Activate" : "Suspend"}
               </button>
               <button class="btn-ghost btn-sm" onclick="openBilling('${id}')">Billing</button>
+
+              <!-- ✅ NEW: Secure (sets temporary password for user) -->
+              <button class="btn-ghost btn-sm" onclick="secureUser('${id}')">Secure</button>
             </div>
           </div>
 
@@ -424,6 +419,25 @@
   }
   window.saveBilling = saveBilling;
 
+  // ✅ NEW: Secure user (set temp password)
+  async function secureUser(id) {
+    const temp = prompt("Set temporary password for this account:");
+    if (!temp) return;
+
+    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/secure`, {
+      method: "PATCH",
+      body: JSON.stringify({ tempPassword: String(temp).trim() })
+    });
+
+    if (!r.ok) {
+      alert((r.data && r.data.message) ? r.data.message : "Secure failed");
+      return;
+    }
+
+    alert("Temporary password set ✅\nTell the lender to login, then set their own password in Secure.");
+  }
+  window.secureUser = secureUser;
+
   if (loadAccountsBtn) loadAccountsBtn.addEventListener("click", loadAccounts);
 
   if (toggleAccountsBtn) {
@@ -441,7 +455,7 @@
   }
 
   // -------------------------
-  // Disputes (matches admin.html IDs)
+  // Disputes
   // -------------------------
   const disputesList = $("disputesList");
   const loadDisputesBtn = $("loadDisputesBtn");
@@ -543,7 +557,7 @@
   if (loadDisputesOverdueBtn) loadDisputesOverdueBtn.addEventListener("click", () => loadDisputes("overdue"));
 
   // -------------------------
-  // Audit logs (matches admin.html IDs)
+  // Audit logs
   // -------------------------
   const auditList = $("auditList");
   const loadAuditBtn = $("loadAuditBtn");
@@ -601,7 +615,6 @@
   // -------------------------
   setAccountsCollapsed(false);
 
-  // Auto-load
   if (requestsList) loadRequestsAndCache();
   if (accountsList) loadAccounts();
   if (disputesList) loadDisputes();
