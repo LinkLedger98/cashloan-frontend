@@ -1,622 +1,187 @@
-(function () {
-  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin | LinkLedger</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
 
-  // -------------------------
-  // Helpers
-  // -------------------------
-  function $(id) { return document.getElementById(id); }
+<body>
+  <div class="container">
 
-  function getToken() { return localStorage.getItem("authToken"); }
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <h1>LinkLedger • Super Admin</h1>
+      </div>
 
-  function escapeHtml(x) {
-    return String(x || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+      <div class="legacy-badge" title="Legacy Mode">
+        <span class="legacy-dot legacy-dot-pink"></span>
+        <span class="legacy-lt">&lt;</span>
+        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-text">Legacy Mode</span>
+      </div>
 
-  function isNineDigits(v) {
-    return /^\d{9}$/.test(String(v || "").trim());
-  }
+      <div class="top-actions">
+        <span class="pill" id="adminPill">Logged in</span>
+        <a class="btn-ghost" href="welcome.html">&lt;back</a>
+        <button class="btn-ghost" onclick="logout()">Logout</button>
+      </div>
+    </div>
 
-  async function fetchJson(path, opts) {
-    if (!API_BASE_URL) throw new Error("API_BASE_URL missing in config.js");
+    <div class="card" style="margin-top:16px;">
+      <h2>Create Lender Account</h2>
+      <p class="small">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
 
-    const token = getToken();
-    const adminKey = ($("adminKey") && $("adminKey").value ? String($("adminKey").value).trim() : "");
+      <form id="adminForm">
+        <label>ADMIN KEY (optional if logged in as admin)</label>
+        <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
 
-    const headers = Object.assign(
-      { "Content-Type": "application/json" },
-      (opts && opts.headers) ? opts.headers : {}
-    );
-
-    // ✅ Legacy support
-    if (adminKey) headers["x-admin-key"] = adminKey;
-
-    // ✅ Token support (admin role)
-    if (token) headers["Authorization"] = token;
-
-    const res = await fetch(API_BASE_URL + path, Object.assign({}, opts || {}, { headers }));
-    const data = await res.json().catch(() => ({}));
-
-    // Auto logout on expired session
-    if (res.status === 401) {
-      alert("Session expired. Please login again.");
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("userRole");
-      window.location.href = "login.html";
-      return { ok: false, status: 401, data };
-    }
-
-    // Forbidden
-    if (res.status === 403) {
-      alert((data && data.message) ? data.message : "Forbidden");
-      return { ok: false, status: 403, data };
-    }
-
-    return { ok: res.ok, status: res.status, data };
-  }
-
-  function setMsg(t) {
-    const el = $("msg");
-    if (el) el.textContent = t || "";
-  }
-
-  function logout() {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userRole");
-    window.location.href = "login.html";
-  }
-  window.logout = logout;
-
-  // -------------------------
-  // Header pill
-  // -------------------------
-  const adminPill = $("adminPill");
-  if (adminPill) {
-    const email = localStorage.getItem("userEmail") || "";
-    adminPill.textContent = email ? `Logged in: ${email}` : "Logged in";
-  }
-
-  // -------------------------
-  // Signup Requests
-  // -------------------------
-  const requestsList = $("requestsList");
-  async function loadRequests() {
-    if (!requestsList) return;
-    requestsList.innerHTML = `<div class="small">Loading...</div>`;
-
-    const r = await fetchJson("/api/admin/requests", { method: "GET" });
-    if (!r.ok) {
-      requestsList.innerHTML = "";
-      return;
-    }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    if (rows.length === 0) {
-      requestsList.innerHTML = `<div class="result-item"><div class="small">No signup requests.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((x) => {
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>${escapeHtml(x.businessName || "")}</b> — ${escapeHtml(x.branchName || "")}</div>
-              <div class="small">Email: <b>${escapeHtml(x.email || "")}</b></div>
-              <div class="small">Phone: ${escapeHtml(x.phone || "")}</div>
-              <div class="small">License: ${escapeHtml(x.licenseNo || "")}</div>
-              ${x.notes ? `<div class="small">Notes: ${escapeHtml(x.notes)}</div>` : ""}
-              <div class="small">Created: ${x.createdAt ? new Date(x.createdAt).toLocaleString() : ""}</div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              <button class="btn-primary btn-sm" onclick="useRequestToFillForm('${escapeHtml(x._id)}')">Use</button>
-              <button class="btn-ghost btn-sm" onclick="deleteRequest('${escapeHtml(x._id)}')">Delete</button>
-            </div>
+        <div class="row">
+          <div>
+            <label>Business Name</label>
+            <input id="businessName" placeholder="e.g. Golden Finance" required />
+          </div>
+          <div>
+            <label>Branch</label>
+            <input id="branchName" placeholder="e.g. Palapye" required />
           </div>
         </div>
-      `;
-    });
 
-    requestsList.innerHTML = html;
-  }
-
-  async function deleteRequest(id) {
-    if (!confirm("Delete this request?")) return;
-
-    const r = await fetchJson(`/api/admin/requests/${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Delete failed");
-      return;
-    }
-    alert("Request deleted ✅");
-    loadRequests();
-  }
-  window.deleteRequest = deleteRequest;
-
-  // ✅ NEW: Fill the create-lender form from a request (button)
-  let _lastRequests = [];
-  window.useRequestToFillForm = function (requestId) {
-    const row = _lastRequests.find(r => String(r._id) === String(requestId));
-    if (!row) {
-      alert("Request not found in memory. Click Reload Requests then try again.");
-      return;
-    }
-
-    if ($("businessName")) $("businessName").value = row.businessName || "";
-    if ($("branchName")) $("branchName").value = row.branchName || "";
-    if ($("phone")) $("phone").value = row.phone || "";
-    if ($("licenseNo")) $("licenseNo").value = row.licenseNo || "";
-    if ($("email")) $("email").value = row.email || "";
-    if ($("tempPassword")) $("tempPassword").value = "";
-
-    const form = $("adminForm");
-    if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  async function loadRequestsAndCache() {
-    const r = await fetchJson("/api/admin/requests", { method: "GET" });
-    if (!requestsList) return;
-
-    if (!r.ok) {
-      requestsList.innerHTML = "";
-      _lastRequests = [];
-      return;
-    }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    _lastRequests = rows;
-
-    if (rows.length === 0) {
-      requestsList.innerHTML = `<div class="result-item"><div class="small">No signup requests.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((x) => {
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>${escapeHtml(x.businessName || "")}</b> — ${escapeHtml(x.branchName || "")}</div>
-              <div class="small">Email: <b>${escapeHtml(x.email || "")}</b></div>
-              <div class="small">Phone: ${escapeHtml(x.phone || "")}</div>
-              <div class="small">License: ${escapeHtml(x.licenseNo || "")}</div>
-              ${x.notes ? `<div class="small">Notes: ${escapeHtml(x.notes)}</div>` : ""}
-              <div class="small">Created: ${x.createdAt ? new Date(x.createdAt).toLocaleString() : ""}</div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              <button class="btn-primary btn-sm" onclick="useRequestToFillForm('${escapeHtml(x._id)}')">Use</button>
-              <button class="btn-ghost btn-sm" onclick="deleteRequest('${escapeHtml(x._id)}')">Delete</button>
-            </div>
+        <div class="row">
+          <div>
+            <label>Phone (shows in borrower search)</label>
+            <input id="phone" placeholder="e.g. 71234567" required />
+          </div>
+          <div>
+            <label>NBIFIRA License No.</label>
+            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
           </div>
         </div>
-      `;
-    });
 
-    requestsList.innerHTML = html;
-  }
-
-  const loadRequestsBtn = $("loadRequestsBtn");
-  if (loadRequestsBtn) loadRequestsBtn.addEventListener("click", loadRequestsAndCache);
-
-  // -------------------------
-  // Create lender
-  // -------------------------
-  const adminForm = $("adminForm");
-  if (adminForm) {
-    adminForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      setMsg("Creating lender...");
-
-      const payload = {
-        businessName: $("businessName").value.trim(),
-        branchName: $("branchName").value.trim(),
-        phone: $("phone").value.trim(),
-        licenseNo: $("licenseNo").value.trim(),
-        email: $("email").value.trim().toLowerCase(),
-        tempPassword: $("tempPassword").value.trim()
-      };
-
-      if (!payload.businessName || !payload.branchName || !payload.phone || !payload.licenseNo || !payload.email || !payload.tempPassword) {
-        setMsg("All fields required.");
-        return;
-      }
-
-      const r = await fetchJson("/api/admin/lenders", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
-      if (r.status === 409) {
-        setMsg(r.data.message || "Email already exists.");
-        return;
-      }
-      if (!r.ok) {
-        setMsg(r.data.message || "Create failed.");
-        return;
-      }
-
-      setMsg("Lender created ✅");
-      adminForm.reset();
-      loadAccounts();
-    });
-  }
-
-  // -------------------------
-  // Accounts
-  // -------------------------
-  const accountsList = $("accountsList");
-  const accountsWrap = $("accountsWrap");
-  const toggleAccountsBtn = $("toggleAccountsBtn");
-  const loadAccountsBtn = $("loadAccountsBtn");
-  const searchBox = $("searchBox");
-  const countLine = $("countLine");
-
-  let accountsCollapsed = false;
-
-  function setAccountsCollapsed(v) {
-    accountsCollapsed = !!v;
-    if (!accountsWrap) return;
-    accountsWrap.style.display = accountsCollapsed ? "none" : "block";
-    if (toggleAccountsBtn) toggleAccountsBtn.textContent = accountsCollapsed ? "▼" : "▲";
-  }
-
-  async function loadAccounts() {
-    if (!accountsList) return;
-    accountsList.innerHTML = `<div class="small">Loading...</div>`;
-
-    const q = searchBox ? String(searchBox.value || "").trim() : "";
-    const r = await fetchJson(`/api/admin/lenders${q ? `?q=${encodeURIComponent(q)}` : ""}`, { method: "GET" });
-
-    if (!r.ok) {
-      accountsList.innerHTML = "";
-      if (countLine) countLine.textContent = "";
-      return;
-    }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    if (countLine) countLine.textContent = `Accounts: ${rows.length}`;
-
-    if (rows.length === 0) {
-      accountsList.innerHTML = `<div class="result-item"><div class="small">No accounts found.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((u) => {
-      const status = String(u.status || "");
-      const billing = String(u.billingStatus || "");
-      const id = escapeHtml(u._id);
-
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>${escapeHtml(u.businessName || "")}</b> — ${escapeHtml(u.branchName || "")}</div>
-              <div class="small">Email: <b>${escapeHtml(u.email || "")}</b></div>
-              <div class="small">Phone: ${escapeHtml(u.phone || "")}</div>
-              <div class="small">License: ${escapeHtml(u.licenseNo || "")}</div>
-              <div class="small">Status: <b>${escapeHtml(status)}</b> • Billing: <b>${escapeHtml(billing)}</b></div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn-ghost btn-sm" onclick="toggleUserStatus('${id}','${escapeHtml(status)}')">
-                ${status === "suspended" ? "Activate" : "Suspend"}
-              </button>
-              <button class="btn-ghost btn-sm" onclick="openBilling('${id}')">Billing</button>
-
-              <!-- ✅ NEW: Secure (sets temporary password for user) -->
-              <button class="btn-ghost btn-sm" onclick="secureUser('${id}')">Secure</button>
-            </div>
+        <div class="row">
+          <div>
+            <label>Email (login)</label>
+            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
           </div>
-
-          <div id="bill-${id}" class="billing-panel" style="display:none; margin-top:10px;">
-            <div class="row" style="grid-template-columns: 1fr 1fr; gap:12px;">
-              <div>
-                <label class="small">Billing Status</label>
-                <select id="bStatus-${id}">
-                  <option value="paid" ${billing === "paid" ? "selected" : ""}>paid</option>
-                  <option value="due" ${billing === "due" ? "selected" : ""}>due</option>
-                  <option value="overdue" ${billing === "overdue" ? "selected" : ""}>overdue</option>
-                </select>
-              </div>
-              <div>
-                <label class="small">Paid Until (optional)</label>
-                <input id="bPaidUntil-${id}" type="date" />
-              </div>
-            </div>
-
-            <div class="row" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
-              <div>
-                <label class="small">Last Payment Amount</label>
-                <input id="bAmt-${id}" placeholder="e.g. 500" />
-              </div>
-              <div>
-                <label class="small">Payment Ref</label>
-                <input id="bRef-${id}" placeholder="e.g. FNB-1234" />
-              </div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <label class="small">Notes</label>
-              <input id="bNotes-${id}" placeholder="Admin notes" />
-            </div>
-
-            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn-primary btn-sm" onclick="saveBilling('${id}')">Save Billing</button>
-              <button class="btn-ghost btn-sm" onclick="openBilling('${id}')">Close</button>
-            </div>
+          <div>
+            <label>Temporary Password</label>
+            <input id="tempPassword" placeholder="Set temporary password" required />
           </div>
         </div>
-      `;
-    });
 
-    accountsList.innerHTML = html;
-  }
+        <button class="btn-primary" type="submit">Create Lender</button>
+        <p id="msg" class="small" style="margin-top:10px;"></p>
+      </form>
 
-  async function toggleUserStatus(id, currentStatus) {
-    const next = (String(currentStatus).toLowerCase() === "suspended") ? "active" : "suspended";
-    if (!confirm(`Set status to "${next}"?`)) return;
+      <div style="margin-top:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <h2 style="margin:0;">Signup Requests</h2>
+          <button class="btn-ghost btn-sm" id="loadRequestsBtn" type="button">Reload Requests</button>
+        </div>
+        <div id="requestsList" style="margin-top:10px;"></div>
+      </div>
+    </div>
 
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: next })
-    });
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Registered accounts</h2>
+          <p class="small" style="margin:6px 0 0 0;">Search, suspend, and update billing.</p>
+        </div>
 
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Update failed");
-      return;
-    }
-    alert("Status updated ✅");
-    loadAccounts();
-  }
-  window.toggleUserStatus = toggleUserStatus;
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-ghost btn-sm" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
+          <button class="btn-ghost btn-sm" id="loadAccountsBtn" type="button">Reload Accounts</button>
+        </div>
+      </div>
 
-  function openBilling(id) {
-    const el = $(`bill-${id}`);
-    if (!el) return;
-    const isOpen = el.style.display === "block";
-    el.style.display = isOpen ? "none" : "block";
-  }
-  window.openBilling = openBilling;
-
-  async function saveBilling(id) {
-    const billingStatus = ($(`bStatus-${id}`) && $(`bStatus-${id}`).value) || "";
-    const paidUntil = ($(`bPaidUntil-${id}`) && $(`bPaidUntil-${id}`).value) || "";
-    const lastPaymentAmount = ($(`bAmt-${id}`) && $(`bAmt-${id}`).value) || "";
-    const lastPaymentRef = ($(`bRef-${id}`) && $(`bRef-${id}`).value) || "";
-    const notes = ($(`bNotes-${id}`) && $(`bNotes-${id}`).value) || "";
-
-    const payload = {
-      billingStatus,
-      paidUntil: paidUntil ? paidUntil : null,
-      lastPaymentAmount: lastPaymentAmount ? Number(lastPaymentAmount) : null,
-      lastPaymentRef,
-      notes
-    };
-
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/billing`, {
-      method: "PATCH",
-      body: JSON.stringify(payload)
-    });
-
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Billing update failed");
-      return;
-    }
-
-    alert("Billing updated ✅");
-    loadAccounts();
-  }
-  window.saveBilling = saveBilling;
-
-  // ✅ NEW: Secure user (set temp password)
-  async function secureUser(id) {
-    const temp = prompt("Set temporary password for this account:");
-    if (!temp) return;
-
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/secure`, {
-      method: "PATCH",
-      body: JSON.stringify({ tempPassword: String(temp).trim() })
-    });
-
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Secure failed");
-      return;
-    }
-
-    alert("Temporary password set ✅\nTell the lender to login, then set their own password in Secure.");
-  }
-  window.secureUser = secureUser;
-
-  if (loadAccountsBtn) loadAccountsBtn.addEventListener("click", loadAccounts);
-
-  if (toggleAccountsBtn) {
-    toggleAccountsBtn.addEventListener("click", function () {
-      setAccountsCollapsed(!accountsCollapsed);
-    });
-  }
-
-  if (searchBox) {
-    let t = null;
-    searchBox.addEventListener("input", function () {
-      clearTimeout(t);
-      t = setTimeout(loadAccounts, 250);
-    });
-  }
-
-  // -------------------------
-  // Disputes
-  // -------------------------
-  const disputesList = $("disputesList");
-  const loadDisputesBtn = $("loadDisputesBtn");
-  const loadDisputesOverdueBtn = $("loadDisputesOverdueBtn");
-
-  async function loadDisputes(mode) {
-    if (!disputesList) return;
-    disputesList.innerHTML = `<div class="small">Loading...</div>`;
-
-    let rows = [];
-    let slaDays = 5;
-    let isOverdueMode = false;
-
-    if (mode === "overdue") {
-      isOverdueMode = true;
-      const r = await fetchJson("/api/admin/disputes/overdue", { method: "GET" });
-      if (!r.ok) { disputesList.innerHTML = ""; return; }
-      slaDays = Number(r.data.slaDays || 5);
-      rows = Array.isArray(r.data.rows) ? r.data.rows : [];
-    } else {
-      const r = await fetchJson(`/api/admin/disputes`, { method: "GET" });
-      if (!r.ok) { disputesList.innerHTML = ""; return; }
-      rows = Array.isArray(r.data) ? r.data : [];
-    }
-
-    if (rows.length === 0) {
-      disputesList.innerHTML = `<div class="result-item"><div class="small">No disputes found.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((d) => {
-      const st = String(d.status || "pending").toLowerCase();
-      const opened = d.dateOpened ? new Date(d.dateOpened).toLocaleString() : "";
-      const resolved = d.dateResolved ? new Date(d.dateResolved).toLocaleString() : "";
-
-      const badge =
-        st === "pending" ? "badge overdue" :
-        st === "resolved" ? "badge paid" :
-        "badge owing";
-
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>Omang:</b> ${escapeHtml(d.nationalId || "")}</div>
-              <div class="small">Status: <span class="${badge}">${escapeHtml(st.toUpperCase())}</span></div>
-              <div class="small">Opened: ${escapeHtml(opened)}</div>
-              ${resolved ? `<div class="small">Resolved: ${escapeHtml(resolved)}</div>` : ""}
-              ${d.raisedByEmail ? `<div class="small">Raised by: ${escapeHtml(d.raisedByEmail)} (${escapeHtml(d.raisedByRole || "")})</div>` : ""}
-              ${d.clientRecordId ? `<div class="small">Client Record ID: ${escapeHtml(d.clientRecordId)}</div>` : ""}
-              ${d.notes ? `<div class="small">Notes: ${escapeHtml(d.notes)}</div>` : ""}
-              ${isOverdueMode ? `<div class="small"><b>⚠ Over SLA (${slaDays} days)</b></div>` : ""}
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              ${
-                st === "pending"
-                  ? `
-                    <button class="btn-primary btn-sm" onclick="resolveDispute('${escapeHtml(d._id)}')">Resolve</button>
-                    <button class="btn-ghost btn-sm" onclick="rejectDispute('${escapeHtml(d._id)}')">Reject</button>
-                  `
-                  : `<span class="small" style="opacity:.8;">Done</span>`
-              }
-            </div>
+      <div id="accountsWrap">
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Search</label>
+            <input id="searchBox" placeholder="Search business / email / license / status / paid..." />
+          </div>
+          <div>
+            <label class="small" style="opacity:.9;">Tip</label>
+            <div class="small">Type to auto-search.</div>
           </div>
         </div>
-      `;
-    });
 
-    disputesList.innerHTML = html;
-  }
+        <div class="small" id="countLine" style="margin-top:10px;"></div>
+        <div id="accountsList" style="margin-top:12px;"></div>
+      </div>
+    </div>
 
-  async function resolveDispute(id) {
-    const notes = prompt("Resolution notes (optional):") || "";
-    const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "resolved", notes: String(notes || "").trim() })
-    });
-    if (!r.ok) { alert((r.data && r.data.message) ? r.data.message : "Failed"); return; }
-    alert("Dispute resolved ✅");
-    loadDisputes();
-  }
-  window.resolveDispute = resolveDispute;
-
-  async function rejectDispute(id) {
-    const notes = prompt("Rejection reason (optional):") || "";
-    const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "rejected", notes: String(notes || "").trim() })
-    });
-    if (!r.ok) { alert((r.data && r.data.message) ? r.data.message : "Failed"); return; }
-    alert("Dispute rejected ✅");
-    loadDisputes();
-  }
-  window.rejectDispute = rejectDispute;
-
-  if (loadDisputesBtn) loadDisputesBtn.addEventListener("click", () => loadDisputes());
-  if (loadDisputesOverdueBtn) loadDisputesOverdueBtn.addEventListener("click", () => loadDisputes("overdue"));
-
-  // -------------------------
-  // Audit logs
-  // -------------------------
-  const auditList = $("auditList");
-  const loadAuditBtn = $("loadAuditBtn");
-  const auditNationalId = $("auditNationalId");
-
-  async function loadAudit() {
-    if (!auditList) return;
-    auditList.innerHTML = `<div class="small">Loading...</div>`;
-
-    const nat = auditNationalId ? String(auditNationalId.value || "").trim() : "";
-    if (nat && !isNineDigits(nat)) {
-      alert("National ID must be exactly 9 digits.");
-      auditList.innerHTML = "";
-      return;
-    }
-
-    const qs = new URLSearchParams();
-    qs.set("limit", "100");
-    if (nat) qs.set("nationalId", nat);
-
-    const r = await fetchJson(`/api/admin/audit?${qs.toString()}`, { method: "GET" });
-    if (!r.ok) { auditList.innerHTML = ""; return; }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    if (rows.length === 0) {
-      auditList.innerHTML = `<div class="result-item"><div class="small">No audit logs found.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((a) => {
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>${escapeHtml(a.action || "")}</b></div>
-              <div class="small">Actor: ${escapeHtml(a.actorEmail || "")} (${escapeHtml(a.actorRole || "")})</div>
-              <div class="small">Target: ${escapeHtml(a.targetType || "")} • ${escapeHtml(a.targetId || "")}</div>
-              ${a.targetNationalId ? `<div class="small">Omang: <b>${escapeHtml(a.targetNationalId)}</b></div>` : ""}
-              <div class="small">Time: ${a.createdAt ? new Date(a.createdAt).toLocaleString() : ""}</div>
-              <div class="small">IP: ${escapeHtml(a.ip || "")}</div>
-            </div>
-          </div>
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Disputes</h2>
+          <p class="small" style="margin:6px 0 0 0;">
+            Pending disputes must be handled within <b>5 business days</b>.
+          </p>
         </div>
-      `;
-    });
 
-    auditList.innerHTML = html;
-  }
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="loadDisputesBtn" type="button">Reload</button>
+          <button class="btn-ghost btn-sm" id="loadOverdueBtn" type="button">Show Overdue</button>
+        </div>
+      </div>
 
-  if (loadAuditBtn) loadAuditBtn.addEventListener("click", loadAudit);
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Status Filter</label>
+          <select id="disputeStatusFilter">
+            <option value="">All</option>
+            <option value="pending">pending</option>
+            <option value="resolved">resolved</option>
+            <option value="rejected">rejected</option>
+          </select>
+        </div>
+        <div>
+          <label>Filter by Omang (9 digits)</label>
+          <input id="disputeSearchNationalId" placeholder="e.g. 123456789" />
+        </div>
+      </div>
 
-  // -------------------------
-  // Boot
-  // -------------------------
-  setAccountsCollapsed(false);
+      <div class="small" id="disputeCountLine" style="margin-top:10px;"></div>
+      <div id="disputesList" style="margin-top:12px;"></div>
+    </div>
 
-  if (requestsList) loadRequestsAndCache();
-  if (accountsList) loadAccounts();
-  if (disputesList) loadDisputes();
-  if (auditList) loadAudit();
-})();
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Audit Logs</h2>
+          <p class="small" style="margin:6px 0 0 0;">
+            Hidden trail of logins, searches, edits (for inspections).
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Omang (optional filter)</label>
+          <input id="auditNationalId" placeholder="e.g. 123456789" />
+        </div>
+        <div>
+          <label>Limit (max 200)</label>
+          <input id="auditLimit" type="number" min="1" max="200" value="100" />
+        </div>
+      </div>
+
+      <div class="small" id="auditCountLine" style="margin-top:10px;"></div>
+      <div id="auditList" style="margin-top:12px;"></div>
+    </div>
+
+  </div>
+
+  <script src="config.js?v=FINAL"></script>
+  <script src="admin.js?v=FINAL"></script>
+</body>
+</html>

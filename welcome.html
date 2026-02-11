@@ -1,3 +1,4 @@
+<!-- welcome.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -30,7 +31,6 @@
       </div>
     </div>
   </div>
-  <!-- ✅ IMPORTANT: closed topbar properly -->
 
   <!-- Big Logo Hero -->
   <section class="logo-hero">
@@ -53,7 +53,9 @@
       </p>
 
       <div class="actions">
+        <!-- ✅ IMPORTANT: always go to dashboard.html (no role-based redirect here) -->
         <a class="btn btn-primary" href="dashboard.html">Proceed to Dashboard</a>
+
         <a class="btn btn-ghost" href="#about">About LinkLedger</a>
 
         <!-- ✅ Super Admin button (hidden unless admin) -->
@@ -123,14 +125,11 @@
 
   </main>
 
-  <!-- ✅ config needed for admin re-auth -->
   <script src="config.js?v=2"></script>
 
   <script>
-    // Year
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ define logout() because button uses onclick="logout()"
     function logout() {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userEmail");
