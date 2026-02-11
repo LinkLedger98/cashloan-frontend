@@ -34,10 +34,24 @@
 
     <!-- ✅ Create Lender -->
     <div class="card" style="margin-top:16px;">
-      <h2>Create Lender Account</h2>
-      <p class="small">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+        <div>
+          <h2>Create Lender Account</h2>
+          <p class="small" style="margin:6px 0 0 0;">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
+        </div>
 
-      <form id="adminForm">
+        <!-- ✅ NEW: helper button to auto-fill blank fields -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="fillFormBtn" type="button" title="Auto fill form for quick testing">
+            Fill Form
+          </button>
+          <button class="btn-ghost btn-sm" id="clearFormBtn" type="button" title="Clear form fields">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <form id="adminForm" style="margin-top:12px;">
         <label>ADMIN KEY (optional if logged in as admin)</label>
         <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
 
@@ -126,4 +140,89 @@
       <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
         <div>
           <h2 style="margin:0;">Disputes</h2>
-          <p class="small
+          <p class="small" style="margin:6px 0 0 0;">View disputes and SLA overdue items.</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="loadDisputesBtn" type="button">Reload Disputes</button>
+          <button class="btn-ghost btn-sm" id="loadDisputesOverdueBtn" type="button">Overdue (SLA)</button>
+        </div>
+      </div>
+
+      <div id="disputesList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- ✅ AUDIT LOGS (Admin) -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Audit Logs</h2>
+          <p class="small" style="margin:6px 0 0 0;">Hidden logs (login, search, edit) for compliance.</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div>
+            <label class="small">National ID (optional)</label>
+            <input id="auditNationalId" placeholder="9-digit Omang filter" />
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Load Logs</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="auditList" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="footer">
+      <div>© <span id="year"></span> LinkLedger • Botswana</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <a href="welcome.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ✅ NEW: Fill form helper (does NOT affect admin.js logic)
+    (function () {
+      const fillBtn = document.getElementById("fillFormBtn");
+      const clearBtn = document.getElementById("clearFormBtn");
+
+      function setVal(id, v) {
+        const el = document.getElementById(id);
+        if (el) el.value = v;
+      }
+
+      if (fillBtn) {
+        fillBtn.addEventListener("click", function () {
+          // quick unique-ish values
+          const stamp = Date.now().toString().slice(-6);
+
+          setVal("businessName", `Test Lender ${stamp}`);
+          setVal("branchName", "Gaborone");
+          setVal("phone", "73132277");
+          setVal("licenseNo", `NBIFIRA-${stamp}`);
+          setVal("email", `test${stamp}@example.com`);
+          setVal("tempPassword", `TempPass${stamp}!`);
+        });
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          setVal("businessName", "");
+          setVal("branchName", "");
+          setVal("phone", "");
+          setVal("licenseNo", "");
+          setVal("email", "");
+          setVal("tempPassword", "");
+        });
+      }
+    })();
+  </script>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

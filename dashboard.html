@@ -3,133 +3,194 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=3" />
+  <title>Super Admin | LinkLedger</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="admin.css" />
 </head>
 
 <body>
   <div class="container">
+
     <div class="topbar">
       <div class="brand">
         <div class="brand-badge"></div>
-        <h1>LinkLedger</h1>
+        <h1>LinkLedger • Super Admin</h1>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="pill" id="userPill">Logged in</span>
-        <a class="btn-ghost" href="index.html">Home</a>
+      <!-- ✅ Legacy Mode (kept) -->
+      <div class="legacy-badge" title="Legacy Mode">
+        <span class="legacy-dot legacy-dot-pink"></span>
+        <span class="legacy-lt">&lt;</span>
+        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-text">Legacy Mode</span>
+      </div>
+
+      <div class="top-actions">
+        <span class="pill" id="adminPill">Logged in</span>
+        <a class="btn-ghost" href="welcome.html">&lt;back</a>
         <button class="btn-ghost" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <!-- Search borrower history -->
-    <div class="card">
-      <h2>Search borrower history</h2>
-      <p>Search by National ID to see reported statuses across lenders.</p>
+    <!-- ✅ Create Lender -->
+    <div class="card" style="margin-top:16px;">
+      <h2>Create Lender Account</h2>
+      <p class="small">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
 
-      <div class="row">
-        <div>
-          <label for="searchNationalId">National ID</label>
-          <input id="searchNationalId" placeholder="e.g. 123456789" inputmode="numeric" maxlength="9" />
+      <form id="adminForm">
+        <label>ADMIN KEY (optional if logged in as admin)</label>
+        <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
+
+        <div class="row">
+          <div>
+            <label>Business Name</label>
+            <input id="businessName" placeholder="e.g. Golden Finance" required />
+          </div>
+          <div>
+            <label>Branch</label>
+            <input id="branchName" placeholder="e.g. Palapye" required />
+          </div>
         </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
+
+        <div class="row">
+          <div>
+            <label>Phone (shows in borrower search)</label>
+            <input id="phone" placeholder="e.g. 71234567" required />
+          </div>
+          <div>
+            <label>NBIFIRA License No.</label>
+            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Email (login)</label>
+            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
+          </div>
+          <div>
+            <label>Temporary Password</label>
+            <input id="tempPassword" placeholder="Set temporary password" required />
+          </div>
+        </div>
+
+        <button class="btn-primary" type="submit">Create Lender</button>
+        <p id="msg" class="small" style="margin-top:10px;"></p>
+      </form>
+
+      <!-- ✅ Signup Requests -->
+      <div style="margin-top:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <h2 style="margin:0;">Signup Requests</h2>
+          <button class="btn-ghost btn-sm" id="loadRequestsBtn" type="button">Reload Requests</button>
+        </div>
+        <div id="requestsList" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- ✅ Registered accounts -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Registered accounts</h2>
+          <p class="small" style="margin:6px 0 0 0;">Search, suspend, and update billing.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-ghost btn-sm" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
+          <button class="btn-ghost btn-sm" id="loadAccountsBtn" type="button">Reload Accounts</button>
         </div>
       </div>
 
-      <hr />
+      <div id="accountsWrap">
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Search</label>
+            <input id="searchBox" placeholder="Search business / email / license / status / paid..." />
+          </div>
+          <div>
+            <label class="small" style="opacity:.9;">Tip</label>
+            <div class="small">Type to auto-search.</div>
+          </div>
+        </div>
 
-      <div id="results" class="results"></div>
+        <div class="small" id="countLine" style="margin-top:10px;"></div>
+
+        <!-- ✅ list goes here -->
+        <div id="accountsList" style="margin-top:12px;"></div>
+      </div>
     </div>
 
-    <!-- My Clients -->
+    <!-- ✅ DISPUTES (Admin) — ADDED to satisfy admin.js -->
     <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
         <div>
-          <h2 style="margin-bottom:4px;">My Clients</h2>
-          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
+          <h2 style="margin:0;">Disputes</h2>
+          <p class="small" style="margin:6px 0 0 0;">
+            Pending disputes must be handled within <b>5 business days</b>.
+          </p>
         </div>
 
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <div>
-            <label class="small" for="myClientsSearch">Search</label>
-            <input id="myClientsSearch" placeholder="Name or National ID" />
-          </div>
-          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
-        </div>
-      </div>
-
-      <hr style="margin:14px 0;" />
-
-      <div id="myClientsList" class="results"></div>
-    </div>
-
-    <!-- Add borrower record -->
-    <div class="card" style="margin-top:16px;">
-      <h2>Add borrower record</h2>
-      <p>Only logged-in lenders can add borrower status records.</p>
-
-      <div class="row">
-        <div>
-          <label for="fullName">Full name</label>
-          <input id="fullName" placeholder="e.g. Thato Molefe" />
-        </div>
-        <div>
-          <label for="nationalId">National ID (9 digits)</label>
-          <input id="nationalId" placeholder="e.g. 123456789" inputmode="numeric" maxlength="9" />
-          <div class="small" style="margin-top:6px; opacity:.85;">Must be exactly 9 digits.</div>
+          <button class="btn-ghost btn-sm" id="loadDisputesBtn" type="button">Reload</button>
+          <button class="btn-ghost btn-sm" id="loadOverdueBtn" type="button">Show Overdue</button>
         </div>
       </div>
 
       <div class="row" style="margin-top:12px;">
         <div>
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="paid">paid</option>
-            <option value="owing">owing</option>
-            <option value="overdue">overdue</option>
+          <label>Status Filter</label>
+          <select id="disputeStatusFilter">
+            <option value="">All</option>
+            <option value="pending">pending</option>
+            <option value="resolved">resolved</option>
+            <option value="rejected">rejected</option>
           </select>
         </div>
         <div>
-          <label for="dueDate">Due date (for owing/overdue)</label>
-          <input id="dueDate" type="date" />
+          <label>Filter by Omang (9 digits)</label>
+          <input id="disputeSearchNationalId" placeholder="e.g. 123456789" />
         </div>
       </div>
 
-      <!-- ✅ Consent evidence block -->
-      <div class="consent-box" style="margin-top:14px;">
-        <div class="consent-row">
-          <label class="consent-check">
-            <input id="consentGiven" type="checkbox" />
-            <span><b>Borrower Consent</b> — I confirm the borrower signed the consent form.</span>
-          </label>
+      <div class="small" id="disputeCountLine" style="margin-top:10px;"></div>
+      <div id="disputesList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- ✅ AUDIT LOGS (Admin) — ADDED to satisfy admin.js -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Audit Logs</h2>
+          <p class="small" style="margin:6px 0 0 0;">
+            Hidden trail of logins, searches, edits (for inspections).
+          </p>
         </div>
 
-        <div style="margin-top:10px;">
-          <label for="consentFile">Upload signed consent form (required)</label>
-          <input id="consentFile" type="file" accept="image/*" capture="environment" />
-          <div class="small" style="margin-top:6px; opacity:.85;">
-            Tip: Use phone camera. Keep photo small/clear (under ~1.5MB).
-          </div>
-          <div id="consentPreviewWrap" style="margin-top:10px; display:none;">
-            <div class="small" style="margin-bottom:6px;">Preview</div>
-            <img id="consentPreview" alt="Consent preview" style="max-width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.10);" />
-          </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
         </div>
       </div>
 
-      <div style="margin-top:12px;">
-        <button class="btn-primary" onclick="addClient()">Save record</button>
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Omang (optional filter)</label>
+          <input id="auditNationalId" placeholder="e.g. 123456789" />
+        </div>
+        <div>
+          <label>Limit (max 200)</label>
+          <input id="auditLimit" type="number" min="1" max="200" value="100" />
+        </div>
       </div>
 
-      <p class="small" style="margin-top:10px; opacity:.9;">
-        By saving, you confirm consent evidence is accurate and stored for compliance.
-      </p>
+      <div class="small" id="auditCountLine" style="margin-top:10px;"></div>
+      <div id="auditList" style="margin-top:12px;"></div>
     </div>
 
   </div>
 
-  <script src="config.js?v=1"></script>
-  <script src="dashboard.js?v=2"></script>
+  <!-- ✅ scripts -->
+  <script src="config.js?v=FINAL"></script>
+  <script src="admin.js?v=FINAL"></script>
 </body>
 </html>

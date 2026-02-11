@@ -18,10 +18,19 @@
     </div>
 
     <div class="top-right">
-      <a class="toplink" href="index.html">Home</a>
-      <a class="toplink" href="login.html" id="logoutBtn">Logout</a>
+      <span class="pill" id="userPill">Logged in</span>
+
+      <div style="display:flex; gap:10px;">
+        <a class="btn-ghost" href="welcome.html">Home</a>
+
+        <!-- ✅ Secure between Home and Logout -->
+        <a class="btn-ghost" href="set_password.html">Secure</a>
+
+        <button class="btn-ghost" id="logoutBtn" onclick="logout()">Logout</button>
+      </div>
     </div>
   </div>
+  <!-- ✅ IMPORTANT: closed topbar properly -->
 
   <!-- Big Logo Hero -->
   <section class="logo-hero">
@@ -121,18 +130,22 @@
     // Year
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // Logout clears everything
-    document.getElementById("logoutBtn").addEventListener("click", function () {
+    // ✅ define logout() because button uses onclick="logout()"
+    function logout() {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userEmail");
       localStorage.removeItem("userRole");
-    });
+      window.location.href = "login.html";
+    }
 
     // Show Super Admin button only for admins (role OR admin emails)
     (function () {
       var email = (localStorage.getItem("userEmail") || "").toLowerCase();
       var role  = (localStorage.getItem("userRole") || "").toLowerCase();
       var isAdmin = (role === "admin" || email === "admin@linkledger.co.bw" || email === "admin2@linkledger.co.bw");
+
+      var pill = document.getElementById("userPill");
+      if (pill) pill.textContent = email ? ("Logged in: " + email) : "Logged in";
 
       var btn = document.getElementById("adminBtn");
       if (!btn) return;

@@ -7,7 +7,6 @@
   function $(id) { return document.getElementById(id); }
 
   function getToken() { return localStorage.getItem("authToken"); }
-  function getRole() { return String(localStorage.getItem("userRole") || "").toLowerCase(); }
 
   function escapeHtml(x) {
     return String(x || "")
@@ -33,14 +32,13 @@
       (opts && opts.headers) ? opts.headers : {}
     );
 
-    // ✅ If adminKey is provided, send it (legacy support)
+    // ✅ Legacy support
     if (adminKey) headers["x-admin-key"] = adminKey;
 
-    // ✅ Always try token as well (role-based support)
+    // ✅ Token support (admin role)
     if (token) headers["Authorization"] = token;
 
     const res = await fetch(API_BASE_URL + path, Object.assign({}, opts || {}, { headers }));
-
     const data = await res.json().catch(() => ({}));
 
     // Auto logout on expired session
@@ -53,9 +51,8 @@
       return { ok: false, status: 401, data };
     }
 
-    // Forbidden (not admin / wrong key)
+    // Forbidden
     if (res.status === 403) {
-      // If user is admin but key missing, message still helps
       alert((data && data.message) ? data.message : "Forbidden");
       return { ok: false, status: 403, data };
     }
@@ -63,38 +60,10 @@
     return { ok: res.ok, status: res.status, data };
   }
 
-  // -------------------------
-  // Existing UI elements
-  // -------------------------
-  const adminPill = $("adminPill");
-  const msg = $("msg");
-  const adminForm = $("adminForm");
-
-  const loadRequestsBtn = $("loadRequestsBtn");
-  const requestsList = $("requestsList");
-
-  const loadAccountsBtn = $("loadAccountsBtn");
-  const toggleAccountsBtn = $("toggleAccountsBtn");
-  const accountsWrap = $("accountsWrap");
-  const searchBox = $("searchBox");
-  const accountsList = $("accountsList");
-  const countLine = $("countLine");
-
-  // ✅ New UI elements
-  const loadDisputesBtn = $("loadDisputesBtn");
-  const loadOverdueBtn = $("loadOverdueBtn");
-  const disputeStatusFilter = $("disputeStatusFilter");
-  const disputeSearchNationalId = $("disputeSearchNationalId");
-  const disputesList = $("disputesList");
-  const disputeCountLine = $("disputeCountLine");
-
-  const loadAuditBtn = $("loadAuditBtn");
-  const auditNationalId = $("auditNationalId");
-  const auditLimit = $("auditLimit");
-  const auditList = $("auditList");
-  const auditCountLine = $("auditCountLine");
-
-  function setMsg(t) { if (msg) msg.textContent = t || ""; }
+  function setMsg(t) {
+    const el = $("msg");
+    if (el) el.textContent = t || "";
+  }
 
   function logout() {
     localStorage.removeItem("authToken");
@@ -105,23 +74,18 @@
   window.logout = logout;
 
   // -------------------------
-  // Gatekeeping
+  // Header pill
   // -------------------------
+  const adminPill = $("adminPill");
   if (adminPill) {
     const email = localStorage.getItem("userEmail") || "";
     adminPill.textContent = email ? `Logged in: ${email}` : "Logged in";
   }
 
-  // If someone loads admin page without token + without admin key,
-  // they can still paste ADMIN_KEY to use legacy.
-  // But if they do have token and role isn't admin, backend blocks anyway.
-  if (!getToken() && !$("adminKey")) {
-    // fine
-  }
-
   // -------------------------
   // Signup Requests
   // -------------------------
+  const requestsList = $("requestsList");
   async function loadRequests() {
     if (!requestsList) return;
     requestsList.innerHTML = `<div class="small">Loading...</div>`;
@@ -151,7 +115,9 @@
               ${x.notes ? `<div class="small">Notes: ${escapeHtml(x.notes)}</div>` : ""}
               <div class="small">Created: ${x.createdAt ? new Date(x.createdAt).toLocaleString() : ""}</div>
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+              <button class="btn-primary btn-sm" onclick="useRequestToFillForm('${escapeHtml(x._id)}')">Use</button>
               <button class="btn-ghost btn-sm" onclick="deleteRequest('${escapeHtml(x._id)}')">Delete</button>
             </div>
           </div>
@@ -175,11 +141,85 @@
   }
   window.deleteRequest = deleteRequest;
 
-  if (loadRequestsBtn) loadRequestsBtn.addEventListener("click", loadRequests);
+  // ✅ NEW: Fill the create-lender form from a request (button)
+  // We already have the request data on screen, but easiest/most reliable:
+  // just reload and find it in the last fetched list by id.
+  // To avoid extra global state, we’ll store the last list.
+  let _lastRequests = [];
+  window.useRequestToFillForm = function (requestId) {
+    const row = _lastRequests.find(r => String(r._id) === String(requestId));
+    if (!row) {
+      alert("Request not found in memory. Click Reload Requests then try again.");
+      return;
+    }
+
+    // fill form inputs
+    if ($("businessName")) $("businessName").value = row.businessName || "";
+    if ($("branchName")) $("branchName").value = row.branchName || "";
+    if ($("phone")) $("phone").value = row.phone || "";
+    if ($("licenseNo")) $("licenseNo").value = row.licenseNo || "";
+    if ($("email")) $("email").value = row.email || "";
+
+    // do NOT auto-set temp password (admin decides)
+    if ($("tempPassword")) $("tempPassword").value = "";
+
+    // scroll to top form
+    const form = $("adminForm");
+    if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Wrap loadRequests so it also stores memory
+  async function loadRequestsAndCache() {
+    const r = await fetchJson("/api/admin/requests", { method: "GET" });
+    if (!requestsList) return;
+
+    if (!r.ok) {
+      requestsList.innerHTML = "";
+      _lastRequests = [];
+      return;
+    }
+
+    const rows = Array.isArray(r.data) ? r.data : [];
+    _lastRequests = rows;
+
+    if (rows.length === 0) {
+      requestsList.innerHTML = `<div class="result-item"><div class="small">No signup requests.</div></div>`;
+      return;
+    }
+
+    let html = "";
+    rows.forEach((x) => {
+      html += `
+        <div class="result-item">
+          <div class="admin-row">
+            <div>
+              <div><b>${escapeHtml(x.businessName || "")}</b> — ${escapeHtml(x.branchName || "")}</div>
+              <div class="small">Email: <b>${escapeHtml(x.email || "")}</b></div>
+              <div class="small">Phone: ${escapeHtml(x.phone || "")}</div>
+              <div class="small">License: ${escapeHtml(x.licenseNo || "")}</div>
+              ${x.notes ? `<div class="small">Notes: ${escapeHtml(x.notes)}</div>` : ""}
+              <div class="small">Created: ${x.createdAt ? new Date(x.createdAt).toLocaleString() : ""}</div>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+              <button class="btn-primary btn-sm" onclick="useRequestToFillForm('${escapeHtml(x._id)}')">Use</button>
+              <button class="btn-ghost btn-sm" onclick="deleteRequest('${escapeHtml(x._id)}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    requestsList.innerHTML = html;
+  }
+
+  const loadRequestsBtn = $("loadRequestsBtn");
+  if (loadRequestsBtn) loadRequestsBtn.addEventListener("click", loadRequestsAndCache);
 
   // -------------------------
   // Create lender
   // -------------------------
+  const adminForm = $("adminForm");
   if (adminForm) {
     adminForm.addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -220,8 +260,15 @@
   }
 
   // -------------------------
-  // Accounts (existing)
+  // Accounts
   // -------------------------
+  const accountsList = $("accountsList");
+  const accountsWrap = $("accountsWrap");
+  const toggleAccountsBtn = $("toggleAccountsBtn");
+  const loadAccountsBtn = $("loadAccountsBtn");
+  const searchBox = $("searchBox");
+  const countLine = $("countLine");
+
   let accountsCollapsed = false;
 
   function setAccountsCollapsed(v) {
@@ -256,6 +303,8 @@
     rows.forEach((u) => {
       const status = String(u.status || "");
       const billing = String(u.billingStatus || "");
+      const id = escapeHtml(u._id);
+
       html += `
         <div class="result-item">
           <div class="admin-row">
@@ -268,18 +317,18 @@
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn-ghost btn-sm" onclick="toggleUserStatus('${escapeHtml(u._id)}','${escapeHtml(status)}')">
+              <button class="btn-ghost btn-sm" onclick="toggleUserStatus('${id}','${escapeHtml(status)}')">
                 ${status === "suspended" ? "Activate" : "Suspend"}
               </button>
-              <button class="btn-ghost btn-sm" onclick="openBilling('${escapeHtml(u._id)}')">Billing</button>
+              <button class="btn-ghost btn-sm" onclick="openBilling('${id}')">Billing</button>
             </div>
           </div>
 
-          <div id="bill-${escapeHtml(u._id)}" class="billing-panel" style="display:none; margin-top:10px;">
+          <div id="bill-${id}" class="billing-panel" style="display:none; margin-top:10px;">
             <div class="row" style="grid-template-columns: 1fr 1fr; gap:12px;">
               <div>
                 <label class="small">Billing Status</label>
-                <select id="bStatus-${escapeHtml(u._id)}">
+                <select id="bStatus-${id}">
                   <option value="paid" ${billing === "paid" ? "selected" : ""}>paid</option>
                   <option value="due" ${billing === "due" ? "selected" : ""}>due</option>
                   <option value="overdue" ${billing === "overdue" ? "selected" : ""}>overdue</option>
@@ -287,29 +336,29 @@
               </div>
               <div>
                 <label class="small">Paid Until (optional)</label>
-                <input id="bPaidUntil-${escapeHtml(u._id)}" type="date" />
+                <input id="bPaidUntil-${id}" type="date" />
               </div>
             </div>
 
             <div class="row" style="grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
               <div>
                 <label class="small">Last Payment Amount</label>
-                <input id="bAmt-${escapeHtml(u._id)}" placeholder="e.g. 500" />
+                <input id="bAmt-${id}" placeholder="e.g. 500" />
               </div>
               <div>
                 <label class="small">Payment Ref</label>
-                <input id="bRef-${escapeHtml(u._id)}" placeholder="e.g. FNB-1234" />
+                <input id="bRef-${id}" placeholder="e.g. FNB-1234" />
               </div>
             </div>
 
             <div style="margin-top:10px;">
               <label class="small">Notes</label>
-              <input id="bNotes-${escapeHtml(u._id)}" placeholder="Admin notes" />
+              <input id="bNotes-${id}" placeholder="Admin notes" />
             </div>
 
             <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn-primary btn-sm" onclick="saveBilling('${escapeHtml(u._id)}')">Save Billing</button>
-              <button class="btn-ghost btn-sm" onclick="openBilling('${escapeHtml(u._id)}')">Close</button>
+              <button class="btn-primary btn-sm" onclick="saveBilling('${id}')">Save Billing</button>
+              <button class="btn-ghost btn-sm" onclick="openBilling('${id}')">Close</button>
             </div>
           </div>
         </div>
@@ -392,12 +441,15 @@
   }
 
   // -------------------------
-  // ✅ Disputes UI (NEW)
+  // Disputes (matches admin.html IDs)
   // -------------------------
+  const disputesList = $("disputesList");
+  const loadDisputesBtn = $("loadDisputesBtn");
+  const loadDisputesOverdueBtn = $("loadDisputesOverdueBtn");
+
   async function loadDisputes(mode) {
     if (!disputesList) return;
     disputesList.innerHTML = `<div class="small">Loading...</div>`;
-    if (disputeCountLine) disputeCountLine.textContent = "";
 
     let rows = [];
     let slaDays = 5;
@@ -410,22 +462,9 @@
       slaDays = Number(r.data.slaDays || 5);
       rows = Array.isArray(r.data.rows) ? r.data.rows : [];
     } else {
-      const status = disputeStatusFilter ? String(disputeStatusFilter.value || "").trim() : "";
-      const r = await fetchJson(`/api/admin/disputes${status ? `?status=${encodeURIComponent(status)}` : ""}`, { method: "GET" });
+      const r = await fetchJson(`/api/admin/disputes`, { method: "GET" });
       if (!r.ok) { disputesList.innerHTML = ""; return; }
       rows = Array.isArray(r.data) ? r.data : [];
-    }
-
-    // Optional filter by National ID
-    const filterId = disputeSearchNationalId ? String(disputeSearchNationalId.value || "").trim() : "";
-    if (filterId) {
-      rows = rows.filter(d => String(d.nationalId || "").trim() === filterId);
-    }
-
-    if (disputeCountLine) {
-      disputeCountLine.textContent = isOverdueMode
-        ? `Overdue disputes (>${slaDays} days): ${rows.length}`
-        : `Disputes: ${rows.length}`;
     }
 
     if (rows.length === 0) {
@@ -438,6 +477,7 @@
       const st = String(d.status || "pending").toLowerCase();
       const opened = d.dateOpened ? new Date(d.dateOpened).toLocaleString() : "";
       const resolved = d.dateResolved ? new Date(d.dateResolved).toLocaleString() : "";
+
       const badge =
         st === "pending" ? "badge overdue" :
         st === "resolved" ? "badge paid" :
@@ -454,7 +494,7 @@
               ${d.raisedByEmail ? `<div class="small">Raised by: ${escapeHtml(d.raisedByEmail)} (${escapeHtml(d.raisedByRole || "")})</div>` : ""}
               ${d.clientRecordId ? `<div class="small">Client Record ID: ${escapeHtml(d.clientRecordId)}</div>` : ""}
               ${d.notes ? `<div class="small">Notes: ${escapeHtml(d.notes)}</div>` : ""}
-              ${isOverdueMode ? `<div class="small" style="opacity:.9;"><b>⚠ SLA breach risk</b></div>` : ""}
+              ${isOverdueMode ? `<div class="small"><b>⚠ Over SLA (${slaDays} days)</b></div>` : ""}
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
@@ -481,10 +521,7 @@
       method: "PATCH",
       body: JSON.stringify({ status: "resolved", notes: String(notes || "").trim() })
     });
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Failed");
-      return;
-    }
+    if (!r.ok) { alert((r.data && r.data.message) ? r.data.message : "Failed"); return; }
     alert("Dispute resolved ✅");
     loadDisputes();
   }
@@ -496,54 +533,27 @@
       method: "PATCH",
       body: JSON.stringify({ status: "rejected", notes: String(notes || "").trim() })
     });
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Failed");
-      return;
-    }
+    if (!r.ok) { alert((r.data && r.data.message) ? r.data.message : "Failed"); return; }
     alert("Dispute rejected ✅");
     loadDisputes();
   }
   window.rejectDispute = rejectDispute;
 
   if (loadDisputesBtn) loadDisputesBtn.addEventListener("click", () => loadDisputes());
-  if (loadOverdueBtn) loadOverdueBtn.addEventListener("click", () => loadDisputes("overdue"));
-
-  if (disputeStatusFilter) disputeStatusFilter.addEventListener("change", () => loadDisputes());
-
-  if (disputeSearchNationalId) {
-    disputeSearchNationalId.addEventListener("input", function () {
-      const v = String(disputeSearchNationalId.value || "").trim();
-      if (v && !isNineDigits(v)) {
-        disputeSearchNationalId.classList.add("input-warn");
-      } else {
-        disputeSearchNationalId.classList.remove("input-warn");
-      }
-    });
-
-    disputeSearchNationalId.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const v = String(disputeSearchNationalId.value || "").trim();
-        if (v && !isNineDigits(v)) {
-          alert("National ID must be exactly 9 digits.");
-          return;
-        }
-        loadDisputes();
-      }
-    });
-  }
+  if (loadDisputesOverdueBtn) loadDisputesOverdueBtn.addEventListener("click", () => loadDisputes("overdue"));
 
   // -------------------------
-  // ✅ Audit logs UI (NEW)
+  // Audit logs (matches admin.html IDs)
   // -------------------------
+  const auditList = $("auditList");
+  const loadAuditBtn = $("loadAuditBtn");
+  const auditNationalId = $("auditNationalId");
+
   async function loadAudit() {
     if (!auditList) return;
     auditList.innerHTML = `<div class="small">Loading...</div>`;
-    if (auditCountLine) auditCountLine.textContent = "";
 
-    const lim = auditLimit ? Number(auditLimit.value || 100) : 100;
     const nat = auditNationalId ? String(auditNationalId.value || "").trim() : "";
-
     if (nat && !isNineDigits(nat)) {
       alert("National ID must be exactly 9 digits.");
       auditList.innerHTML = "";
@@ -551,15 +561,13 @@
     }
 
     const qs = new URLSearchParams();
-    qs.set("limit", String(Math.min(200, Math.max(1, lim))));
+    qs.set("limit", "100");
     if (nat) qs.set("nationalId", nat);
 
     const r = await fetchJson(`/api/admin/audit?${qs.toString()}`, { method: "GET" });
     if (!r.ok) { auditList.innerHTML = ""; return; }
 
     const rows = Array.isArray(r.data) ? r.data : [];
-    if (auditCountLine) auditCountLine.textContent = `Audit rows: ${rows.length}`;
-
     if (rows.length === 0) {
       auditList.innerHTML = `<div class="result-item"><div class="small">No audit logs found.</div></div>`;
       return;
@@ -593,11 +601,9 @@
   // -------------------------
   setAccountsCollapsed(false);
 
-  // auto-load key panels
-  loadRequests();
-  loadAccounts();
-
-  // New panels
+  // Auto-load
+  if (requestsList) loadRequestsAndCache();
+  if (accountsList) loadAccounts();
   if (disputesList) loadDisputes();
   if (auditList) loadAudit();
 })();

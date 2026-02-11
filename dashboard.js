@@ -83,7 +83,7 @@ async function openDispute(nationalId, clientRecordId) {
     return;
   }
 
-  if (!/^\d{9}$/.test(String(nationalId || "").trim())) {
+  if (!/^\d{9}$/.test(String(v || nationalId || "").trim())) {
     alert("National ID must be exactly 9 digits.");
     return;
   }
@@ -114,7 +114,6 @@ async function openDispute(nationalId, clientRecordId) {
 
     alert("Dispute opened ✅ Record marked Under Dispute (for admin review).");
 
-    // Refresh search view to reflect changes (if user wants)
     const input = document.getElementById("searchNationalId");
     if (input && input.value && input.value.trim() === String(nationalId).trim()) {
       await searchClient();
@@ -132,6 +131,10 @@ async function addClient() {
   const nationalId = document.getElementById("nationalId").value.trim();
   const status = document.getElementById("status").value;
   const dueDate = document.getElementById("dueDate").value;
+
+  // ✅ Consent UI elements (must exist in dashboard.html)
+  const consentCheck = document.getElementById("consentCheck");
+  const consentFile = document.getElementById("consentFile");
 
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
@@ -152,17 +155,43 @@ async function addClient() {
     return;
   }
 
-  const payload = { fullName, nationalId, status };
-  if (dueDate) payload.dueDate = dueDate;
+  // ✅ Consent required
+  if (!consentCheck || !consentFile) {
+    alert("Consent fields missing on dashboard.html (consentCheck / consentFile).");
+    return;
+  }
+
+  if (!consentCheck.checked) {
+    alert("Borrower consent is required. Tick the consent checkbox.");
+    return;
+  }
+
+  if (!consentFile.files || consentFile.files.length === 0) {
+    alert("Please upload a photo/file of the signed consent form.");
+    return;
+  }
+
+  const file = consentFile.files[0];
+
+  // ✅ Build multipart payload
+  const fd = new FormData();
+  fd.append("fullName", fullName);
+  fd.append("nationalId", nationalId);
+  fd.append("status", status);
+  if (dueDate) fd.append("dueDate", dueDate);
+
+  // Consent fields
+  fd.append("consentGiven", "true");
+  fd.append("consentFile", file);
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        // ❗ Do NOT set Content-Type here for FormData
         "Authorization": token
       },
-      body: JSON.stringify(payload)
+      body: fd
     });
 
     const data = await res.json().catch(() => ({}));
@@ -187,6 +216,10 @@ async function addClient() {
     document.getElementById("nationalId").value = "";
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
+
+    // ✅ reset consent fields
+    consentCheck.checked = false;
+    consentFile.value = "";
 
     await loadMyClients();
   } catch (err) {
