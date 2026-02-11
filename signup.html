@@ -4,7 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Request Access • LinkLedger</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- ✅ Match Sign-in theme -->
+  <link rel="stylesheet" href="login.css?v=FINAL" />
+
+  <!-- ✅ Theme-only: support existing .row layout used below -->
+  <style>
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 740px){
+      .row{ grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 
 <body>

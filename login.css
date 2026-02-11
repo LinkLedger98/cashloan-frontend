@@ -2,14 +2,15 @@
   --pink:#ff2ea6;
   --pink2:#ff5bc0;
 
-  --bg:#fbfbfe;
-  --card:#ffffff;
-  --text:#14131a;
-  --muted:#5b5a68;
-  --border:rgba(20,19,26,0.10);
+  --text:#f4f5f8;
+  --muted:rgba(244,245,248,0.72);
 
-  --shadow:0 18px 45px rgba(15, 10, 20, 0.10);
-  --shadow2:0 10px 26px rgba(15, 10, 20, 0.08);
+  --glass:rgba(18, 18, 22, 0.62);
+  --glass2:rgba(18, 18, 22, 0.45);
+  --border:rgba(255,255,255,0.10);
+
+  --shadow:0 22px 60px rgba(0,0,0,0.55);
+  --shadow2:0 12px 30px rgba(0,0,0,0.35);
 }
 
 *{
@@ -22,17 +23,26 @@
 html, body{ height:100%; }
 
 body{
+  /* Premium dark → pink-tinted light (your request) */
   background:
-    radial-gradient(900px 600px at 88% 8%, rgba(255,46,166,0.14), transparent 55%),
-    radial-gradient(900px 600px at 18% 78%, rgba(255,91,192,0.10), transparent 55%),
-    linear-gradient(180deg, #ffffff 0%, #fbfbfe 55%, #f6f6fb 100%);
+    radial-gradient(900px 500px at 25% 0%, rgba(255,46,166,0.22), transparent 55%),
+    radial-gradient(1000px 600px at 80% 15%, rgba(255,91,192,0.18), transparent 60%),
+    linear-gradient(
+      180deg,
+      #07070a 0%,
+      #0b0b10 35%,
+      #12121a 55%,
+      #2a1a24 75%,
+      #6f4a5f 100% /* ✅ light part has pink tint so text reads */
+    );
   color:var(--text);
 }
 
-a{ color:rgba(20,19,26,0.78); text-decoration:none; }
+/* Links on dark */
+a{ color:rgba(244,245,248,0.82); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 
-/* ✅ Your HTML uses .container, so define it */
+/* Layout */
 .container{
   max-width:1100px;
   margin:0 auto;
@@ -42,6 +52,7 @@ a:hover{ text-decoration:underline; }
   flex-direction:column;
 }
 
+/* Topbar as glass */
 .topbar{
   display:flex;
   justify-content:space-between;
@@ -49,11 +60,11 @@ a:hover{ text-decoration:underline; }
   gap:14px;
   padding:14px 16px;
 
-  border:1px solid rgba(20,19,26,0.07);
-  background:rgba(255,255,255,0.72);
+  border:1px solid var(--border);
+  background: var(--glass2);
   border-radius:20px;
   box-shadow: var(--shadow2);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
 }
 
 .brand{
@@ -67,9 +78,12 @@ a:hover{ text-decoration:underline; }
   height:12px;
   border-radius:999px;
   background: linear-gradient(90deg, var(--pink), var(--pink2));
-  box-shadow:0 0 0 6px rgba(255,46,166,0.12);
+  box-shadow:
+    0 0 0 6px rgba(255,46,166,0.14),
+    0 10px 30px rgba(255,46,166,0.28);
 }
 
+/* Pills (if you use them anywhere) */
 .nav{
   display:flex;
   align-items:center;
@@ -80,12 +94,14 @@ a:hover{ text-decoration:underline; }
 .pill{
   padding:9px 12px;
   border-radius:999px;
-  border:1px solid rgba(20,19,26,0.10);
-  color:rgba(20,19,26,0.78);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(244,245,248,0.82);
   font-size:13px;
-  background: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(10px);
 }
 
+/* Buttons */
 .btn-primary,
 .btn-ghost{
   border:none;
@@ -97,74 +113,82 @@ a:hover{ text-decoration:underline; }
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  transition: transform 140ms ease, filter 140ms ease, background 140ms ease;
+  transition: transform 140ms ease, filter 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 
 .btn-primary{
   background: linear-gradient(90deg, var(--pink), var(--pink2));
-  color:#120a12;
-  box-shadow:0 12px 26px rgba(255,46,166,0.18);
+  color:#1a0714;
+  box-shadow: 0 18px 40px rgba(255,46,166,0.22);
 }
-.btn-primary:hover{ filter: brightness(1.03); transform: translateY(-1px); }
+.btn-primary:hover{ filter: brightness(1.05); transform: translateY(-1px); }
 
 .btn-ghost{
-  background: rgba(20,19,26,0.04);
-  border:1px solid rgba(20,19,26,0.10);
-  color: rgba(20,19,26,0.88);
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.14);
+  color: rgba(244,245,248,0.88);
 }
-.btn-ghost:hover{ transform: translateY(-1px); background: rgba(20,19,26,0.06); }
+.btn-ghost:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.09); }
 
-/* ✅ you use btn-sm in login.html but it wasn't defined */
 .btn-sm{
-  padding: 10px 12px;     /* bigger tap target */
+  padding: 10px 12px;
   border-radius: 12px;
   font-size: 13px;
   white-space: nowrap;
 }
 
+/* Card as big glass panel (like your screenshot) */
 .card{
-  width:min(520px, 100%);
-  background: rgba(255,255,255,0.86);
-  border: 1px solid rgba(20,19,26,0.08);
-  border-radius: 24px;
+  width:min(900px, 100%);  /* ✅ wider like the reset page */
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 22px;
   padding: 22px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
-  margin: 18px auto 0;   /* ✅ centers nicely */
+  backdrop-filter: blur(18px);
+  margin: 18px auto 0;
 }
 
 h1{ font-size:20px; }
-h2{ font-size:24px; margin-bottom:8px; }
+h2{ font-size:22px; margin-bottom:8px; color:rgba(244,245,248,0.92); }
+
+p{ color: var(--muted); }
 
 label{
   display:block;
   font-size:13px;
-  color:rgba(20,19,26,0.72);
+  color:rgba(244,245,248,0.70);
   font-weight:700;
-  margin: 10px 0 6px;
+  margin: 12px 0 6px;
 }
 
+/* Inputs: dark glass like screenshot */
 input{
   width:100%;
   padding:12px 12px;
   border-radius:14px;
-  border:1px solid rgba(20,19,26,0.10);
-  background: rgba(255,255,255,0.75);
-  color:var(--text);
+  border:1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.22);
+  color:rgba(244,245,248,0.92);
   outline:none;
 }
 
+input::placeholder{
+  color: rgba(244,245,248,0.38);
+}
+
 input:focus{
-  border-color:rgba(255,46,166,0.55);
-  box-shadow:0 0 0 3px rgba(255,46,166,0.16);
+  border-color:rgba(255,46,166,0.60);
+  box-shadow:0 0 0 3px rgba(255,46,166,0.18);
 }
 
 .small{
   font-size: 13px;
-  color: rgba(20,19,26,0.70);
+  color: rgba(244,245,248,0.70);
   margin-top: 6px;
 }
 
 @media (max-width: 740px){
   .pill{ display:none; }
+  .card{ width: 100%; }
 }
