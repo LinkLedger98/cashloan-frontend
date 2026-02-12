@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkLedger | Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css?v=3" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <h1>LinkLedger</h1>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span class="pill" id="userPill">Logged in</span>
+        <a class="btn-ghost" href="welcome.html">&lt;back</a>
+        <button class="btn-ghost" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Search borrower history -->
+    <div class="card">
+      <h2>Search borrower history</h2>
+      <p>Search by National ID to see reported statuses across lenders.</p>
+
+      <div class="row">
+        <div>
+          <label for="searchNationalId">National ID</label>
+          <input id="searchNationalId" placeholder="e.g. 123456789" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
+        </div>
+      </div>
+
+      <hr />
+
+      <div id="results" class="results"></div>
+    </div>
+
+    <!-- My Clients -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <h2 style="margin-bottom:4px;">My Clients</h2>
+          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div>
+            <label class="small" for="myClientsSearch">Search</label>
+            <input id="myClientsSearch" placeholder="Name or National ID" />
+          </div>
+          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0;" />
+
+      <div id="myClientsList" class="results"></div>
+    </div>
+
+    <!-- Add borrower record -->
+    <div class="card" style="margin-top:16px;">
+      <h2>Add borrower record</h2>
+      <p>Only logged-in lenders can add borrower status records.</p>
+
+      <div class="row">
+        <div>
+          <label for="fullName">Full name</label>
+          <input id="fullName" placeholder="e.g. Thato Molefe" />
+        </div>
+        <div>
+          <label for="nationalId">National ID</label>
+          <input id="nationalId" placeholder="e.g. 123456789" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="paid">paid</option>
+            <option value="owing">owing</option>
+            <option value="overdue">overdue</option>
+          </select>
+        </div>
+        <div>
+          <label for="dueDate">Due date (for owing/overdue)</label>
+          <input id="dueDate" type="date" />
+        </div>
+      </div>
+
+      <!-- ✅ Consent evidence (checkbox + upload) -->
+      <div style="margin-top:12px;">
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input id="consentCheck" type="checkbox" />
+          Borrower consent obtained (required)
+        </label>
+
+        <div style="margin-top:10px;">
+          <label for="consentFile">Upload signed consent proof</label>
+          <input id="consentFile" type="file" />
+          <div class="small" style="opacity:.85; margin-top:6px;">
+            Required for compliance.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button class="btn-primary" onclick="addClient()">Save record</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="config.js?v=FINAL"></script>
+  <script src="dashboard.js?v=FINAL"></script>
+</body>
+</html>
