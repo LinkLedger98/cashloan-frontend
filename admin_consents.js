@@ -53,16 +53,65 @@
     return { ok: res.ok, status: res.status, data };
   }
 
+  // ✅ NEW: open protected file using Authorization token
+  async function openProtectedFile(fileUrl) {
+    try {
+      const token = getToken();
+      if (!token) {
+        alert("Missing token. Please login again.");
+        logout();
+        return;
+      }
+
+      if (!fileUrl) {
+        alert("No file URL available.");
+        return;
+      }
+
+      // fileUrl might be "/api/..." or full "https://..."
+      const fullUrl = fileUrl.startsWith("http")
+        ? fileUrl
+        : (API_BASE_URL ? (API_BASE_URL + fileUrl) : fileUrl);
+
+      const res = await fetch(fullUrl, {
+        method: "GET",
+        headers: { "Authorization": token }
+      });
+
+      // If API returns JSON (like Missing token) we show it nicely
+      const ct = String(res.headers.get("content-type") || "");
+      if (!res.ok) {
+        if (ct.includes("application/json")) {
+          const j = await res.json().catch(() => ({}));
+          alert((j && j.message) ? j.message : "Failed to open file");
+        } else {
+          alert("Failed to open file");
+        }
+        return;
+      }
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Open in new tab
+      window.open(blobUrl, "_blank", "noopener");
+
+      // Cleanup after a while
+      setTimeout(() => {
+        try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+      }, 60 * 1000);
+    } catch (err) {
+      console.error(err);
+      alert("Could not open file (network/server error).");
+    }
+  }
+
   // Header pill
   const adminPill = $("adminPill");
   if (adminPill) {
     const email = localStorage.getItem("userEmail") || "";
     adminPill.textContent = email ? `Logged in: ${email}` : "Logged in";
   }
-
-  /* ===========================
-     CONSENTS
-  =========================== */
 
   const list = $("consentsList");
   const countLine = $("countLine");
@@ -110,7 +159,7 @@
       const created = c.createdAt ? new Date(c.createdAt).toLocaleString() : "";
 
       const fileLine = fileUrl
-        ? `<a class="btn-ghost btn-sm" href="${escapeHtml(API_BASE_URL + fileUrl)}" target="_blank" rel="noopener">Open File</a>`
+        ? `<button class="btn-ghost btn-sm" type="button" onclick="openConsentFile('${escapeHtml(fileUrl)}')">View File</button>`
         : `<span class="small" style="opacity:.8;">No file URL saved</span>`;
 
       html += `
@@ -161,113 +210,15 @@
     loadConsents();
   }
 
+  // ✅ Expose open file helper to HTML onclick
+  window.openConsentFile = (fileUrl) => openProtectedFile(fileUrl);
+
   window.approveConsent = (id) => updateConsent(id, "approved");
   window.rejectConsent = (id) => updateConsent(id, "rejected");
 
   if (reloadBtn) reloadBtn.addEventListener("click", loadConsents);
   if (statusFilter) statusFilter.addEventListener("change", loadConsents);
 
-  /* ===========================
-     PAYMENT PROOFS
-  =========================== */
-
-  const paymentList = $("paymentList");
-  const payCountLine = $("payCountLine");
-  const payStatusFilter = $("payStatusFilter");
-  const payEmailFilter = $("payEmailFilter");
-  const reloadPayBtn = $("reloadPayBtn");
-
-  async function loadPaymentProofs() {
-    if (!paymentList) return;
-
-    const status = String((payStatusFilter && payStatusFilter.value) || "pending").toLowerCase();
-    const email = String((payEmailFilter && payEmailFilter.value) || "").trim().toLowerCase();
-
-    paymentList.innerHTML = `<div class="small">Loading...</div>`;
-
-    const qs = new URLSearchParams();
-    qs.set("status", status);
-    if (email) qs.set("email", email);
-
-    const r = await fetchJson(`/api/admin/payment-proofs?${qs.toString()}`, { method: "GET" });
-    if (!r.ok) { paymentList.innerHTML = ""; if (payCountLine) payCountLine.textContent = ""; return; }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    if (payCountLine) payCountLine.textContent = `Records: ${rows.length}`;
-
-    if (rows.length === 0) {
-      paymentList.innerHTML = `<div class="result-item"><div class="small">No payment proofs found.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((p) => {
-      const id = escapeHtml(p._id);
-      const st = escapeHtml(p.status || "pending");
-      const fileUrl = String(p.fileUrl || "").trim();
-      const created = p.createdAt ? new Date(p.createdAt).toLocaleString() : "";
-
-      const fileLine = fileUrl
-        ? `<a class="btn-ghost btn-sm" href="${escapeHtml(API_BASE_URL + fileUrl)}" target="_blank" rel="noopener">Open File</a>`
-        : `<span class="small" style="opacity:.8;">No file URL saved</span>`;
-
-      html += `
-        <div class="result-item">
-          <div class="admin-row">
-            <div>
-              <div><b>Lender:</b> ${escapeHtml(p.lenderEmail || "")}</div>
-              <div class="small">${escapeHtml(p.lenderName || "")} ${p.lenderBranch ? `• ${escapeHtml(p.lenderBranch)}` : ""}</div>
-              <div class="small">Status: <b>${st}</b></div>
-              <div class="small">File: ${escapeHtml(p.fileName || "—")} ${p.mimeType ? `• ${escapeHtml(p.mimeType)}` : ""}</div>
-              <div class="small">Created: ${escapeHtml(created)}</div>
-
-              <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-                ${fileLine}
-              </div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              ${
-                String(st).toLowerCase() === "pending"
-                ? `
-                  <button class="btn-primary btn-sm" onclick="approvePay('${id}')">Approve</button>
-                  <button class="btn-ghost btn-sm" onclick="rejectPay('${id}')">Reject</button>
-                `
-                : `<span class="small" style="opacity:.8;">Done</span>`
-              }
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    paymentList.innerHTML = html;
-  }
-
-  async function updatePaymentProof(id, status) {
-    const notes = prompt(`Notes (optional) for ${status}:`) || "";
-
-    const r = await fetchJson(`/api/admin/payment-proofs/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status, notes })
-    });
-
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Update failed");
-      return;
-    }
-
-    alert(`Payment proof ${status} ✅`);
-    loadPaymentProofs();
-  }
-
-  window.approvePay = (id) => updatePaymentProof(id, "approved");
-  window.rejectPay = (id) => updatePaymentProof(id, "rejected");
-
-  if (reloadPayBtn) reloadPayBtn.addEventListener("click", loadPaymentProofs);
-  if (payStatusFilter) payStatusFilter.addEventListener("change", loadPaymentProofs);
-
   // boot
   loadConsents();
-  loadPaymentProofs();
 })();
