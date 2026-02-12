@@ -53,8 +53,8 @@
       </p>
 
       <div class="actions">
-        <!-- ✅ IMPORTANT: always go to dashboard.html (no role-based redirect here) -->
-        <a class="btn btn-primary" href="dashboard.html">Proceed to Dashboard</a>
+        <!-- ✅ IMPORTANT: always go to dashboard.html -->
+        <a class="btn btn-primary" id="proceedBtn" href="dashboard.html">Proceed to Dashboard</a>
 
         <a class="btn btn-ghost" href="#about">About LinkLedger</a>
 
@@ -136,6 +136,22 @@
       localStorage.removeItem("userRole");
       window.location.href = "login.html";
     }
+
+    // ✅ HARD-FORCE Proceed button to dashboard.html (prevents any admin redirect/caching issues)
+    (function () {
+      var proceed = document.getElementById("proceedBtn");
+      if (proceed) proceed.setAttribute("href", "dashboard.html");
+
+      // Optional safety: if not logged in, don't allow proceed
+      var token = localStorage.getItem("authToken") || "";
+      if (!token && proceed) {
+        proceed.addEventListener("click", function (e) {
+          e.preventDefault();
+          alert("Please log in first");
+          window.location.href = "login.html";
+        });
+      }
+    })();
 
     // Show Super Admin button only for admins (role OR admin emails)
     (function () {
