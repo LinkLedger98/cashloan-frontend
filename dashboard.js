@@ -83,7 +83,8 @@ async function openDispute(nationalId, clientRecordId) {
     return;
   }
 
-  if (!/^\d{9}$/.test(String(v || nationalId || "").trim())) {
+  // ✅ FIXED (was using undefined `v`)
+  if (!/^\d{9}$/.test(String(nationalId || "").trim())) {
     alert("National ID must be exactly 9 digits.");
     return;
   }
@@ -167,7 +168,7 @@ async function addClient() {
   }
 
   if (!consentFile.files || consentFile.files.length === 0) {
-    alert("Please upload a photo/file of the signed consent form.");
+    alert("Please upload a file of the signed consent form (image or PDF).");
     return;
   }
 
@@ -225,6 +226,61 @@ async function addClient() {
   } catch (err) {
     console.error(err);
     alert("Server error while saving borrower record");
+  }
+}
+
+/* ================================
+   ✅ Proof of Payment (billing)
+   POST /api/billing/proofs (multipart)
+================================ */
+async function uploadPaymentProof() {
+  if (!requireLogin()) return;
+
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+  if (!API_BASE_URL) {
+    alert("API_BASE_URL missing in config.js");
+    return;
+  }
+
+  const fileInput = document.getElementById("paymentProofFile");
+  const statusDiv = document.getElementById("paymentProofStatus");
+
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    alert("Please choose a proof of payment file (image or PDF).");
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  const fd = new FormData();
+  fd.append("paymentProofFile", file);
+
+  if (statusDiv) statusDiv.textContent = "Uploading...";
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
+      method: "POST",
+      headers: { "Authorization": token },
+      body: fd
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (await handleAuthFailure(res, data)) return;
+
+    if (!res.ok) {
+      if (statusDiv) statusDiv.textContent = "";
+      alert((data && data.message) ? data.message : "Upload failed");
+      return;
+    }
+
+    alert("Proof of payment submitted ✅ Admin will review.");
+    if (statusDiv) statusDiv.textContent = "Submitted ✅ Pending review.";
+    fileInput.value = "";
+  } catch (err) {
+    console.error(err);
+    if (statusDiv) statusDiv.textContent = "";
+    alert("Server error while uploading proof of payment");
   }
 }
 
@@ -543,6 +599,9 @@ window.updateClient = updateClient;
 
 // ✅ expose dispute
 window.openDispute = openDispute;
+
+// ✅ expose payment proof
+window.uploadPaymentProof = uploadPaymentProof;
 
 (function () {
   if (!requireLogin()) return;

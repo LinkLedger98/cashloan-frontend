@@ -104,9 +104,10 @@
 
         <div style="margin-top:10px;">
           <label for="consentFile">Upload signed consent proof</label>
-          <input id="consentFile" type="file" />
+          <!-- ✅ accept ANY IMAGE + PDF -->
+          <input id="consentFile" type="file" accept="image/*,application/pdf" />
           <div class="small" style="opacity:.85; margin-top:6px;">
-            Required for compliance.
+            Required for compliance. Accepted: any image or PDF.
           </div>
         </div>
       </div>
@@ -114,6 +115,30 @@
       <div style="margin-top:12px;">
         <button class="btn-primary" onclick="addClient()">Save record</button>
       </div>
+    </div>
+
+    <!-- ✅ Proof of Payment (billing) -->
+    <div class="card" style="margin-top:16px;">
+      <h2>Upload proof of payment</h2>
+      <p class="small" style="margin-top:6px;">
+        If you paid your subscription, upload proof here (image or PDF). Admin will approve/reject.
+      </p>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label for="paymentProofFile">Proof of payment file</label>
+          <input id="paymentProofFile" type="file" accept="image/*,application/pdf" />
+          <div class="small" style="opacity:.85; margin-top:6px;">
+            Accepted: any image or PDF. Max size depends on server limits.
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" onclick="uploadPaymentProof()">Submit proof</button>
+        </div>
+      </div>
+
+      <div id="paymentProofStatus" class="small" style="margin-top:10px; opacity:.85;"></div>
     </div>
 
   </div>
