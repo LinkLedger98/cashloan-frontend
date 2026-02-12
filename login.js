@@ -53,15 +53,18 @@
       localStorage.setItem("userEmail", data.email);
       localStorage.setItem("userRole", (data.role || "lender").toLowerCase());
 
-      // ✅ If approved but needs password setup (new flow)
+      // ✅ If approved but needs password setup
       if (data.mustSetPassword === true) {
         window.location.href = "set_password.html";
         return;
       }
 
-      // ✅ Role redirect
+      // ✅ Role redirect (FIXED)
       const role = (data.role || "lender").toLowerCase();
-      window.location.href = (role === "admin") ? "admin.html" : "welcome.html";
+      window.location.href = (role === "admin")
+        ? "admin_accounts.html"
+        : "welcome.html";
+
     } catch (err) {
       console.error(err);
       setMsg("Network error. Try again.");
