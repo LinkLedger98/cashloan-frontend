@@ -31,31 +31,28 @@
       </div>
     </div>
 
-    <!-- ✅ Admin Nav -->
+    <!-- Admin Nav -->
     <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
       <a class="btn-primary btn-sm" href="admin_accounts.html">Accounts</a>
       <a class="btn-ghost btn-sm" href="admin_clients.html">Clients</a>
       <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
       <a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
       <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
-      <a class="btn-ghost btn-sm" href="admin_lenders.html">Lenders</a>
     </div>
 
-    <!-- ✅ Create Lender -->
+    <!-- Create Lender -->
     <div class="card" style="margin-top:16px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
         <div>
           <h2>Create Lender Account</h2>
-          <p class="small" style="margin:6px 0 0 0;">Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).</p>
+          <p class="small" style="margin:6px 0 0 0;">
+            Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).
+          </p>
         </div>
 
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-ghost btn-sm" id="fillFormBtn" type="button" title="Auto fill form for quick testing">
-            Fill Form
-          </button>
-          <button class="btn-ghost btn-sm" id="clearFormBtn" type="button" title="Clear form fields">
-            Clear
-          </button>
+          <button class="btn-ghost btn-sm" id="fillFormBtn" type="button">Fill Form</button>
+          <button class="btn-ghost btn-sm" id="clearFormBtn" type="button">Clear</button>
         </div>
       </div>
 
@@ -66,33 +63,33 @@
         <div class="row">
           <div>
             <label>Business Name</label>
-            <input id="businessName" placeholder="e.g. Golden Finance" required />
+            <input id="businessName" required />
           </div>
           <div>
             <label>Branch</label>
-            <input id="branchName" placeholder="e.g. Palapye" required />
+            <input id="branchName" required />
           </div>
         </div>
 
         <div class="row">
           <div>
-            <label>Phone (shows in borrower search)</label>
-            <input id="phone" placeholder="e.g. 71234567" required />
+            <label>Phone</label>
+            <input id="phone" required />
           </div>
           <div>
             <label>NBIFIRA License No.</label>
-            <input id="licenseNo" placeholder="e.g. NBIFIRA-12345" required />
+            <input id="licenseNo" required />
           </div>
         </div>
 
         <div class="row">
           <div>
-            <label>Email (login)</label>
-            <input id="email" type="email" placeholder="e.g. info@goldenfinance.co.bw" required />
+            <label>Email</label>
+            <input id="email" type="email" required />
           </div>
           <div>
             <label>Temporary Password</label>
-            <input id="tempPassword" placeholder="Set temporary password" required />
+            <input id="tempPassword" required />
           </div>
         </div>
 
@@ -100,50 +97,15 @@
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
 
-      <!-- ✅ Signup Requests -->
       <div style="margin-top:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <h2 style="margin:0;">Signup Requests</h2>
-          <button class="btn-ghost btn-sm" id="loadRequestsBtn" type="button">Reload Requests</button>
-        </div>
-        <div id="requestsList" style="margin-top:10px;"></div>
-      </div>
-    </div>
-
-    <!-- ✅ Registered accounts -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
-        <div>
-          <h2 style="margin:0;">Registered accounts</h2>
-          <p class="small" style="margin:6px 0 0 0;">Search, suspend, and update billing.</p>
-        </div>
-
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn-ghost btn-sm" id="toggleAccountsBtn" type="button" title="Collapse/Expand">▲</button>
-          <button class="btn-ghost btn-sm" id="loadAccountsBtn" type="button">Reload Accounts</button>
-        </div>
-      </div>
-
-      <div id="accountsWrap">
-        <div class="row" style="margin-top:12px;">
-          <div>
-            <label>Search</label>
-            <input id="searchBox" placeholder="Search business / email / license / status / paid..." />
-          </div>
-          <div>
-            <label class="small" style="opacity:.9;">Tip</label>
-            <div class="small">Type to auto-search.</div>
-          </div>
-        </div>
-
-        <div class="small" id="countLine" style="margin-top:10px;"></div>
-        <div id="accountsList" style="margin-top:12px;"></div>
+        <h2>Signup Requests</h2>
+        <div id="requestsList"></div>
       </div>
     </div>
 
     <div class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div>
         <a href="welcome.html">Home</a>
         <a href="dashboard.html">Dashboard</a>
       </div>
@@ -153,40 +115,6 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-
-    (function () {
-      const fillBtn = document.getElementById("fillFormBtn");
-      const clearBtn = document.getElementById("clearFormBtn");
-
-      function setVal(id, v) {
-        const el = document.getElementById(id);
-        if (el) el.value = v;
-      }
-
-      if (fillBtn) {
-        fillBtn.addEventListener("click", function () {
-          const stamp = Date.now().toString().slice(-6);
-
-          setVal("businessName", `Test Lender ${stamp}`);
-          setVal("branchName", "Gaborone");
-          setVal("phone", "73132277");
-          setVal("licenseNo", `NBIFIRA-${stamp}`);
-          setVal("email", `test${stamp}@example.com`);
-          setVal("tempPassword", `TempPass${stamp}!`);
-        });
-      }
-
-      if (clearBtn) {
-        clearBtn.addEventListener("click", function () {
-          setVal("businessName", "");
-          setVal("branchName", "");
-          setVal("phone", "");
-          setVal("licenseNo", "");
-          setVal("email", "");
-          setVal("tempPassword", "");
-        });
-      }
-    })();
   </script>
 
   <script src="config.js"></script>
