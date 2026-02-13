@@ -72,6 +72,78 @@ function escapeHtml(x) {
     .replaceAll("'", "&#039;");
 }
 
+/* ================================
+   ✅ UI Helpers (new)
+================================ */
+function setConsentAck(ok, message) {
+  const el = document.getElementById("consentAck");
+  if (!el) return;
+
+  el.style.display = "block";
+  el.style.padding = "8px 10px";
+  el.style.borderRadius = "10px";
+  el.style.border = "1px solid rgba(0,0,0,.12)";
+
+  if (ok) {
+    el.style.background = "rgba(0, 200, 0, 0.08)";
+    el.style.color = "#0b6b0b";
+    el.textContent = `✅ ${message || "Consent file received."}`;
+  } else {
+    el.style.background = "rgba(255, 0, 0, 0.06)";
+    el.style.color = "#8a1f1f";
+    el.textContent = `❌ ${message || "Please resend."}`;
+  }
+}
+
+function clearConsentAck() {
+  const el = document.getElementById("consentAck");
+  if (!el) return;
+  el.style.display = "none";
+  el.textContent = "";
+}
+
+function setPaymentStatus(kind, text) {
+  const el = document.getElementById("paymentProofStatus");
+  if (!el) return;
+
+  el.style.display = "block";
+  el.style.padding = "10px 12px";
+  el.style.borderRadius = "10px";
+  el.style.border = "1px solid rgba(0,0,0,.12)";
+
+  const k = String(kind || "").toLowerCase();
+  if (k === "approved") {
+    el.style.background = "rgba(0, 200, 0, 0.08)";
+    el.style.color = "#0b6b0b";
+    el.textContent = `Approved ✅ ${text ? "— " + text : ""}`.trim();
+    return;
+  }
+  if (k === "resend") {
+    el.style.background = "rgba(255, 165, 0, 0.12)";
+    el.style.color = "#7a4b00";
+    el.textContent = `Resend ⚠️ ${text ? "— " + text : ""}`.trim();
+    return;
+  }
+  if (k === "past_due") {
+    el.style.background = "rgba(255, 0, 0, 0.06)";
+    el.style.color = "#8a1f1f";
+    el.textContent = `Past due ⛔ ${text ? "— " + text : ""}`.trim();
+    return;
+  }
+
+  // default
+  el.style.background = "rgba(0,0,0,.03)";
+  el.style.color = "#333";
+  el.textContent = text || "";
+}
+
+function clearPaymentStatus() {
+  const el = document.getElementById("paymentProofStatus");
+  if (!el) return;
+  el.style.display = "none";
+  el.textContent = "";
+}
+
 // ✅ Dispute button action (5-day dispute loop starter)
 async function openDispute(nationalId, clientRecordId) {
   if (!requireLogin()) return;
@@ -128,6 +200,9 @@ async function openDispute(nationalId, clientRecordId) {
 async function addClient() {
   if (!requireLogin()) return;
 
+  // reset visual feedback each attempt
+  clearConsentAck();
+
   const fullName = document.getElementById("fullName").value.trim();
   const nationalId = document.getElementById("nationalId").value.trim();
   const status = document.getElementById("status").value;
@@ -142,6 +217,7 @@ async function addClient() {
 
   if (!API_BASE_URL) {
     alert("API_BASE_URL missing in config.js");
+    setConsentAck(false, "Please resend (missing API config).");
     return;
   }
 
@@ -159,6 +235,7 @@ async function addClient() {
   // ✅ Consent required
   if (!consentCheck || !consentFile) {
     alert("Consent fields missing on dashboard.html (consentCheck / consentFile).");
+    setConsentAck(false, "Please resend (consent fields missing).");
     return;
   }
 
@@ -199,6 +276,8 @@ async function addClient() {
     if (await handleAuthFailure(res, data)) return;
 
     if (res.status === 409) {
+      // consent file reached server, but record duplicate; still show ✅
+      setConsentAck(true, "Consent received.");
       alert(data.message || "Borrower already exists on your dashboard.");
       await loadMyClients();
       document.getElementById("searchNationalId").value = nationalId;
@@ -207,9 +286,14 @@ async function addClient() {
     }
 
     if (!res.ok) {
+      // Upload failed / rejected
+      setConsentAck(false, (data && data.message) ? `Please resend — ${data.message}` : "Please resend.");
       alert(data.message || "Failed to save borrower record");
       return;
     }
+
+    // ✅ Success — consent received
+    setConsentAck(true, "Consent received.");
 
     alert("Borrower record saved ✅");
 
@@ -225,6 +309,7 @@ async function addClient() {
     await loadMyClients();
   } catch (err) {
     console.error(err);
+    setConsentAck(false, "Please resend (server/network error).");
     alert("Server error while saving borrower record");
   }
 }
@@ -256,7 +341,7 @@ async function uploadPaymentProof() {
   const fd = new FormData();
   fd.append("paymentProofFile", file);
 
-  if (statusDiv) statusDiv.textContent = "Uploading...";
+  setPaymentStatus("", "Uploading...");
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
@@ -269,17 +354,30 @@ async function uploadPaymentProof() {
     if (await handleAuthFailure(res, data)) return;
 
     if (!res.ok) {
-      if (statusDiv) statusDiv.textContent = "";
-      alert((data && data.message) ? data.message : "Upload failed");
+      const msg = (data && data.message) ? String(data.message) : "Upload failed";
+      setPaymentStatus("resend", msg);
+      alert(msg);
       return;
     }
 
+    // Server may return message / billingStatus etc.
+    const raw = (data && (data.billingStatus || data.status || data.result || data.message)) ? String(
+      data.billingStatus || data.status || data.result || data.message
+    ) : "Submitted ✅ Pending review.";
+
+    const lc = raw.toLowerCase();
+
+    // ✅ Map to the 3 statuses
+    if (lc.includes("approved")) setPaymentStatus("approved", raw);
+    else if (lc.includes("past due") || lc.includes("past_due") || lc.includes("overdue")) setPaymentStatus("past_due", raw);
+    else if (lc.includes("resend") || lc.includes("reject") || lc.includes("rejected")) setPaymentStatus("resend", raw);
+    else setPaymentStatus("resend", raw); // default if unknown → resend/pending
+
     alert("Proof of payment submitted ✅ Admin will review.");
-    if (statusDiv) statusDiv.textContent = "Submitted ✅ Pending review.";
     fileInput.value = "";
   } catch (err) {
     console.error(err);
-    if (statusDiv) statusDiv.textContent = "";
+    setPaymentStatus("resend", "Please resend (server/network error).");
     alert("Server error while uploading proof of payment");
   }
 }
@@ -486,6 +584,7 @@ async function loadMyClients() {
   }
   if (!list) return;
 
+  // If collapsed, keep list empty text minimal
   list.innerHTML = `<p class="small">Loading...</p>`;
 
   try {
@@ -603,12 +702,35 @@ window.openDispute = openDispute;
 // ✅ expose payment proof
 window.uploadPaymentProof = uploadPaymentProof;
 
+// ✅ Collapsible "My Clients" (new)
+function setupMyClientsCollapse() {
+  const btn = document.getElementById("toggleMyClientsBtn");
+  const wrap = document.getElementById("myClientsWrap");
+  if (!btn || !wrap) return;
+
+  let expanded = true;
+
+  function render() {
+    wrap.style.display = expanded ? "block" : "none";
+    btn.textContent = expanded ? "▲" : "▼";
+    btn.title = expanded ? "Collapse" : "Expand";
+  }
+
+  btn.addEventListener("click", function () {
+    expanded = !expanded;
+    render();
+  });
+
+  render();
+}
+
 (function () {
   if (!requireLogin()) return;
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 
+  setupMyClientsCollapse();
   loadMyClients();
 
   const input = document.getElementById("myClientsSearch");

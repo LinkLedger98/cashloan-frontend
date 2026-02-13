@@ -42,29 +42,7 @@
       <div id="results" class="results"></div>
     </div>
 
-    <!-- My Clients -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-          <h2 style="margin-bottom:4px;">My Clients</h2>
-          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <div>
-            <label class="small" for="myClientsSearch">Search</label>
-            <input id="myClientsSearch" placeholder="Name or National ID" />
-          </div>
-          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
-        </div>
-      </div>
-
-      <hr style="margin:14px 0;" />
-
-      <div id="myClientsList" class="results"></div>
-    </div>
-
-    <!-- Add borrower record -->
+    <!-- ✅ Add borrower record (moved above My Clients) -->
     <div class="card" style="margin-top:16px;">
       <h2>Add borrower record</h2>
       <p>Only logged-in lenders can add borrower status records.</p>
@@ -109,11 +87,43 @@
           <div class="small" style="opacity:.85; margin-top:6px;">
             Required for compliance. Accepted: any image or PDF.
           </div>
+
+          <!-- ✅ Consent upload acknowledgment -->
+          <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
         </div>
       </div>
 
       <div style="margin-top:12px;">
         <button class="btn-primary" onclick="addClient()">Save record</button>
+      </div>
+    </div>
+
+    <!-- My Clients -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <h2 style="margin-bottom:4px;">My Clients</h2>
+          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div>
+            <label class="small" for="myClientsSearch">Search</label>
+            <input id="myClientsSearch" placeholder="Name or National ID" />
+          </div>
+
+          <!-- ✅ Collapsible controls -->
+          <button class="btn-ghost btn-sm" id="toggleMyClientsBtn" type="button" title="Collapse/Expand">▲</button>
+
+          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0;" />
+
+      <!-- ✅ Wrap so we can collapse it -->
+      <div id="myClientsWrap">
+        <div id="myClientsList" class="results"></div>
       </div>
     </div>
 
@@ -138,7 +148,11 @@
         </div>
       </div>
 
-      <div id="paymentProofStatus" class="small" style="margin-top:10px; opacity:.85;"></div>
+      <!-- ✅ Response area with clear status styling -->
+      <div id="paymentProofStatus"
+           class="small"
+           style="margin-top:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03); display:none;">
+      </div>
     </div>
 
   </div>
