@@ -97,10 +97,58 @@
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
 
+      <!-- ✅ Signup Requests (Collapsible) -->
       <div style="margin-top:18px;">
-        <h2>Signup Requests</h2>
-        <div id="requestsList"></div>
+        <div class="collapsible-head">
+          <div>
+            <h2 style="margin:0;">Signup Requests</h2>
+            <div class="small" style="opacity:.85; margin-top:4px;">
+              Autofill the form, then create the lender. Delete request when done.
+            </div>
+          </div>
+          <button class="btn-ghost btn-sm" id="toggleRequestsBtn" type="button" title="Collapse/Expand">▲</button>
+        </div>
+
+        <div class="collapsible" id="requestsWrap">
+          <div class="collapsible-inner">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+              <button class="btn-ghost btn-sm" id="reloadRequestsBtn" type="button">Reload Requests</button>
+            </div>
+            <div id="requestsList" style="margin-top:10px;"></div>
+          </div>
+        </div>
       </div>
+
+      <!-- ✅ Lenders List (Collapsible) -->
+      <div style="margin-top:18px;">
+        <div class="collapsible-head">
+          <div>
+            <h2 style="margin:0;">Lenders</h2>
+            <div class="small" style="opacity:.85; margin-top:4px;">
+              Suspend/Activate and view Proof of Payment.
+            </div>
+          </div>
+          <button class="btn-ghost btn-sm" id="toggleLendersBtn" type="button" title="Collapse/Expand">▲</button>
+        </div>
+
+        <div class="collapsible" id="lendersWrap">
+          <div class="collapsible-inner">
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label class="small">Search</label>
+                <input id="lendersSearch" placeholder="Search business / email / license / status..." />
+              </div>
+              <div style="display:flex; align-items:flex-end;">
+                <button class="btn-ghost btn-sm" id="reloadLendersBtn" type="button">Reload Lenders</button>
+              </div>
+            </div>
+
+            <div class="small" id="lendersCount" style="margin-top:10px; opacity:.85;"></div>
+            <div id="lendersList" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="footer">
@@ -118,6 +166,35 @@
   </script>
 
   <script src="config.js"></script>
+  <!-- keep your existing file name -->
   <script src="admin.js"></script>
+
+  <!-- ✅ Added: Payment acknowledgement template (Approved / Resend / Past due) -->
+  <template id="popAckTemplate">
+    <div class="pop-ack-box" style="margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03);">
+      <div class="small" style="margin-bottom:8px;"><b>Payment acknowledgement</b> (send to lender)</div>
+
+      <div class="row" style="margin-top:6px;">
+        <div>
+          <label class="small">Status</label>
+          <select class="popAckStatus">
+            <option value="approved">Approved</option>
+            <option value="resend">Resend</option>
+            <option value="past_due">Past due</option>
+          </select>
+        </div>
+        <div>
+          <label class="small">Note (optional)</label>
+          <input class="popAckNote" placeholder="e.g. Receipt is unclear, please resend" />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+        <button class="btn-primary btn-sm popAckSave" type="button">Send acknowledgement</button>
+        <div class="small popAckMsg" style="opacity:.85;"></div>
+      </div>
+    </div>
+  </template>
+
 </body>
 </html>
