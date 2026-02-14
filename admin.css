@@ -324,3 +324,7 @@ input::placeholder{ color: rgba(185,188,198,.65); }
   border-radius:12px;
   font-size:13px;
 }
+
+/* ✅ Payment acknowledgement UI */
+.pop-ack-box .popAckMsg.good { color: rgba(0,255,150,.9); }
+.pop-ack-box .popAckMsg.bad { color: rgba(255,120,120,.95); }
