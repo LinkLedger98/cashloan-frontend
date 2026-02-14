@@ -1,15 +1,18 @@
 /* =========================================================
    LinkLedger • Super Admin (admin.js)
    One JS file for:
-   - admin_accounts.html (create lender, signup requests, lenders list + PoP + billing ack)
+   - admin_accounts.html (create lender, signup requests, lenders list + billing ack UI host)
    - admin_disputes.html (list disputes + "investigating" note)
    - admin_audit.html (audit logs)
    - admin_consents.html (consent approvals ONLY)
 
-   Notes:
-   - Uses token in localStorage.authToken
-   - Optional legacy ADMIN_KEY input (#adminKey) sent as x-admin-key
-   - Backend endpoints are best-effort and will show clear alerts if missing.
+   ✅ IMPORTANT FIXES IN THIS VERSION
+   - Removed wrong "/api" double-prefix in endpoints (server mounts routes at /api already)
+     So we call: "/admin/..." not "/api/admin/..."
+   - Create lender uses: POST /admin/lenders
+   - Consent PATCH uses: { consentStatus, notes }
+   - Dispute PATCH uses: { adminStatus, adminNote } (NOT status="investigating")
+   - Stronger admin-gate: requires token AND role=admin (from localStorage or decoded JWT)
 ========================================================= */
 
 (function () {
@@ -30,6 +33,21 @@
       .replaceAll("'", "&#039;");
   }
 
+  function parseJwt(token) {
+    try {
+      const t = String(token || "");
+      const parts = t.split(".");
+      if (parts.length < 2) return null;
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const json = decodeURIComponent(
+        atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+      );
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  }
+
   function logout() {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userEmail");
@@ -47,9 +65,9 @@
       (opts && opts.headers) ? opts.headers : {}
     );
 
-    if (token) headers["Authorization"] = token;
+    if (token) headers["Authorization"] = "Bearer " + token;
 
-    // Optional legacy admin key input
+    // Optional legacy admin key input (only exists on accounts page)
     const adminKeyEl = $("adminKey");
     const keyVal = adminKeyEl ? String(adminKeyEl.value || "").trim() : "";
     if (keyVal) headers["x-admin-key"] = keyVal;
@@ -67,41 +85,28 @@
       return false;
     }
 
-    // Quick UI pill
+    // Update pill
     const pill = $("adminPill");
     const email = getEmail();
     if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 
-    // If role is already stored, allow (fast path)
-    if (getRole() === "admin" || getRole() === "superadmin") return true;
-
-    // Otherwise verify with backend (best-effort)
-    try {
-      const r = await fetchJson("/api/auth/me", { method: "GET" });
-      if (!r.ok) {
-        if (r.status === 401 || r.status === 403) {
-          alert("Session expired or access denied. Please login again.");
-          logout();
-          return false;
-        }
-        // If endpoint doesn't exist, we still allow (but you should add it server-side)
-        return true;
-      }
-
-      const role = String((r.data && (r.data.role || r.data.userRole)) || "").toLowerCase();
+    // Get role from localStorage OR JWT payload
+    let role = getRole();
+    if (!role) {
+      const decoded = parseJwt(token);
+      role = String((decoded && (decoded.role || decoded.userRole)) || "").toLowerCase();
       if (role) localStorage.setItem("userRole", role);
-
-      if (role && role !== "admin" && role !== "superadmin") {
-        alert("Access denied: admin only.");
-        logout();
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      // If server/network fails, don’t lock you out while developing
-      return true;
     }
+
+    // Hard gate: only admin allowed in Super Admin pages
+    if (role && role !== "admin" && role !== "superadmin") {
+      alert("Access denied: admin only.");
+      logout();
+      return false;
+    }
+
+    // If role missing (older tokens), allow but keep token requirement
+    return true;
   }
 
   /* ---------------- Collapsible helpers ---------------- */
@@ -176,7 +181,7 @@
     if (!list) return;
 
     list.innerHTML = `<div class="small">Loading...</div>`;
-    const r = await fetchJson("/api/admin/requests", { method: "GET" });
+    const r = await fetchJson("/admin/requests", { method: "GET" });
 
     if (!r.ok) {
       list.innerHTML = "";
@@ -232,7 +237,7 @@
 
   window.deleteRequest = async function (id) {
     if (!confirm("Delete this signup request?")) return;
-    const r = await fetchJson(`/api/admin/requests/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const r = await fetchJson(`/admin/requests/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!r.ok) {
       alert((r.data && r.data.message) ? r.data.message : "Delete failed");
       return;
@@ -256,7 +261,7 @@
     lendersList.innerHTML = `<div class="small">Loading...</div>`;
     if (lendersCount) lendersCount.textContent = "";
 
-    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
+    const r = await fetchJson("/admin/lenders", { method: "GET" });
     if (!r.ok) {
       lendersList.innerHTML = "";
       alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
@@ -269,7 +274,8 @@
       rows = rows.filter(u => {
         const hay = [
           u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
-          u.status, u.billingStatus, u.paymentProofStatus
+          u.status, u.billingStatus,
+          u.billingAckStatus, u.billingAckNote
         ].map(x => String(x || "").toLowerCase()).join(" ");
         return hay.includes(q);
       });
@@ -292,14 +298,9 @@
       const email = escapeHtml(u.email || "—");
       const st = escapeHtml(u.status || "active");
 
-      // Proof of Payment fields (best-effort)
-      const popUrl = String(u.paymentProofUrl || u.popUrl || "").trim();
-      const popStatus = String(u.paymentProofStatus || u.popStatus || u.billingStatus || "").trim();
-      const popUpdated = u.paymentProofUpdatedAt || u.popUpdatedAt || u.billingUpdatedAt || null;
-
-      const popLine = popUrl
-        ? `<a class="btn-ghost btn-sm" href="${escapeHtml(popUrl)}" target="_blank" rel="noopener">View Proof</a>`
-        : `<span class="small" style="opacity:.8;">No proof uploaded</span>`;
+      // Acknowledgement state (from User model)
+      const ack = String(u.billingAckStatus || "").trim();
+      const ackUpdated = u.billingAckUpdatedAt || null;
 
       html += `
         <div class="result-item">
@@ -312,24 +313,17 @@
               <div class="kv" style="margin-top:8px;">
                 ${statusTag(st)}
                 ${u.billingStatus ? `<span class="tag">${escapeHtml(String(u.billingStatus))}</span>` : ""}
+                ${ack ? `<span class="tag">${escapeHtml(ack)}</span>` : ""}
+                ${ackUpdated ? `<span class="small" style="opacity:.8;">Ack: ${escapeHtml(new Date(ackUpdated).toLocaleString())}</span>` : ""}
               </div>
 
-              <div class="pop-box" style="margin-top:10px;">
-                <div class="small" style="margin-bottom:8px;"><b>Proof of Payment</b>${popStatus ? ` • <b>${escapeHtml(popStatus)}</b>` : ""}</div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                  ${popLine}
-                  ${popUpdated ? `<span class="small" style="opacity:.8;">Updated: ${escapeHtml(new Date(popUpdated).toLocaleString())}</span>` : ""}
-                </div>
-
-                <!-- Host for Payment Acknowledgement UI -->
-                <div class="pop-ack-host" data-lender-id="${id}"></div>
-              </div>
+              <!-- Host for Payment Acknowledgement UI -->
+              <div class="pop-ack-host" data-lender-id="${id}" style="margin-top:10px;"></div>
             </div>
 
             <div class="small-actions">
               <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','suspended')">Suspend</button>
               <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','active')">Activate</button>
-              <button class="btn-primary btn-sm" type="button" onclick="openUpdateLender('${id}')">Update</button>
             </div>
           </div>
         </div>
@@ -347,7 +341,7 @@
   window.setLenderStatus = async function (id, status) {
     if (!confirm(`Set account status to "${status}"?`)) return;
 
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/status`, {
+    const r = await fetchJson(`/admin/users/${encodeURIComponent(id)}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status })
     });
@@ -358,26 +352,6 @@
     }
 
     loadLenders();
-  };
-
-  window.openUpdateLender = async function (id) {
-    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
-    if (!r.ok) return alert("Could not load lender details");
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    const u = rows.find(x => String(x._id) === String(id));
-    if (!u) return alert("Lender not found");
-
-    setVal("businessName", u.businessName || "");
-    setVal("branchName", u.branchName || "");
-    setVal("phone", u.phone || "");
-    setVal("licenseNo", u.licenseNo || "");
-    setVal("email", u.email || "");
-    setVal("tempPassword", "");
-
-    const msg = $("msg");
-    if (msg) msg.textContent = "Loaded lender into form ✅ (set temp password if needed, then submit your update flow)";
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   async function handleCreateLenderSubmit(e) {
@@ -400,15 +374,14 @@
     const msg = $("msg");
     if (msg) msg.textContent = "Creating...";
 
-    // Endpoint assumption (common)
-    // If your backend uses a different route, change it here ONLY.
-    const r = await fetchJson("/api/admin/create-lender", {
+    // ✅ Correct backend route
+    const r = await fetchJson("/admin/lenders", {
       method: "POST",
       body: JSON.stringify(payload)
     });
 
     if (!r.ok) {
-      const m = (r.data && r.data.message) ? r.data.message : "Create lender failed (check backend route: POST /api/admin/create-lender)";
+      const m = (r.data && r.data.message) ? r.data.message : "Create lender failed";
       if (msg) msg.textContent = "❌ " + m;
       alert(m);
       return;
@@ -418,7 +391,6 @@
     alert("Lender created ✅");
     clearForm();
 
-    // Refresh lists
     try { loadLenders(); } catch (e) {}
     try { loadRequests(); } catch (e) {}
   }
@@ -447,17 +419,15 @@
         msgDiv.textContent = "Sending...";
 
         try {
-          // Backend should store what dashboard can read later:
-          // PATCH /api/admin/lenders/:id/billing  { billingStatus, billingNote }
-          const r = await fetchJson(`/api/admin/lenders/${encodeURIComponent(lenderId)}/billing`, {
+          // ✅ Correct backend route:
+          // PATCH /admin/lenders/:id/billing { billingStatus, billingNote }
+          const r = await fetchJson(`/admin/lenders/${encodeURIComponent(lenderId)}/billing`, {
             method: "PATCH",
             body: JSON.stringify({ billingStatus: status, billingNote: note })
           });
 
           if (!r.ok) {
-            const m = (r.data && r.data.message)
-              ? r.data.message
-              : "Failed (backend endpoint missing: PATCH /api/admin/lenders/:id/billing)";
+            const m = (r.data && r.data.message) ? r.data.message : "Failed to save acknowledgement";
             msgDiv.textContent = "❌ " + m;
             alert(m);
             return;
@@ -478,32 +448,23 @@
 
   /* =========================================================
      DISPUTES PAGE
-     - Show who it's from (lender)
-     - Send note back + mark investigating
+     - Shows who submitted them (raisedByEmail etc.)
+     - Admin can mark investigating + note back
   ========================================================= */
   function pickLenderDisplay(d) {
-    const business = d.lenderBusinessName || d.cashloanName || d.businessName || "";
-    const branch = d.lenderBranchName || d.cashloanBranch || d.branchName || "";
-    const email = d.lenderEmail || d.openedByEmail || d.createdByEmail || d.email || "";
-    const phone = d.lenderPhone || d.cashloanPhone || "";
-
-    const line1 = [business, branch].filter(Boolean).join(" • ");
-    const line2 = [email ? `Email: ${email}` : "", phone ? `Phone: ${phone}` : ""].filter(Boolean).join(" • ");
-    return { line1: line1 || "Unknown lender", line2 };
+    const email = d.raisedByEmail || d.lenderEmail || d.openedByEmail || d.createdByEmail || d.email || "";
+    const role = d.raisedByRole || "";
+    const line1 = email ? `Lender: ${email}${role ? ` • ${role}` : ""}` : "Unknown lender";
+    return { line1 };
   }
 
-  async function loadDisputes(mode) {
+  async function loadDisputes() {
     const list = $("disputesList");
     if (!list) return;
 
     list.innerHTML = `<div class="small">Loading...</div>`;
 
-    // best-effort routes
-    const path = (mode === "overdue")
-      ? "/api/admin/disputes/overdue"
-      : "/api/admin/disputes";
-
-    const r = await fetchJson(path, { method: "GET" });
+    const r = await fetchJson("/admin/disputes", { method: "GET" });
     if (!r.ok) {
       list.innerHTML = "";
       alert((r.data && r.data.message) ? r.data.message : "Failed to load disputes");
@@ -521,9 +482,9 @@
       const id = escapeHtml(d._id);
       const nationalId = escapeHtml(d.nationalId || "");
       const status = escapeHtml(d.status || "pending");
+      const adminStatus = escapeHtml(d.adminStatus || "");
       const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
-      const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
-      const note = escapeHtml(d.adminNote || d.note || "");
+      const adminNote = escapeHtml(d.adminNote || "");
 
       const lender = pickLenderDisplay(d);
 
@@ -532,20 +493,18 @@
           <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
             <div>
               <div><b>Dispute</b> • Omang: <b>${nationalId || "—"}</b></div>
-              <div class="small">Status: <b>${status}</b>${created ? ` • Opened: ${escapeHtml(created)}` : ""}${due ? ` • SLA due: ${escapeHtml(due)}` : ""}</div>
+              <div class="small">Status: <b>${status}</b>${adminStatus ? ` • Admin: <b>${adminStatus}</b>` : ""}${created ? ` • Opened: ${escapeHtml(created)}` : ""}</div>
               <div class="small" style="margin-top:6px;"><b>From:</b> ${escapeHtml(lender.line1)}</div>
-              ${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
               ${d.notes ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
-              ${note ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${note}</div>` : ""}
+              ${adminNote ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${adminNote}</div>` : ""}
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
               <button class="btn-ghost btn-sm" type="button" onclick="markInvestigating('${id}')">Investigating</button>
               <button class="btn-primary btn-sm" type="button" onclick="sendDisputeNote('${id}')">Send Note</button>
+              <button class="btn-ghost btn-sm" type="button" onclick="closeDispute('${id}','resolved')">Resolve</button>
+              <button class="btn-ghost btn-sm" type="button" onclick="closeDispute('${id}','rejected')">Reject</button>
             </div>
-          </div>
-          <div class="small" style="margin-top:10px; opacity:.8;">
-            Tip: “Investigating” sends acknowledgement to lender and starts the 5-day loop on your side.
           </div>
         </div>
       `;
@@ -557,63 +516,71 @@
   window.markInvestigating = async function (id) {
     const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
 
-    // Expected backend endpoint:
-    // PATCH /api/admin/disputes/:id  { status: "investigating", adminNote }
-    const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    // ✅ Correct backend expects adminStatus + adminNote
+    const r = await fetchJson(`/admin/disputes/${encodeURIComponent(id)}`, {
       method: "PATCH",
-      body: JSON.stringify({ status: "investigating", adminNote: note })
+      body: JSON.stringify({ adminStatus: "investigating", adminNote: note })
     });
 
     if (!r.ok) {
-      const m = (r.data && r.data.message)
-        ? r.data.message
-        : "Failed (backend endpoint missing: PATCH /api/admin/disputes/:id)";
+      const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
       alert(m);
       return;
     }
 
     alert("Marked as investigating ✅");
-    loadDisputes("");
+    loadDisputes();
   };
 
   window.sendDisputeNote = async function (id) {
     const note = prompt("Send note to lender:", "") || "";
     if (!note.trim()) return;
 
-    const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    const r = await fetchJson(`/admin/disputes/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify({ adminNote: note })
     });
 
     if (!r.ok) {
-      const m = (r.data && r.data.message)
-        ? r.data.message
-        : "Failed (backend endpoint missing: PATCH /api/admin/disputes/:id)";
+      const m = (r.data && r.data.message) ? r.data.message : "Failed to send note";
       alert(m);
       return;
     }
 
-    alert("Note sent ✅");
-    loadDisputes("");
+    alert("Note saved ✅");
+    loadDisputes();
+  };
+
+  window.closeDispute = async function (id, status) {
+    if (!confirm(`Set dispute to "${status}"?`)) return;
+
+    const r = await fetchJson(`/admin/disputes/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, adminStatus: status })
+    });
+
+    if (!r.ok) {
+      const m = (r.data && r.data.message) ? r.data.message : "Failed to close dispute";
+      alert(m);
+      return;
+    }
+
+    alert("Updated ✅");
+    loadDisputes();
   };
 
   /* =========================================================
      AUDIT PAGE
-     - show who did what + timestamps
   ========================================================= */
   async function loadAudit() {
     const list = $("auditList");
     if (!list) return;
 
-    const nationalId = String(($("auditNationalId") && $("auditNationalId").value) || "").trim();
     const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
 
     list.innerHTML = `<div class="small">Loading...</div>`;
-    const q = [];
-    if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
-    if (limit) q.push(`limit=${encodeURIComponent(String(limit))}`);
+    const r = await fetchJson(`/admin/audit?limit=${encodeURIComponent(String(limit))}`, { method: "GET" });
 
-    const r = await fetchJson(`/api/admin/audit${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
     if (!r.ok) {
       list.innerHTML = "";
       alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
@@ -635,8 +602,8 @@
       const when = ts ? new Date(ts).toLocaleString() : "";
       const actor = a.actorEmail || a.email || a.userEmail || a.actor || "—";
       const action = a.action || a.event || "—";
-      const target = a.nationalId || a.targetNationalId || "";
-      const meta = a.meta || a.details || a.payload || null;
+      const target = a.targetNationalId || a.nationalId || "";
+      const meta = a.meta || null;
 
       html += `
         <div class="result-item">
@@ -667,7 +634,7 @@
     if (status) q.push(`status=${encodeURIComponent(status)}`);
     if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
 
-    const r = await fetchJson(`/api/admin/consents${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
+    const r = await fetchJson(`/admin/consents${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
     if (!r.ok) {
       list.innerHTML = "";
       alert((r.data && r.data.message) ? r.data.message : "Failed to load consents");
@@ -687,10 +654,10 @@
     rows.forEach((c) => {
       const id = escapeHtml(c._id);
       const omang = escapeHtml(c.nationalId || "");
-      const lender = escapeHtml(c.lenderEmail || c.createdByEmail || c.uploaderEmail || "—");
+      const lenderEmail = escapeHtml(c.cashloanEmail || "—");
       const created = c.createdAt ? new Date(c.createdAt).toLocaleString() : "";
-      const fileUrl = String(c.fileUrl || c.consentFileUrl || c.url || "").trim();
-      const st = escapeHtml(c.status || "pending");
+      const fileUrl = String(c.consentFileUrl || "").trim();
+      const st = escapeHtml(c.consentStatus || "pending");
 
       html += `
         <div class="result-item">
@@ -698,7 +665,7 @@
             <div>
               <div><b>Consent</b> • Omang: <b>${omang || "—"}</b></div>
               <div class="small">Status: <b>${st}</b>${created ? ` • Uploaded: ${escapeHtml(created)}` : ""}</div>
-              <div class="small">From: <b>${lender}</b></div>
+              <div class="small">From: <b>${lenderEmail}</b></div>
               <div style="margin-top:10px;">
                 ${fileUrl ? `<a class="btn-ghost btn-sm" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">View file</a>` : `<span class="small" style="opacity:.8;">No file URL</span>`}
               </div>
@@ -716,25 +683,24 @@
     list.innerHTML = html;
   }
 
-  window.setConsentStatus = async function (id, status) {
-    const note = status === "rejected"
+  window.setConsentStatus = async function (id, consentStatus) {
+    const notes = (consentStatus === "rejected")
       ? (prompt("Rejection note (optional):", "Please re-upload a clear consent file.") || "")
       : (prompt("Approval note (optional):", "Consent approved.") || "");
 
-    const r = await fetchJson(`/api/admin/consents/${encodeURIComponent(id)}`, {
+    // ✅ Correct backend expects: { consentStatus, notes }
+    const r = await fetchJson(`/admin/consents/${encodeURIComponent(id)}`, {
       method: "PATCH",
-      body: JSON.stringify({ status, note })
+      body: JSON.stringify({ consentStatus, notes })
     });
 
     if (!r.ok) {
-      const m = (r.data && r.data.message)
-        ? r.data.message
-        : "Failed (backend endpoint missing: PATCH /api/admin/consents/:id)";
+      const m = (r.data && r.data.message) ? r.data.message : "Failed to update consent";
       alert(m);
       return;
     }
 
-    alert(`Consent ${status} ✅`);
+    alert(`Consent ${consentStatus} ✅`);
     loadConsents();
   };
 
@@ -761,8 +727,7 @@
     if ($("adminForm")) $("adminForm").addEventListener("submit", handleCreateLenderSubmit);
 
     // Disputes page
-    if ($("loadDisputesBtn")) $("loadDisputesBtn").addEventListener("click", function () { loadDisputes(""); });
-    if ($("loadDisputesOverdueBtn")) $("loadDisputesOverdueBtn").addEventListener("click", function () { loadDisputes("overdue"); });
+    if ($("loadDisputesBtn")) $("loadDisputesBtn").addEventListener("click", loadDisputes);
 
     // Audit page
     if ($("loadAuditBtn")) $("loadAuditBtn").addEventListener("click", loadAudit);
@@ -774,7 +739,7 @@
     // Auto-load depending on page
     try { if ($("requestsList")) loadRequests(); } catch (e) {}
     try { if ($("lendersList")) loadLenders(); } catch (e) {}
-    try { if ($("disputesList")) loadDisputes(""); } catch (e) {}
+    try { if ($("disputesList")) loadDisputes(); } catch (e) {}
     try { if ($("auditList")) loadAudit(); } catch (e) {}
     try { if ($("consentsList")) loadConsents(); } catch (e) {}
   });
