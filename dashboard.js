@@ -80,6 +80,39 @@ function escapeHtml(x) {
 }
 
 /* ================================
+   ✅ File validation (client-side)
+   - Mirrors backend: image/* + pdf
+   - Fallback: some phones use application/octet-stream
+================================ */
+function isAllowedImageExt(name) {
+  const n = String(name || "").toLowerCase().trim();
+  return (
+    n.endsWith(".png") ||
+    n.endsWith(".jpg") ||
+    n.endsWith(".jpeg") ||
+    n.endsWith(".webp") ||
+    n.endsWith(".gif") ||
+    n.endsWith(".bmp") ||
+    n.endsWith(".heic") ||
+    n.endsWith(".heif") ||
+    n.endsWith(".tif") ||
+    n.endsWith(".tiff")
+  );
+}
+
+function isAllowedUploadFile(file) {
+  if (!file) return false;
+  const mime = String(file.type || "").toLowerCase().trim();
+  if (mime.startsWith("image/")) return true;
+  if (mime === "application/pdf") return true;
+
+  // some phones/browser combos
+  if (mime === "application/octet-stream" && isAllowedImageExt(file.name)) return true;
+
+  return false;
+}
+
+/* ================================
    ✅ UI Helpers
 ================================ */
 function setConsentAck(ok, message) {
@@ -125,6 +158,12 @@ function setPaymentStatus(kind, text) {
     el.textContent = `Approved ✅ ${text ? "— " + text : ""}`.trim();
     return;
   }
+  if (k === "pending") {
+    el.style.background = "rgba(0,0,0,0.05)";
+    el.style.color = "#333";
+    el.textContent = `Pending ⏳ ${text ? "— " + text : ""}`.trim();
+    return;
+  }
   if (k === "resend") {
     el.style.background = "rgba(255, 165, 0, 0.12)";
     el.style.color = "#7a4b00";
@@ -152,19 +191,23 @@ function clearPaymentStatus() {
 
 /* ================================
    ✅ Helpers for API calls
+   FIX: do NOT set Content-Type to undefined (it can become "undefined")
 ================================ */
 async function apiJson(path, opts) {
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
   const token = getToken();
   if (!API_BASE_URL) throw new Error("API_BASE_URL missing in config.js");
 
-  const res = await fetch(`${API_BASE_URL}${path}`, Object.assign({}, opts || {}, {
-    headers: Object.assign({}, (opts && opts.headers) || {}, {
-      "Authorization": token,
-      "Content-Type": (opts && opts.body instanceof FormData) ? undefined : "application/json"
-    })
-  }));
+  const isForm = (opts && opts.body && (opts.body instanceof FormData));
 
+  const headers = Object.assign({}, (opts && opts.headers) || {}, {
+    "Authorization": token
+  });
+
+  // only set JSON content-type when NOT FormData
+  if (!isForm) headers["Content-Type"] = "application/json";
+
+  const res = await fetch(`${API_BASE_URL}${path}`, Object.assign({}, opts || {}, { headers }));
   const data = await res.json().catch(() => ({}));
   return { res, data };
 }
@@ -173,8 +216,8 @@ function mapProofToUiStatus(status) {
   const s = String(status || "").toLowerCase();
   if (s === "approved") return "approved";
   if (s === "rejected") return "resend";
-  if (s === "pending") return "resend";
-  return "resend";
+  if (s === "pending") return "pending";
+  return "pending";
 }
 
 /* ================================
@@ -184,14 +227,9 @@ function adminTag(adminStatus, coreStatus) {
   const a = String(adminStatus || "").toLowerCase();
   const c = String(coreStatus || "").toLowerCase();
 
-  // final decisions
   if (a === "resolved" || c === "resolved") return `<span class="tag good">Resolved</span>`;
   if (a === "rejected" || c === "rejected") return `<span class="tag bad">Rejected</span>`;
-
-  // in-progress
   if (a === "investigating") return `<span class="tag warn">Investigating</span>`;
-
-  // default
   return `<span class="tag">Pending</span>`;
 }
 
@@ -301,10 +339,14 @@ async function loadBillingLoopback() {
       const reviewedAt = p.reviewedAt ? fmtDateTime(p.reviewedAt) : "";
       const createdAt = p.createdAt ? fmtDateTime(p.createdAt) : "";
       const notes = escapeHtml(p.notes || "");
+      const fileUrl = p.fileUrl ? String(p.fileUrl) : "";
+      const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+      const fullFileUrl = (API_BASE_URL && fileUrl) ? `${API_BASE_URL}${fileUrl}` : "";
 
-      // Show in the existing status box too
+      // status pill
       if (ui === "approved") setPaymentStatus("approved", "Admin approved your proof.");
-      else setPaymentStatus("resend", ui === "resend" ? "Admin requires resend / rejected / pending." : "Pending");
+      else if (ui === "pending") setPaymentStatus("pending", "Waiting for Admin review.");
+      else setPaymentStatus("resend", "Admin rejected / requires resend.");
 
       setBillingLoopbackBox(`
         <div style="font-weight:900; margin-bottom:6px;">Proof of Payment — Review Result</div>
@@ -313,13 +355,23 @@ async function loadBillingLoopback() {
           ${createdAt ? ` • Submitted: ${escapeHtml(createdAt)}` : ""}
           ${reviewedAt ? ` • Reviewed: ${escapeHtml(reviewedAt)}` : ""}
         </div>
-        ${notes ? `<div style="margin-top:10px;"><b>Admin note:</b> ${notes}</div>` : `<div style="margin-top:10px; opacity:.8;">No admin note.</div>`}
-      `, ui === "approved" ? "approved" : "resend");
+
+        ${notes
+          ? `<div style="margin-top:10px;"><b>Admin note:</b> ${notes}</div>`
+          : `<div style="margin-top:10px; opacity:.8;">No admin note.</div>`
+        }
+
+        ${fullFileUrl
+          ? `<div style="margin-top:10px;">
+               <a class="btn-ghost btn-sm" href="${escapeHtml(fullFileUrl)}" target="_blank" rel="noopener">View uploaded file</a>
+             </div>`
+          : ``
+        }
+      `, ui === "approved" ? "approved" : (ui === "pending" ? "resend" : "resend"));
 
       return;
     }
 
-    // if no proof exists
     if (res.ok && data && data.ok && data.hasProof === false) {
       setBillingLoopbackBox(`
         <div style="font-weight:900; margin-bottom:6px;">Proof of Payment — Review Result</div>
@@ -329,7 +381,7 @@ async function loadBillingLoopback() {
       return;
     }
   } catch (e) {
-    // ignore (we’ll show below via /auth/me if available)
+    // ignore and fallback
   }
 
   // 2) fallback: show user billingStatus/notes from /auth/me (good for “Billing acknowledgement”)
@@ -341,7 +393,6 @@ async function loadBillingLoopback() {
       const billing = String(data.billingStatus || "").toLowerCase();
       const note = escapeHtml(data.notes || "");
 
-      // map model paid/due/overdue
       const kind = billing === "paid" ? "approved" : (billing === "overdue" ? "past_due" : "resend");
 
       setBillingLoopbackBox(`
@@ -401,13 +452,11 @@ async function openDispute(nationalId, clientRecordId) {
 
     alert("Dispute opened ✅ Record marked Under Dispute (for admin review).");
 
-    // refresh search result if same ID
     const input = document.getElementById("searchNationalId");
     if (input && input.value && input.value.trim() === String(nationalId).trim()) {
       await searchClient();
     }
 
-    // refresh dispute loopback
     try { await loadMyDisputes(); } catch (e) {}
   } catch (err) {
     console.error(err);
@@ -466,6 +515,13 @@ async function addClient() {
   }
 
   const file = consentFile.files[0];
+
+  // ✅ Client-side validation to match backend
+  if (!isAllowedUploadFile(file)) {
+    setConsentAck(false, "Please upload a screenshot/photo/scan (image) or PDF.");
+    alert("Invalid file type. Please upload an image (png/jpg/heic/etc) or PDF.");
+    return;
+  }
 
   const fd = new FormData();
   fd.append("fullName", fullName);
@@ -540,10 +596,18 @@ async function uploadPaymentProof() {
   }
 
   const file = fileInput.files[0];
+
+  // ✅ Client-side validation to match backend
+  if (!isAllowedUploadFile(file)) {
+    setPaymentStatus("resend", "Invalid file type. Use image or PDF.");
+    alert("Invalid file type. Please upload a screenshot/photo/scan (image) or PDF.");
+    return;
+  }
+
   const fd = new FormData();
   fd.append("paymentProofFile", file);
 
-  setPaymentStatus("", "Uploading...");
+  setPaymentStatus("pending", "Uploading...");
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
@@ -565,7 +629,6 @@ async function uploadPaymentProof() {
     alert("Proof of payment submitted ✅ Admin will review.");
     fileInput.value = "";
 
-    // refresh loopback
     try { await loadBillingLoopback(); } catch (e) {}
   } catch (err) {
     console.error(err);
@@ -900,7 +963,6 @@ function setupMyClientsCollapse() {
   const wrap = document.getElementById("myClientsWrap");
   if (!btn || !wrap) return;
 
-  // default expanded
   function setCollapsed(collapsed) {
     if (collapsed) {
       wrap.classList.add("is-collapsed");
@@ -931,6 +993,10 @@ function setupMyClientsCollapse() {
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 
   setupMyClientsCollapse();
+
+  // clear consent ack when changing file/checkbox
+  const cFile = document.getElementById("consentFile");
+  if (cFile) cFile.addEventListener("change", clearConsentAck);
 
   // buttons
   const dBtn = document.getElementById("reloadMyDisputesBtn");

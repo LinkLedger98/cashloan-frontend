@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=FINAL" />
+  <link rel="stylesheet" href="dashboard.css?v=7" />
 </head>
 
 <body>
@@ -82,9 +82,13 @@
 
         <div style="margin-top:10px;">
           <label for="consentFile">Upload signed consent proof</label>
-          <input id="consentFile" type="file" accept="image/*,application/pdf" />
+          <input
+            id="consentFile"
+            type="file"
+            accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
+          />
           <div class="small" style="opacity:.85; margin-top:6px;">
-            Required for compliance. Accepted: any image or PDF.
+            Required for compliance. Accepted: screenshots/photos/scans (any image) or PDF.
           </div>
 
           <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
@@ -161,9 +165,13 @@
       <div class="row" style="margin-top:12px;">
         <div>
           <label for="paymentProofFile">Proof of payment file</label>
-          <input id="paymentProofFile" type="file" accept="image/*,application/pdf" />
+          <input
+            id="paymentProofFile"
+            type="file"
+            accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
+          />
           <div class="small" style="opacity:.85; margin-top:6px;">
-            Accepted: any image or PDF. If your file is huge, compress it slightly if upload fails.
+            Accepted: screenshots/photos/scans (any image) or PDF. If the file is huge, compress it slightly if upload fails.
           </div>
         </div>
 
@@ -182,7 +190,7 @@
 
   </div>
 
-  <script src="config.js?v=FINAL"></script>
-  <script src="dashboard.js?v=FINAL"></script>
+  <script src="config.js?v=7"></script>
+  <script src="dashboard.js?v=7"></script>
 </body>
 </html>
