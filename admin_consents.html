@@ -40,14 +40,11 @@
       <a class="btn-primary btn-sm" href="admin_consents.html">Consents</a>
     </div>
 
-    <!-- Consent approvals -->
     <div class="card" style="margin-top:16px;">
       <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
         <div>
           <h2 style="margin:0;">Consent Approvals</h2>
-          <p class="small" style="margin:6px 0 0 0;">
-            Review uploaded borrower consent evidence (photo/PDF). Approve or reject.
-          </p>
+          <p class="small" style="margin:6px 0 0 0;">Approve / reject borrower consent evidence.</p>
         </div>
 
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -59,15 +56,14 @@
         <div>
           <label>Status</label>
           <select id="statusFilter">
-            <option value="pending">pending</option>
-            <option value="approved">approved</option>
-            <option value="rejected">rejected</option>
+            <option value="pending" selected>Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
-
         <div>
           <label>Omang (optional)</label>
-          <input id="nationalIdFilter" placeholder="9-digit Omang filter" />
+          <input id="nationalIdFilter" placeholder="e.g. 123456789" />
         </div>
       </div>
 
@@ -77,10 +73,6 @@
 
     <div class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <a href="welcome.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-      </div>
     </div>
 
   </div>
@@ -88,11 +80,13 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD
+    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
-        const role = String(localStorage.getItem("userRole") || "").toLowerCase();
+        const role = String(
+          localStorage.getItem("userRole") || localStorage.getItem("role") || ""
+        ).toLowerCase();
 
         if (!token) {
           window.location.href = "login.html";

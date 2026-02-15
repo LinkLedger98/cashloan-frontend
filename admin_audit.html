@@ -31,7 +31,6 @@
       </div>
     </div>
 
-    <!-- Admin Nav -->
     <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
       <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
       <a class="btn-ghost btn-sm" href="admin_clients.html">Clients</a>
@@ -78,11 +77,13 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD
+    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
-        const role = String(localStorage.getItem("userRole") || "").toLowerCase();
+        const role = String(
+          localStorage.getItem("userRole") || localStorage.getItem("role") || ""
+        ).toLowerCase();
 
         if (!token) {
           window.location.href = "login.html";

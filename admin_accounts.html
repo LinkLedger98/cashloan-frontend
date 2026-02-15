@@ -164,11 +164,13 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD
+    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
-        const role = String(localStorage.getItem("userRole") || "").toLowerCase();
+        const role = String(
+          localStorage.getItem("userRole") || localStorage.getItem("role") || ""
+        ).toLowerCase();
 
         if (!token) {
           window.location.href = "login.html";
@@ -190,7 +192,6 @@
   <script src="config.js"></script>
   <script src="admin.js"></script>
 
-  <!-- ✅ Added: Payment acknowledgement template (Approved / Resend / Past due) -->
   <template id="popAckTemplate">
     <div class="pop-ack-box" style="margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03);">
       <div class="small" style="margin-bottom:8px;"><b>Payment acknowledgement</b> (send to lender)</div>
