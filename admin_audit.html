@@ -20,7 +20,7 @@
       <div class="legacy-badge" title="Legacy Mode">
         <span class="legacy-dot legacy-dot-pink"></span>
         <span class="legacy-lt">&lt;</span>
-        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-dot legacy-dot-pink"></span>
         <span class="legacy-text">Legacy Mode</span>
       </div>
 
@@ -32,7 +32,7 @@
     </div>
 
     <!-- Admin Nav -->
-    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
       <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
       <a class="btn-ghost btn-sm" href="admin_clients.html">Clients</a>
       <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
@@ -77,6 +77,28 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ✅ SUPERADMIN FRONTEND GUARD
+    (function () {
+      try {
+        const token = localStorage.getItem("authToken");
+        const role = String(localStorage.getItem("userRole") || "").toLowerCase();
+
+        if (!token) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        if (role !== "superadmin") {
+          alert("Access Denied");
+          window.location.href = "dashboard.html";
+          return;
+        }
+      } catch (e) {
+        alert("Access Denied");
+        window.location.href = "dashboard.html";
+      }
+    })();
   </script>
 
   <script src="config.js"></script>
