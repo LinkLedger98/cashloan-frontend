@@ -34,6 +34,13 @@ async function handleAuthFailure(res, data) {
   return false;
 }
 
+function fmtDateTime(isoOrNull) {
+  if (!isoOrNull) return "";
+  const d = new Date(isoOrNull);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString();
+}
+
 function fmtDate(isoOrNull) {
   if (!isoOrNull) return "";
   const d = new Date(isoOrNull);
@@ -73,7 +80,7 @@ function escapeHtml(x) {
 }
 
 /* ================================
-   ✅ UI Helpers (new)
+   ✅ UI Helpers
 ================================ */
 function setConsentAck(ok, message) {
   const el = document.getElementById("consentAck");
@@ -131,7 +138,6 @@ function setPaymentStatus(kind, text) {
     return;
   }
 
-  // default
   el.style.background = "rgba(0,0,0,.03)";
   el.style.color = "#333";
   el.textContent = text || "";
@@ -144,7 +150,216 @@ function clearPaymentStatus() {
   el.textContent = "";
 }
 
-// ✅ Dispute button action (5-day dispute loop starter)
+/* ================================
+   ✅ Helpers for API calls
+================================ */
+async function apiJson(path, opts) {
+  const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
+  const token = getToken();
+  if (!API_BASE_URL) throw new Error("API_BASE_URL missing in config.js");
+
+  const res = await fetch(`${API_BASE_URL}${path}`, Object.assign({}, opts || {}, {
+    headers: Object.assign({}, (opts && opts.headers) || {}, {
+      "Authorization": token,
+      "Content-Type": (opts && opts.body instanceof FormData) ? undefined : "application/json"
+    })
+  }));
+
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
+
+function mapProofToUiStatus(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "approved") return "approved";
+  if (s === "rejected") return "resend";
+  if (s === "pending") return "resend";
+  return "resend";
+}
+
+/* ================================
+   ✅ Dispute loopback UI
+================================ */
+function adminTag(adminStatus, coreStatus) {
+  const a = String(adminStatus || "").toLowerCase();
+  const c = String(coreStatus || "").toLowerCase();
+
+  // final decisions
+  if (a === "resolved" || c === "resolved") return `<span class="tag good">Resolved</span>`;
+  if (a === "rejected" || c === "rejected") return `<span class="tag bad">Rejected</span>`;
+
+  // in-progress
+  if (a === "investigating") return `<span class="tag warn">Investigating</span>`;
+
+  // default
+  return `<span class="tag">Pending</span>`;
+}
+
+async function loadMyDisputes() {
+  const list = document.getElementById("myDisputesList");
+  if (!list) return;
+  if (!requireLogin()) return;
+
+  list.innerHTML = `<div class="result-item"><div class="small">Loading...</div></div>`;
+
+  try {
+    const { res, data } = await apiJson("/api/disputes/mine", { method: "GET" });
+    if (await handleAuthFailure(res, data)) return;
+
+    if (!res.ok) {
+      list.innerHTML = "";
+      alert((data && data.message) ? data.message : "Failed to load disputes");
+      return;
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    if (rows.length === 0) {
+      list.innerHTML = `<div class="result-item"><div class="small">No disputes opened yet.</div></div>`;
+      return;
+    }
+
+    let html = "";
+    rows.forEach((d) => {
+      const omang = escapeHtml(d.nationalId || "");
+      const lenderNote = escapeHtml(d.notes || "");
+      const adminNote = escapeHtml(d.adminNote || "");
+      const adminStatusRaw = d.adminStatus || "";
+      const coreStatusRaw = d.status || "";
+      const opened = d.createdAt ? fmtDateTime(d.createdAt) : "";
+      const updated = d.adminUpdatedAt ? fmtDateTime(d.adminUpdatedAt) : "";
+      const updatedBy = escapeHtml(d.adminUpdatedBy || "");
+
+      html += `
+        <div class="result-item">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div><b>Dispute</b> • Omang: <b>${omang || "—"}</b></div>
+              <div class="small" style="margin-top:6px;">
+                ${adminTag(adminStatusRaw, coreStatusRaw)}
+                ${opened ? `Opened: ${escapeHtml(opened)}` : ""}
+              </div>
+
+              ${lenderNote ? `<div class="small" style="margin-top:10px; opacity:.9;"><b>Your reason:</b> ${lenderNote}</div>` : ""}
+
+              ${
+                (String(adminStatusRaw || "").toLowerCase() === "investigating" || adminNote)
+                  ? `<div class="small" style="margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);">
+                      <div style="font-weight:800; margin-bottom:6px;">Admin response</div>
+                      <div>${adminNote ? adminNote : "Investigation in progress."}</div>
+                      <div class="small" style="margin-top:8px; opacity:.8;">
+                        ${updated ? `Updated: ${escapeHtml(updated)}` : ""}
+                        ${updatedBy ? ` • By: ${updatedBy}` : ""}
+                      </div>
+                    </div>`
+                  : `<div class="small" style="margin-top:10px; opacity:.75;">No admin response yet.</div>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = "";
+    alert("Server error while loading disputes");
+  }
+}
+
+/* ================================
+   ✅ Billing loopback UI
+================================ */
+function setBillingLoopbackBox(html, kind) {
+  const el = document.getElementById("billingLoopback");
+  if (!el) return;
+
+  el.style.display = "block";
+  el.style.padding = "10px 12px";
+  el.style.borderRadius = "12px";
+  el.style.border = "1px solid rgba(255,255,255,.12)";
+
+  const k = String(kind || "").toLowerCase();
+  if (k === "approved") el.style.background = "rgba(0,255,140,0.10)";
+  else if (k === "past_due") el.style.background = "rgba(255,70,70,0.10)";
+  else el.style.background = "rgba(255,205,0,0.10)";
+
+  el.innerHTML = html;
+}
+
+async function loadBillingLoopback() {
+  if (!requireLogin()) return;
+
+  // 1) latest proof review status
+  try {
+    const { res, data } = await apiJson("/api/billing/proofs/mine", { method: "GET" });
+    if (await handleAuthFailure(res, data)) return;
+
+    if (res.ok && data && data.ok && data.hasProof) {
+      const p = data.proof || {};
+      const ui = mapProofToUiStatus(p.status);
+      const reviewedAt = p.reviewedAt ? fmtDateTime(p.reviewedAt) : "";
+      const createdAt = p.createdAt ? fmtDateTime(p.createdAt) : "";
+      const notes = escapeHtml(p.notes || "");
+
+      // Show in the existing status box too
+      if (ui === "approved") setPaymentStatus("approved", "Admin approved your proof.");
+      else setPaymentStatus("resend", ui === "resend" ? "Admin requires resend / rejected / pending." : "Pending");
+
+      setBillingLoopbackBox(`
+        <div style="font-weight:900; margin-bottom:6px;">Proof of Payment — Review Result</div>
+        <div class="small" style="opacity:.9;">
+          Status: <b>${escapeHtml(String(p.status || "").toUpperCase())}</b>
+          ${createdAt ? ` • Submitted: ${escapeHtml(createdAt)}` : ""}
+          ${reviewedAt ? ` • Reviewed: ${escapeHtml(reviewedAt)}` : ""}
+        </div>
+        ${notes ? `<div style="margin-top:10px;"><b>Admin note:</b> ${notes}</div>` : `<div style="margin-top:10px; opacity:.8;">No admin note.</div>`}
+      `, ui === "approved" ? "approved" : "resend");
+
+      return;
+    }
+
+    // if no proof exists
+    if (res.ok && data && data.ok && data.hasProof === false) {
+      setBillingLoopbackBox(`
+        <div style="font-weight:900; margin-bottom:6px;">Proof of Payment — Review Result</div>
+        <div class="small" style="opacity:.85;">No proof submitted yet.</div>
+      `, "resend");
+      clearPaymentStatus();
+      return;
+    }
+  } catch (e) {
+    // ignore (we’ll show below via /auth/me if available)
+  }
+
+  // 2) fallback: show user billingStatus/notes from /auth/me (good for “Billing acknowledgement”)
+  try {
+    const { res, data } = await apiJson("/api/auth/me", { method: "GET" });
+    if (await handleAuthFailure(res, data)) return;
+
+    if (res.ok && data) {
+      const billing = String(data.billingStatus || "").toLowerCase();
+      const note = escapeHtml(data.notes || "");
+
+      // map model paid/due/overdue
+      const kind = billing === "paid" ? "approved" : (billing === "overdue" ? "past_due" : "resend");
+
+      setBillingLoopbackBox(`
+        <div style="font-weight:900; margin-bottom:6px;">Subscription Status</div>
+        <div class="small" style="opacity:.9;">
+          Status: <b>${escapeHtml(billing || "unknown")}</b>
+        </div>
+        ${note ? `<div style="margin-top:10px;"><b>Admin messages:</b><br/><span class="small" style="opacity:.9; white-space:pre-wrap;">${note}</span></div>` : ""}
+      `, kind);
+    }
+  } catch (err) {
+    // silent
+  }
+}
+
+/* ================================
+   ✅ Dispute button action (5-day loop starter)
+================================ */
 async function openDispute(nationalId, clientRecordId) {
   if (!requireLogin()) return;
 
@@ -155,7 +370,6 @@ async function openDispute(nationalId, clientRecordId) {
     return;
   }
 
-  // ✅ FIXED (was using undefined `v`)
   if (!/^\d{9}$/.test(String(nationalId || "").trim())) {
     alert("National ID must be exactly 9 digits.");
     return;
@@ -187,20 +401,25 @@ async function openDispute(nationalId, clientRecordId) {
 
     alert("Dispute opened ✅ Record marked Under Dispute (for admin review).");
 
+    // refresh search result if same ID
     const input = document.getElementById("searchNationalId");
     if (input && input.value && input.value.trim() === String(nationalId).trim()) {
       await searchClient();
     }
+
+    // refresh dispute loopback
+    try { await loadMyDisputes(); } catch (e) {}
   } catch (err) {
     console.error(err);
     alert("Server error while opening dispute");
   }
 }
 
+/* ================================
+   ✅ Add client (consent evidence required)
+================================ */
 async function addClient() {
   if (!requireLogin()) return;
-
-  // reset visual feedback each attempt
   clearConsentAck();
 
   const fullName = document.getElementById("fullName").value.trim();
@@ -208,7 +427,6 @@ async function addClient() {
   const status = document.getElementById("status").value;
   const dueDate = document.getElementById("dueDate").value;
 
-  // ✅ Consent UI elements (must exist in dashboard.html)
   const consentCheck = document.getElementById("consentCheck");
   const consentFile = document.getElementById("consentFile");
 
@@ -226,13 +444,11 @@ async function addClient() {
     return;
   }
 
-  // ✅ Strict 9-digit Omang validation
   if (!/^\d{9}$/.test(nationalId)) {
     alert("National ID must be exactly 9 digits.");
     return;
   }
 
-  // ✅ Consent required
   if (!consentCheck || !consentFile) {
     alert("Consent fields missing on dashboard.html (consentCheck / consentFile).");
     setConsentAck(false, "Please resend (consent fields missing).");
@@ -251,24 +467,19 @@ async function addClient() {
 
   const file = consentFile.files[0];
 
-  // ✅ Build multipart payload
   const fd = new FormData();
   fd.append("fullName", fullName);
   fd.append("nationalId", nationalId);
   fd.append("status", status);
   if (dueDate) fd.append("dueDate", dueDate);
 
-  // Consent fields
   fd.append("consentGiven", "true");
   fd.append("consentFile", file);
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/clients`, {
       method: "POST",
-      headers: {
-        // ❗ Do NOT set Content-Type here for FormData
-        "Authorization": token
-      },
+      headers: { "Authorization": token },
       body: fd
     });
 
@@ -276,7 +487,6 @@ async function addClient() {
     if (await handleAuthFailure(res, data)) return;
 
     if (res.status === 409) {
-      // consent file reached server, but record duplicate; still show ✅
       setConsentAck(true, "Consent received.");
       alert(data.message || "Borrower already exists on your dashboard.");
       await loadMyClients();
@@ -286,15 +496,12 @@ async function addClient() {
     }
 
     if (!res.ok) {
-      // Upload failed / rejected
       setConsentAck(false, (data && data.message) ? `Please resend — ${data.message}` : "Please resend.");
       alert(data.message || "Failed to save borrower record");
       return;
     }
 
-    // ✅ Success — consent received
     setConsentAck(true, "Consent received.");
-
     alert("Borrower record saved ✅");
 
     document.getElementById("fullName").value = "";
@@ -302,7 +509,6 @@ async function addClient() {
     document.getElementById("status").value = "paid";
     document.getElementById("dueDate").value = "";
 
-    // ✅ reset consent fields
     consentCheck.checked = false;
     consentFile.value = "";
 
@@ -315,8 +521,7 @@ async function addClient() {
 }
 
 /* ================================
-   ✅ Proof of Payment (billing)
-   POST /api/billing/proofs (multipart)
+   ✅ Proof of Payment upload
 ================================ */
 async function uploadPaymentProof() {
   if (!requireLogin()) return;
@@ -329,15 +534,12 @@ async function uploadPaymentProof() {
   }
 
   const fileInput = document.getElementById("paymentProofFile");
-  const statusDiv = document.getElementById("paymentProofStatus");
-
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
     alert("Please choose a proof of payment file (image or PDF).");
     return;
   }
 
   const file = fileInput.files[0];
-
   const fd = new FormData();
   fd.append("paymentProofFile", file);
 
@@ -360,21 +562,11 @@ async function uploadPaymentProof() {
       return;
     }
 
-    // Server may return message / billingStatus etc.
-    const raw = (data && (data.billingStatus || data.status || data.result || data.message)) ? String(
-      data.billingStatus || data.status || data.result || data.message
-    ) : "Submitted ✅ Pending review.";
-
-    const lc = raw.toLowerCase();
-
-    // ✅ Map to the 3 statuses
-    if (lc.includes("approved")) setPaymentStatus("approved", raw);
-    else if (lc.includes("past due") || lc.includes("past_due") || lc.includes("overdue")) setPaymentStatus("past_due", raw);
-    else if (lc.includes("resend") || lc.includes("reject") || lc.includes("rejected")) setPaymentStatus("resend", raw);
-    else setPaymentStatus("resend", raw); // default if unknown → resend/pending
-
     alert("Proof of payment submitted ✅ Admin will review.");
     fileInput.value = "";
+
+    // refresh loopback
+    try { await loadBillingLoopback(); } catch (e) {}
   } catch (err) {
     console.error(err);
     setPaymentStatus("resend", "Please resend (server/network error).");
@@ -382,6 +574,9 @@ async function uploadPaymentProof() {
   }
 }
 
+/* ================================
+   ✅ Search client (status-only output remains)
+================================ */
 async function searchClient() {
   if (!requireLogin()) return;
 
@@ -401,7 +596,6 @@ async function searchClient() {
     return;
   }
 
-  // ✅ Strict 9-digit
   if (!/^\d{9}$/.test(nationalId)) {
     alert("National ID must be exactly 9 digits.");
     return;
@@ -584,7 +778,6 @@ async function loadMyClients() {
   }
   if (!list) return;
 
-  // If collapsed, keep list empty text minimal
   list.innerHTML = `<p class="small">Loading...</p>`;
 
   try {
@@ -696,42 +889,60 @@ window.logout = logout;
 window.toggleEdit = toggleEdit;
 window.updateClient = updateClient;
 
-// ✅ expose dispute
 window.openDispute = openDispute;
-
-// ✅ expose payment proof
 window.uploadPaymentProof = uploadPaymentProof;
 
-// ✅ Collapsible "My Clients" (new)
+/* ================================
+   ✅ Smooth collapse for My Clients
+================================ */
 function setupMyClientsCollapse() {
   const btn = document.getElementById("toggleMyClientsBtn");
   const wrap = document.getElementById("myClientsWrap");
   if (!btn || !wrap) return;
 
-  let expanded = true;
-
-  function render() {
-    wrap.style.display = expanded ? "block" : "none";
-    btn.textContent = expanded ? "▲" : "▼";
-    btn.title = expanded ? "Collapse" : "Expand";
+  // default expanded
+  function setCollapsed(collapsed) {
+    if (collapsed) {
+      wrap.classList.add("is-collapsed");
+      btn.textContent = "▼";
+      btn.title = "Expand";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.remove("is-collapsed");
+      btn.textContent = "▲";
+      btn.title = "Collapse";
+      btn.setAttribute("aria-expanded", "true");
+    }
   }
 
   btn.addEventListener("click", function () {
-    expanded = !expanded;
-    render();
+    const isCollapsed = wrap.classList.contains("is-collapsed");
+    setCollapsed(!isCollapsed);
   });
 
-  render();
+  setCollapsed(false);
 }
 
-(function () {
+(async function () {
   if (!requireLogin()) return;
+
   const pill = document.getElementById("userPill");
   const email = getEmail();
   if (pill) pill.textContent = email ? `Logged in: ${email}` : "Logged in";
 
   setupMyClientsCollapse();
+
+  // buttons
+  const dBtn = document.getElementById("reloadMyDisputesBtn");
+  if (dBtn) dBtn.addEventListener("click", loadMyDisputes);
+
+  const bBtn = document.getElementById("reloadBillingBtn");
+  if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
+
+  // initial loads
   loadMyClients();
+  loadMyDisputes();
+  loadBillingLoopback();
 
   const input = document.getElementById("myClientsSearch");
   if (input) {

@@ -1,12 +1,10 @@
 /* Dashboard-only dark theme — does NOT affect other pages */
-:root {
-  color-scheme: dark;
-}
+:root { color-scheme: dark; }
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: #07080b; /* darker, less blue */
+  background: #07080b;
   color: #e8eef7;
 }
 
@@ -25,11 +23,7 @@ body {
   margin-bottom: 16px;
 }
 
-.brand {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
+.brand { display: flex; gap: 10px; align-items: center; }
 
 .brand-badge {
   width: 14px;
@@ -39,22 +33,17 @@ body {
   box-shadow: 0 0 0 6px rgba(255, 79, 216, 0.12);
 }
 
-h1, h2 {
-  margin: 0;
-}
+h1, h2 { margin: 0; }
 
 .card {
-  background: #0e1117; /* darker */
+  background: #0e1117;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
-.small {
-  opacity: 0.8;
-  font-size: 13px;
-}
+.small { opacity: 0.8; font-size: 13px; }
 
 .row {
   display: grid;
@@ -111,6 +100,8 @@ hr {
   color: #e8eef7;
 }
 
+.btn-sm { padding: 7px 10px; border-radius: 10px; font-size: 13px; }
+
 .pill {
   display: inline-block;
   padding: 7px 10px;
@@ -120,10 +111,7 @@ hr {
   font-size: 13px;
 }
 
-.results {
-  display: grid;
-  gap: 10px;
-}
+.results { display: grid; gap: 10px; }
 
 .result-item {
   background: rgba(255,255,255,0.04);
@@ -145,22 +133,47 @@ hr {
 .badge.owing { background: rgba(255,205,0,0.12); border: 1px solid rgba(255,205,0,0.28); }
 .badge.overdue { background: rgba(255,70,70,0.12); border: 1px solid rgba(255,70,70,0.28); }
 
-/* ✅ Consent block (minimal, keeps style consistent) */
+/* ✅ Consent block */
 .consent-box{
   border: 1px solid rgba(255,79,216,0.18);
   background: rgba(255,79,216,0.05);
   border-radius: 14px;
   padding: 12px;
 }
-
 .consent-check{
   display:flex;
   gap:10px;
   align-items:flex-start;
   cursor:pointer;
 }
+.consent-check input{ width:auto; margin-top:2px; }
 
-.consent-check input{
-  width:auto;
-  margin-top:2px;
+/* ✅ Smooth collapse wrapper (My Clients) */
+.collapse-wrap{
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height 260ms ease, opacity 220ms ease, transform 220ms ease;
+  opacity: 1;
+  transform: translateY(0);
 }
+.collapse-wrap.is-collapsed{
+  max-height: 0px;
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.collapse-inner{ padding-top: 2px; }
+
+/* ✅ Tiny tags for dispute/billing */
+.tag {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  margin-right: 8px;
+}
+.tag.good { border-color: rgba(0,255,140,0.25); background: rgba(0,255,140,0.10); }
+.tag.warn { border-color: rgba(255,205,0,0.26); background: rgba(255,205,0,0.10); }
+.tag.bad  { border-color: rgba(255,70,70,0.26); background: rgba(255,70,70,0.10); }

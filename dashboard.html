@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LinkLedger | Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=3" />
+  <link rel="stylesheet" href="dashboard.css?v=FINAL" />
 </head>
 
 <body>
@@ -42,7 +42,7 @@
       <div id="results" class="results"></div>
     </div>
 
-    <!-- ✅ Add borrower record (moved above My Clients) -->
+    <!-- ✅ Add borrower record -->
     <div class="card" style="margin-top:16px;">
       <h2>Add borrower record</h2>
       <p>Only logged-in lenders can add borrower status records.</p>
@@ -82,13 +82,11 @@
 
         <div style="margin-top:10px;">
           <label for="consentFile">Upload signed consent proof</label>
-          <!-- ✅ accept ANY IMAGE + PDF -->
           <input id="consentFile" type="file" accept="image/*,application/pdf" />
           <div class="small" style="opacity:.85; margin-top:6px;">
             Required for compliance. Accepted: any image or PDF.
           </div>
 
-          <!-- ✅ Consent upload acknowledgment -->
           <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
         </div>
       </div>
@@ -98,7 +96,7 @@
       </div>
     </div>
 
-    <!-- My Clients -->
+    <!-- ✅ My Clients (smooth collapse) -->
     <div class="card" style="margin-top:16px;">
       <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
         <div>
@@ -112,34 +110,60 @@
             <input id="myClientsSearch" placeholder="Name or National ID" />
           </div>
 
-          <!-- ✅ Collapsible controls -->
           <button class="btn-ghost btn-sm" id="toggleMyClientsBtn" type="button" title="Collapse/Expand">▲</button>
-
           <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
         </div>
       </div>
 
       <hr style="margin:14px 0;" />
 
-      <!-- ✅ Wrap so we can collapse it -->
-      <div id="myClientsWrap">
-        <div id="myClientsList" class="results"></div>
+      <div id="myClientsWrap" class="collapse-wrap">
+        <div class="collapse-inner">
+          <div id="myClientsList" class="results"></div>
+        </div>
       </div>
     </div>
 
-    <!-- ✅ Proof of Payment (billing) -->
+    <!-- ✅ Disputes loopback (admin notes appear here) -->
     <div class="card" style="margin-top:16px;">
-      <h2>Upload proof of payment</h2>
-      <p class="small" style="margin-top:6px;">
-        If you paid your subscription, upload proof here (image or PDF). Admin will approve/reject.
-      </p>
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <h2 style="margin-bottom:4px;">My Disputes (Admin Responses)</h2>
+          <p class="small" style="margin:0;">
+            When Admin marks a dispute as “Investigating”, you will see the note here.
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <button class="btn-ghost" id="reloadMyDisputesBtn" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0;" />
+      <div id="myDisputesList" class="results"></div>
+    </div>
+
+    <!-- ✅ Proof of Payment (billing) + loopback review -->
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <h2 style="margin-bottom:4px;">Subscription & Proof of Payment</h2>
+          <p class="small" style="margin:0;">
+            Upload proof here. Admin review outcome will appear below.
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <button class="btn-ghost" id="reloadBillingBtn" type="button">Refresh</button>
+        </div>
+      </div>
 
       <div class="row" style="margin-top:12px;">
         <div>
           <label for="paymentProofFile">Proof of payment file</label>
           <input id="paymentProofFile" type="file" accept="image/*,application/pdf" />
           <div class="small" style="opacity:.85; margin-top:6px;">
-            Accepted: any image or PDF. Max size depends on server limits.
+            Accepted: any image or PDF. If your file is huge, compress it slightly if upload fails.
           </div>
         </div>
 
@@ -148,11 +172,12 @@
         </div>
       </div>
 
-      <!-- ✅ Response area with clear status styling -->
       <div id="paymentProofStatus"
            class="small"
            style="margin-top:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03); display:none;">
       </div>
+
+      <div id="billingLoopback" class="small" style="margin-top:12px; display:none;"></div>
     </div>
 
   </div>
