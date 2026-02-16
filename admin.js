@@ -69,6 +69,29 @@
     return false;
   }
 
+  function normalizeApiPathOrUrl(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return "";
+
+    // If it's a full URL, strip the origin and keep only /api/...
+    // Example: https://cashloan-backend.onrender.com/api/admin/consents/ID/file
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        const u = new URL(raw);
+        return u.pathname + (u.search || "");
+      } catch (e) {
+        // fallback: try to find /api/
+        const idx = raw.toLowerCase().indexOf("/api/");
+        if (idx >= 0) return raw.slice(idx);
+        return raw;
+      }
+    }
+
+    // Ensure it starts with /
+    if (!raw.startsWith("/")) return "/" + raw;
+    return raw;
+  }
+
   async function fetchJson(path, opts) {
     if (!API_BASE_URL) throw new Error("API_BASE_URL missing in config.js");
 
@@ -88,20 +111,25 @@
     return { ok: res.ok, status: res.status, data };
   }
 
-  async function fetchBlob(path) {
+  async function fetchBlob(pathOrUrl) {
     if (!API_BASE_URL) throw new Error("API_BASE_URL missing in config.js");
 
+    const apiPath = normalizeApiPathOrUrl(pathOrUrl);
+    if (!apiPath) throw new Error("Missing file path");
+
     const headers = authHeaders({});
-    const res = await fetch(API_BASE_URL + path, { method: "GET", headers });
+    const res = await fetch(API_BASE_URL + apiPath, { method: "GET", headers });
 
     if (!res.ok) {
       let text = "";
       try { text = await res.text(); } catch (e) {}
+
       // try parse json style
       try {
         const j = JSON.parse(text || "{}");
         if (handleAdminForbiddenMaybe(j, res.status)) throw new Error("redirect");
       } catch (e) {}
+
       throw new Error(text || "Failed to fetch file");
     }
 
@@ -119,9 +147,9 @@
     return fallback || "file";
   }
 
-  async function openFileWithAuth(apiPath, fallbackName) {
+  async function openFileWithAuth(pathOrUrl, fallbackName) {
     try {
-      const { blob, contentDisposition } = await fetchBlob(apiPath);
+      const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
       const filename = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
       const url = URL.createObjectURL(blob);
 
@@ -137,7 +165,7 @@
       }
       setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
     } catch (e) {
-      if (String(e && e.message || "").toLowerCase().includes("redirect")) return;
+      if (String((e && e.message) || "").toLowerCase().includes("redirect")) return;
       console.error(e);
       alert("Could not open file. " + (e && e.message ? e.message : ""));
     }
@@ -520,11 +548,6 @@
     return ts > seenTs;
   }
 
-  function markProofSeen(lenderId, updatedAt) {
-    if (!updatedAt) return;
-    try { localStorage.setItem(proofSeenKey(lenderId), String(updatedAt)); } catch (e) {}
-  }
-
   async function loadLenders() {
     const lendersList = $("lendersList");
     const lendersCount = $("lendersCount");
@@ -629,13 +652,17 @@
 
   window.loadLenders = loadLenders;
 
-  // ✅ View proof of payment (marks as seen -> highlight clears next refresh)
+  // ✅ View proof of payment (token fetch → blob → open)
   window.viewPopFile = async function (lenderId, popUrl) {
     const url = String(popUrl || "");
     if (!url) return;
-    // mark seen using current time (or better: the updatedAt already rendered)
+
+    // mark seen locally
     try { localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString()); } catch (e) {}
+
+    // IMPORTANT: popUrl can be "/api/..." or full URL — both are supported now
     openFileWithAuth(url, "payment-proof");
+
     // refresh after a moment
     setTimeout(() => { try { loadLenders(); } catch (e) {} }, 600);
   };
@@ -806,7 +833,6 @@
         msgDiv.className = "popAckMsg";
 
         try {
-          // ✅ FIXED: correct backend route + payload
           const r = await fetchJson(`/api/admin/lenders/${encodeURIComponent(lenderId)}/billing`, {
             method: "PATCH",
             body: JSON.stringify({ billingStatus, billingNote })
@@ -1048,15 +1074,10 @@
       const st = escapeHtml(c.consentStatus || c.status || "pending");
       const created = c.createdAt ? new Date(c.createdAt).toLocaleString() : "";
 
-      // ✅ FIXED: use backend payload names
       const lenderName = escapeHtml(c.lenderName || "—");
       const lenderBranch = escapeHtml(c.lenderBranch || "");
       const lenderEmail = escapeHtml(c.lenderEmail || "—");
       const fromLine = [lenderName, lenderBranch].filter(Boolean).join(" • ");
-
-      const filePath = (c.consentFileUrl && String(c.consentFileUrl).startsWith("/"))
-        ? String(c.consentFileUrl)
-        : (c.fileUrl && String(c.fileUrl).startsWith("/") ? String(c.fileUrl) : "");
 
       html += `
         <div class="result-item">
@@ -1067,10 +1088,7 @@
               <div class="small">From: <b>${fromLine || lenderEmail}</b>${lenderEmail ? ` • ${lenderEmail}` : ""}</div>
 
               <div style="margin-top:10px;">
-                ${filePath
-                  ? `<button class="btn-ghost btn-sm" type="button" onclick="openConsentFile('${id}')">View file</button>`
-                  : `<span class="small" style="opacity:.8;">No file</span>`
-                }
+                <button class="btn-ghost btn-sm" type="button" onclick="openConsentFile('${id}')">View Consent</button>
               </div>
             </div>
 
@@ -1086,6 +1104,7 @@
     list.innerHTML = html;
   }
 
+  // ✅ View consent file (token fetch → blob → open)
   window.openConsentFile = function (id) {
     openFileWithAuth(`/api/admin/consents/${encodeURIComponent(id)}/file`, "consent");
   };
