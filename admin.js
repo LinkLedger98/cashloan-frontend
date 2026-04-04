@@ -549,108 +549,120 @@
   }
 
   async function loadLenders() {
-    const lendersList = $("lendersList");
-    const lendersCount = $("lendersCount");
-    const lendersSearch = $("lendersSearch");
-    if (!lendersList) return;
+  const lendersList = $("lendersList");
+  const lendersCount = $("lendersCount");
+  const lendersSearch = $("lendersSearch");
+  if (!lendersList) return;
 
-    lendersList.innerHTML = `<div class="small">Loading...</div>`;
-    if (lendersCount) lendersCount.textContent = "";
+  lendersList.innerHTML = `<div class="small">Loading...</div>`;
+  if (lendersCount) lendersCount.textContent = "";
 
-    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
-    if (!r.ok) {
-      lendersList.innerHTML = "";
-      alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
-      return;
-    }
-
-    let rows = Array.isArray(r.data) ? r.data : [];
-    const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
-    if (q) {
-      rows = rows.filter(u => {
-        const hay = [
-          u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
-          u.status, u.billingStatus, u.paymentProofStatus
-        ].map(x => String(x || "").toLowerCase()).join(" ");
-        return hay.includes(q);
-      });
-    }
-
-    if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
-
-    if (rows.length === 0) {
-      lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((u) => {
-      const id = escapeHtml(u._id);
-      const businessName = escapeHtml(u.businessName || "—");
-      const branchName = escapeHtml(u.branchName || "—");
-      const phone = escapeHtml(u.phone || "—");
-      const licenseNo = escapeHtml(u.licenseNo || "—");
-      const email = escapeHtml(u.email || "—");
-      const st = escapeHtml(u.status || "active");
-
-      const popStatus = String(u.paymentProofStatus || "").toLowerCase();
-      const popUpdatedAt = u.paymentProofUpdatedAt || null;
-      const popUrl = u.paymentProofUrl || "";
-      const popId = parseIdFromUrl(popUrl);
-
-      const popIsNew = isProofNewForUser(u._id, popUpdatedAt);
-
-      const popTag = popStatus
-        ? `<span class="tag ${popStatus === "approved" ? "active" : popStatus === "rejected" ? "suspended" : ""}">
-             PoP: ${escapeHtml(popStatus)}
-           </span>`
-        : "";
-
-      html += `
-        <div class="result-item ${popIsNew ? "ll-new-highlight" : ""}">
-          <div class="admin-row">
-            <div>
-              <div><b>${businessName}</b> • ${branchName}</div>
-              <div class="small">Email: <b>${email}</b></div>
-              <div class="small">Phone: ${phone} • License: ${licenseNo}</div>
-
-              <div class="kv" style="margin-top:8px;">
-                ${statusTag(st)}
-                ${u.billingStatus ? `<span class="tag">${escapeHtml(String(u.billingStatus))}</span>` : ""}
-                ${u.mustChangePassword ? `<span class="tag" title="User must change password on next login">mustChangePassword</span>` : ""}
-                ${popTag}
-                ${popUpdatedAt ? `<span class="small" style="opacity:.8;">PoP updated: ${escapeHtml(new Date(popUpdatedAt).toLocaleString())}</span>` : ""}
-              </div>
-
-              <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                ${popUrl ? `<button class="btn-ghost btn-sm" type="button" onclick="viewPopFile('${escapeHtml(u._id)}','${escapeHtml(popUrl)}')">View PoP</button>` : ""}
-                ${popId ? `<button class="btn-ghost btn-sm" type="button" onclick="reviewPop('${escapeHtml(popId)}','approved')">Approve PoP</button>` : ""}
-                ${popId ? `<button class="btn-ghost btn-sm" type="button" onclick="reviewPop('${escapeHtml(popId)}','rejected')">Reject PoP</button>` : ""}
-              </div>
-
-              <div class="pop-box" style="margin-top:10px;">
-                <div class="small" style="margin-bottom:8px;"><b>Billing Acknowledgement</b></div>
-                <div class="pop-ack-host" data-lender-id="${id}"></div>
-              </div>
-            </div>
-
-            <div class="small-actions">
-              <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','suspended')">Suspend</button>
-              <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','active')">Activate</button>
-              <button class="btn-ghost btn-sm" type="button" onclick="secureLender('${id}','${email}')">Secure</button>
-              <button class="btn-primary btn-sm" type="button" onclick="openUpdateLender('${id}')">Update</button>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    lendersList.innerHTML = html;
-
-    try { mountPopAckUI(); } catch (e) {}
+  const r = await fetchJson("/api/admin/lenders", { method: "GET" });
+  if (!r.ok) {
+    lendersList.innerHTML = "";
+    alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
+    return;
   }
 
-  window.loadLenders = loadLenders;
+  let rows = Array.isArray(r.data) ? r.data : [];
+  const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
+  if (q) {
+    rows = rows.filter(u => {
+      const hay = [
+        u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
+        u.status, u.billingStatus, u.paymentProofStatus
+      ].map(x => String(x || "").toLowerCase()).join(" ");
+      return hay.includes(q);
+    });
+  }
+
+  if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
+
+  if (rows.length === 0) {
+    lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
+    return;
+  }
+
+  let html = "";
+  rows.forEach((u) => {
+    const id = escapeHtml(u._id);
+    const businessName = escapeHtml(u.businessName || "—");
+    const branchName = escapeHtml(u.branchName || "—");
+    const phone = escapeHtml(u.phone || "—");
+    const licenseNo = escapeHtml(u.licenseNo || "—");
+    const email = escapeHtml(u.email || "—");
+    const st = escapeHtml(u.status || "active");
+
+    const popStatus = String(u.paymentProofStatus || "").toLowerCase();
+    const popUpdatedAt = u.paymentProofUpdatedAt || null;
+    const popUrl = u.paymentProofUrl || "";
+    const popId = parseIdFromUrl(popUrl);
+
+    const popIsNew = isProofNewForUser(u._id, popUpdatedAt);
+
+    const popTag = popStatus
+      ? `<span class="tag ${popStatus === "approved" ? "active" : popStatus === "rejected" ? "suspended" : ""}">
+           PoP: ${escapeHtml(popStatus)}
+         </span>`
+      : "";
+
+    html += `
+      <div class="result-item ${popIsNew ? "ll-new-highlight" : ""}">
+        <div class="admin-row">
+          <div>
+            <div><b>${businessName}</b> • ${branchName}</div>
+            <div class="small">Email: <b>${email}</b></div>
+            <div class="small">Phone: ${phone} • License: ${licenseNo}</div>
+
+            <div class="kv" style="margin-top:8px;">
+              ${statusTag(st)}
+              ${u.billingStatus ? `<span class="tag">${escapeHtml(String(u.billingStatus))}</span>` : ""}
+              ${u.mustChangePassword ? `<span class="tag" title="User must change password on next login">mustChangePassword</span>` : ""}
+              ${popTag}
+              ${popUpdatedAt ? `<span class="small" style="opacity:.8;">PoP updated: ${escapeHtml(new Date(popUpdatedAt).toLocaleString())}</span>` : ""}
+            </div>
+
+            <!-- ✅ UPDATED BUTTON BLOCK -->
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              ${popUrl ? `<button class="btn-ghost btn-sm" type="button" onclick="viewPopFile('${id}','${escapeHtml(popUrl)}')">View PoP</button>` : ""}
+              ${popId ? `<button class="btn-ghost btn-sm" type="button" onclick="reviewPop('${popId}','approved')">Approve PoP</button>` : ""}
+              ${popId ? `<button class="btn-ghost btn-sm" type="button" onclick="reviewPop('${popId}','rejected')">Reject PoP</button>` : ""}
+            </div>
+
+            <!-- ✅ NEW RECEIPT UPLOAD -->
+            ${popId ? `
+              <div style="margin-top:10px;">
+                <input type="file" id="receipt-${popId}" />
+                <button class="btn-primary btn-sm" onclick="uploadReceipt('${popId}')">
+                  Upload Receipt
+                </button>
+              </div>
+            ` : ""}
+
+            <div class="pop-box" style="margin-top:10px;">
+              <div class="small" style="margin-bottom:8px;"><b>Billing Acknowledgement</b></div>
+              <div class="pop-ack-host" data-lender-id="${id}"></div>
+            </div>
+          </div>
+
+          <div class="small-actions">
+            <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','suspended')">Suspend</button>
+            <button class="btn-ghost btn-sm" type="button" onclick="setLenderStatus('${id}','active')">Activate</button>
+            <button class="btn-ghost btn-sm" type="button" onclick="secureLender('${id}','${email}')">Secure</button>
+            <button class="btn-primary btn-sm" type="button" onclick="openUpdateLender('${id}')">Update</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  lendersList.innerHTML = html;
+
+  try { mountPopAckUI(); } catch (e) {}
+}
+
+window.loadLenders = loadLenders;
+
 
   // ✅ View proof of payment (token fetch → blob → open)
   window.viewPopFile = async function (lenderId, popUrl) {
@@ -1199,5 +1211,41 @@ ${against.email || against.phone ? `
     try { if ($("auditList")) loadAudit(); } catch (e) {}
     try { if ($("consentsList")) loadConsents(); } catch (e) {}
   });
+window.uploadReceipt = async function (id) {
+  const input = document.getElementById(`receipt-${id}`);
 
+  if (!input || !input.files.length) {
+    alert("Please select a file first");
+    return;
+  }
+
+  const file = input.files[0];
+
+  const fd = new FormData();
+  fd.append("receipt", file);
+
+  try {
+    const res = await fetch(window.APP_CONFIG.API_BASE_URL + `/api/admin/payment-proofs/${encodeURIComponent(id)}/receipt`, {
+      method: "POST",
+      headers: {
+        "Authorization": localStorage.getItem("authToken")
+      },
+      body: fd
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.message || "Upload failed");
+      return;
+    }
+
+    alert("Receipt uploaded ✅");
+try { loadLenders(); } catch(e) {}
+
+  } catch (err) {
+    console.error(err);
+    alert("Server error uploading receipt");
+  }
+};
 })();
