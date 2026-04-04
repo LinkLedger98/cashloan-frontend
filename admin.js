@@ -864,16 +864,25 @@
   /* =========================================================
      DISPUTES PAGE (no /overdue endpoint → filter client-side)
   ========================================================= */
-  function pickLenderDisplay(d) {
-    const business = d.lenderBusinessName || d.cashloanName || d.businessName || "";
-    const branch = d.lenderBranchName || d.cashloanBranch || d.branchName || "";
-    const email = d.lenderEmail || d.openedByEmail || d.createdByEmail || d.email || "";
-    const phone = d.lenderPhone || d.cashloanPhone || "";
+ function pickLenderDisplay(d) {
+  const rb = d.raisedBy || {};
 
-    const line1 = [business, branch].filter(Boolean).join(" • ");
-    const line2 = [email ? `Email: ${email}` : "", phone ? `Phone: ${phone}` : ""].filter(Boolean).join(" • ");
-    return { line1: line1 || "Unknown lender", line2 };
-  }
+  const business = rb.name || "";
+  const branch = rb.branch || "";
+  const email = rb.email || "";
+  const phone = rb.phone || "";
+
+  const line1 = [business, branch].filter(Boolean).join(" • ");
+  const line2 = [
+    email ? `Email: ${email}` : "",
+    phone ? `Phone: ${phone}` : ""
+  ].filter(Boolean).join(" • ");
+
+  return {
+    line1: line1 || "Unknown lender",
+    line2
+  };
+}
 
   async function loadDisputes(mode) {
     const list = $("disputesList");
