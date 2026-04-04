@@ -925,6 +925,8 @@
       const note = escapeHtml(d.adminNote || d.note || "");
 
       const lender = pickLenderDisplay(d);
+      const against = d.against || {}; 
+      const client = d.client || {};
 
       html += `
         <div class="result-item">
@@ -932,8 +934,32 @@
             <div>
               <div><b>Dispute</b> • Omang: <b>${nationalId || "—"}</b></div>
               <div class="small">Status: <b>${status}</b>${created ? ` • Opened: ${escapeHtml(created)}` : ""}${due ? ` • SLA due: ${escapeHtml(due)}` : ""}</div>
-              <div class="small" style="margin-top:6px;"><b>From:</b> ${escapeHtml(lender.line1)}</div>
-              ${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
+            <div class="small" style="margin-top:6px;">
+  <b>From:</b> ${escapeHtml(lender.line1)}
+</div>
+
+${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
+
+<div class="small" style="margin-top:6px;">
+  <b>Against:</b> ${escapeHtml(
+    [against.name, against.branch].filter(Boolean).join(" • ") || "—"
+  )}
+</div>
+
+${against.email || against.phone ? `
+  <div class="small" style="opacity:.9;">
+    ${escapeHtml([
+      against.email ? `Email: ${against.email}` : "",
+      against.phone ? `Phone: ${against.phone}` : ""
+    ].filter(Boolean).join(" • "))}
+  </div>
+` : ""}
+
+<div class="small" style="margin-top:6px;">
+  <b>Client:</b> ${escapeHtml(
+    [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
+  )}
+</div>
               ${d.notes ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
               ${note ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${note}</div>` : ""}
             </div>
