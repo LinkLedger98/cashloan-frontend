@@ -279,18 +279,21 @@ async function loadMyDisputes() {
 
               ${lenderNote ? `<div class="small" style="margin-top:10px; opacity:.9;"><b>Your reason:</b> ${lenderNote}</div>` : ""}
 
-              ${
-                (String(adminStatusRaw || "").toLowerCase() === "investigating" || adminNote)
-                  ? `<div class="small" style="margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);">
-                      <div style="font-weight:800; margin-bottom:6px;">Admin response</div>
-                      <div>${adminNote ? adminNote : "Investigation in progress."}</div>
-                      <div class="small" style="margin-top:8px; opacity:.8;">
-                        ${updated ? `Updated: ${escapeHtml(updated)}` : ""}
-                        ${updatedBy ? ` • By: ${updatedBy}` : ""}
-                      </div>
-                    </div>`
-                  : `<div class="small" style="margin-top:10px; opacity:.75;">No admin response yet.</div>`
-              }
+             ${
+  (d.adminNote || d.adminStatus)
+    ? `<div class="small" style="margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);">
+        <div style="font-weight:800; margin-bottom:6px;">Admin response</div>
+
+        <div>${escapeHtml(d.adminNote || "Update from admin.")}</div>
+
+        <div class="small" style="margin-top:8px; opacity:.8;">
+          ${d.adminStatus ? `Status: ${escapeHtml(d.adminStatus)}` : ""}
+          ${d.adminUpdatedAt ? ` • Updated: ${new Date(d.adminUpdatedAt).toLocaleString()}` : ""}
+          ${d.adminUpdatedBy ? ` • By: ${escapeHtml(d.adminUpdatedBy)}` : ""}
+        </div>
+      </div>`
+    : `<div class="small" style="margin-top:10px; opacity:.75;">No admin response yet.</div>`
+}
             </div>
           </div>
         </div>
@@ -356,10 +359,16 @@ async function loadBillingLoopback() {
           ${reviewedAt ? ` • Reviewed: ${escapeHtml(reviewedAt)}` : ""}
         </div>
 
-        ${notes
-          ? `<div style="margin-top:10px;"><b>Admin note:</b> ${notes}</div>`
-          : `<div style="margin-top:10px; opacity:.8;">No admin note.</div>`
-        }
+       ${p.notes ? `
+  <div style="margin-top:10px; padding:10px; border-radius:10px; background:rgba(0,120,255,0.08);">
+    <div style="font-weight:700; margin-bottom:4px;">Admin feedback</div>
+    <div>${escapeHtml(p.notes)}</div>
+  </div>
+` : `
+  <div style="margin-top:10px; opacity:.75;">
+    No admin feedback yet.
+  </div>
+`} 
 
         ${fullFileUrl
           ? `<div style="margin-top:10px;">
@@ -886,8 +895,21 @@ async function loadMyClients() {
               <div><b>${escapeHtml(r.fullName || "Unknown")}</b></div>
               <div class="small">National ID: <b>${escapeHtml(r.nationalId || "")}</b></div>
               <div class="small">Status: <span class="badge ${badgeClass}">${stUpper}</span></div>
-              ${dates}
-              <div class="small">Added: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</div>
+${dates}
+
+${r.consentStatus ? `
+  <div class="small" style="margin-top:6px;">
+    <b>Consent:</b> ${escapeHtml(r.consentStatus)}
+  </div>
+` : ""}
+
+${r.consentNotes ? `
+  <div class="small" style="margin-top:4px; color:#2563eb;">
+    ${escapeHtml(r.consentNotes)}
+  </div>
+` : ""}
+
+<div class="small">Added: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</div>
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
