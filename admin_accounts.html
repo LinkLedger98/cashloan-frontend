@@ -31,192 +31,194 @@
       </div>
     </div>
 
-    <!-- Admin Nav -->
-    <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="btn-primary btn-sm" href="admin_accounts.html">Accounts</a>
-      <a class="btn-ghost btn-sm" href="admin_clients.html">Clients</a>
-      <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
-      <a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
-      <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+   <!-- Admin Nav -->
+<div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+  <a class="btn-primary btn-sm" href="admin_accounts.html">Accounts</a>
+  <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
+  <a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
+  <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+</div>
+
+<!-- Create Institution -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+    <div>
+      <h2>Create Institution Account</h2>
+      <p class="small" style="margin:6px 0 0 0;">
+        Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).
+      </p>
     </div>
 
-    <!-- Create Lender -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
-        <div>
-          <h2>Create Lender Account</h2>
-          <p class="small" style="margin:6px 0 0 0;">
-            Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).
-          </p>
-        </div>
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-ghost btn-sm" id="fillFormBtn" type="button">Fill Form</button>
-          <button class="btn-ghost btn-sm" id="clearFormBtn" type="button">Clear</button>
-        </div>
-      </div>
-
-      <form id="adminForm" style="margin-top:12px;">
-        <label>ADMIN KEY (optional if logged in as admin)</label>
-        <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
-
-        <div class="row">
-          <div>
-            <label>Business Name</label>
-            <input id="businessName" required />
-          </div>
-          <div>
-            <label>Branch</label>
-            <input id="branchName" required />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Phone</label>
-            <input id="phone" required />
-          </div>
-          <div>
-            <label>NBIFIRA License No.</label>
-            <input id="licenseNo" required />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Email</label>
-            <input id="email" type="email" required />
-          </div>
-          <div>
-            <label>Temporary Password</label>
-            <input id="tempPassword" required />
-          </div>
-        </div>
-
-        <button class="btn-primary" type="submit">Create Lender</button>
-        <p id="msg" class="small" style="margin-top:10px;"></p>
-      </form>
-
-      <!-- ✅ Signup Requests (Collapsible) -->
-      <div style="margin-top:18px;">
-        <div class="collapsible-head">
-          <div>
-            <h2 style="margin:0;">Signup Requests</h2>
-            <div class="small" style="opacity:.85; margin-top:4px;">
-              Autofill the form, then create the lender. Delete request when done.
-            </div>
-          </div>
-          <button class="btn-ghost btn-sm" id="toggleRequestsBtn" type="button" title="Collapse/Expand">▲</button>
-        </div>
-
-        <div class="collapsible" id="requestsWrap">
-          <div class="collapsible-inner">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-              <button class="btn-ghost btn-sm" id="reloadRequestsBtn" type="button">Reload Requests</button>
-            </div>
-            <div id="requestsList" style="margin-top:10px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ✅ Lenders List (Collapsible) -->
-      <div style="margin-top:18px;">
-        <div class="collapsible-head">
-          <div>
-            <h2 style="margin:0;">Lenders</h2>
-            <div class="small" style="opacity:.85; margin-top:4px;">
-              Suspend/Activate and view Proof of Payment.
-            </div>
-          </div>
-          <button class="btn-ghost btn-sm" id="toggleLendersBtn" type="button" title="Collapse/Expand">▲</button>
-        </div>
-
-        <div class="collapsible" id="lendersWrap">
-          <div class="collapsible-inner">
-            <div class="row" style="margin-top:10px;">
-              <div>
-                <label class="small">Search</label>
-                <input id="lendersSearch" placeholder="Search business / email / license / status..." />
-              </div>
-              <div style="display:flex; align-items:flex-end;">
-                <button class="btn-ghost btn-sm" id="reloadLendersBtn" type="button">Reload Lenders</button>
-              </div>
-            </div>
-
-            <div class="small" id="lendersCount" style="margin-top:10px; opacity:.85;"></div>
-            <div id="lendersList" style="margin-top:10px;"></div>
-          </div>
-        </div>
-      </div>
-
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-ghost btn-sm" id="fillFormBtn" type="button">Fill Form</button>
+      <button class="btn-ghost btn-sm" id="clearFormBtn" type="button">Clear</button>
     </div>
-
-    <div class="footer">
-      <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div>
-        <a href="welcome.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-      </div>
-    </div>
-
   </div>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
+  <form id="adminForm" style="margin-top:12px;">
+    <label>ADMIN KEY (optional if logged in as admin)</label>
+    <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
 
-    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
-    (function () {
-      try {
-        const token = localStorage.getItem("authToken");
-        const role = String(
-          localStorage.getItem("userRole") || localStorage.getItem("role") || ""
-        ).toLowerCase();
-
-        if (!token) {
-          window.location.href = "login.html";
-          return;
-        }
-
-        if (role !== "superadmin") {
-          alert("Access Denied");
-          window.location.href = "dashboard.html";
-          return;
-        }
-      } catch (e) {
-        alert("Access Denied");
-        window.location.href = "dashboard.html";
-      }
-    })();
-  </script>
-
-  <script src="config.js"></script>
-  <script src="admin.js"></script>
-
-  <template id="popAckTemplate">
-    <div class="pop-ack-box" style="margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03);">
-      <div class="small" style="margin-bottom:8px;"><b>Payment acknowledgement</b> (send to lender)</div>
-
-      <div class="row" style="margin-top:6px;">
-        <div>
-          <label class="small">Status</label>
-          <select class="popAckStatus">
-            <option value="approved">Approved</option>
-            <option value="resend">Resend</option>
-            <option value="past_due">Past due</option>
-          </select>
-        </div>
-        <div>
-          <label class="small">Note (optional)</label>
-          <input class="popAckNote" placeholder="e.g. Receipt is unclear, please resend" />
-        </div>
+    <div class="row">
+      <div>
+        <label>Business Name</label>
+        <input id="businessName" required />
       </div>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
-        <button class="btn-primary btn-sm popAckSave" type="button">Send acknowledgement</button>
-        <div class="small popAckMsg" style="opacity:.85;"></div>
+      <div>
+        <label>Branch</label>
+        <input id="branchName" required />
       </div>
     </div>
-  </template>
+
+    <div class="row">
+      <div>
+        <label>Phone</label>
+        <input id="phone" required />
+      </div>
+      <div>
+        <label>NBIFIRA License No.</label>
+        <input id="licenseNo" required />
+      </div>
+    </div>
+
+       <div class="row">
+  <div>
+    <label>Email</label>
+    <input id="email" type="email" required />
+  </div>
+  <div>
+    <label>Temporary Password</label>
+    <input id="tempPassword" required />
+  </div>
+</div>
+
+<button class="btn-primary" type="submit">Create Institution</button>
+<p id="msg" class="small" style="margin-top:10px;"></p>
+</form>
+
+<!-- ✅ Signup Requests (Collapsible) -->
+<div style="margin-top:18px;">
+  <div class="collapsible-head">
+    <div>
+      <h2 style="margin:0;">Signup Requests</h2>
+      <div class="small" style="opacity:.85; margin-top:4px;">
+        Autofill the form, then create the institution. Delete request when done.
+      </div>
+    </div>
+    <button class="btn-ghost btn-sm" id="toggleRequestsBtn" type="button" title="Collapse/Expand">▲</button>
+  </div>
+
+  <!-- 👇 CLOSED BY DEFAULT -->
+  <div class="collapsible" id="requestsWrap" style="display:none;">
+    <div class="collapsible-inner">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn-ghost btn-sm" id="reloadRequestsBtn" type="button">Reload Requests</button>
+      </div>
+      <div id="requestsList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+    <!-- ✅ Institutions List (Collapsible) -->
+<div style="margin-top:18px;">
+  <div class="collapsible-head">
+    <div>
+      <h2 style="margin:0;">Institutions</h2>
+      <div class="small" style="opacity:.85; margin-top:4px;">
+        Suspend/Activate and view Proof of Payment.
+      </div>
+    </div>
+    <button class="btn-ghost btn-sm" id="toggleLendersBtn" type="button" title="Collapse/Expand">▲</button>
+  </div>
+
+  <!-- 👇 CLOSED BY DEFAULT -->
+  <div class="collapsible" id="lendersWrap" style="display:none;">
+    <div class="collapsible-inner">
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label class="small">Search</label>
+          <input id="lendersSearch" placeholder="Search institution / email / license / status..." />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-ghost btn-sm" id="reloadLendersBtn" type="button">Reload Institutions</button>
+        </div>
+      </div>
+
+      <div class="small" id="lendersCount" style="margin-top:10px; opacity:.85;"></div>
+      <div id="lendersList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div>© <span id="year"></span> LinkLedger • Botswana</div>
+  <div>
+    <a href="welcome.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+  </div>
+</div>
+
+</div>
+
+<script>
+  // Year
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  // ✅ SUPERADMIN FRONTEND GUARD (FIXED — now inside script)
+  (function () {
+    try {
+      const token = localStorage.getItem("authToken");
+      const role = String(
+        localStorage.getItem("userRole") || localStorage.getItem("role") || ""
+      ).toLowerCase();
+
+      if (!token) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      if (role !== "superadmin") {
+        alert("Access Denied");
+        window.location.href = "dashboard.html";
+        return;
+      }
+    } catch (e) {
+      alert("Access Denied");
+      window.location.href = "dashboard.html";
+    }
+  })();
+</script>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+
+<template id="popAckTemplate">
+  <div class="pop-ack-box" style="margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03);">
+    <div class="small" style="margin-bottom:8px;">
+      <b>Payment acknowledgement</b> (send to institution)
+    </div>
+
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <label class="small">Status</label>
+        <select class="popAckStatus">
+          <option value="approved">Approved</option>
+          <option value="resend">Resend</option>
+          <option value="past_due">Past due</option>
+        </select>
+      </div>
+      <div>
+        <label class="small">Note (optional)</label>
+        <input class="popAckNote" placeholder="e.g. Receipt is unclear, please resend" />
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+      <button class="btn-primary btn-sm popAckSave" type="button">Send acknowledgement</button>
+      <div class="small popAckMsg" style="opacity:.85;"></div>
+    </div>
+  </div>
+</template>
 
 </body>
 </html>

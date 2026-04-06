@@ -22,163 +22,163 @@
       </div>
     </div>
 
-    <!-- Search borrower history -->
-    <div class="card">
-      <h2>Search borrower history</h2>
-      <p>Search by National ID to see reported statuses across lenders.</p>
+   <!-- Verify customer history -->
+<div class="card">
+  <h2>Verify Customer</h2>
+  <p>Search by National ID to see reported credit statuses across institutions.</p>
 
-      <div class="row">
-        <div>
-          <label for="searchNationalId">National ID</label>
-          <input id="searchNationalId" placeholder="e.g. 123456789" />
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
-        </div>
-      </div>
-
-      <hr />
-
-      <div id="results" class="results"></div>
+  <div class="row">
+    <div>
+      <label for="searchNationalId">National ID</label>
+      <input id="searchNationalId" placeholder="e.g. 123456789" />
     </div>
+    <div style="display:flex; align-items:flex-end;">
+      <button class="btn-primary" style="width:100%;" onclick="searchClient()">Search</button>
+    </div>
+  </div>
 
-    <!-- ✅ Add borrower record -->
-    <div class="card" style="margin-top:16px;">
-      <h2>Add borrower record</h2>
-      <p>Only logged-in lenders can add borrower status records.</p>
+  <hr />
 
-      <div class="row">
-        <div>
-          <label for="fullName">Full name</label>
-          <input id="fullName" placeholder="e.g. Thato Molefe" />
-        </div>
-        <div>
-          <label for="nationalId">National ID</label>
-          <input id="nationalId" placeholder="e.g. 123456789" />
-        </div>
-      </div>
+  <div id="results" class="results"></div>
+</div>
 
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="paid">paid</option>
-            <option value="owing">owing</option>
-            <option value="overdue">overdue</option>
-          </select>
-        </div>
-        <div>
-          <label for="dueDate">Due date (for owing/overdue)</label>
-          <input id="dueDate" type="date" />
-        </div>
-      </div>
+   <!-- ✅ Add customer record -->
+<div class="card" style="margin-top:16px;">
+  <h2>Add Customer Record</h2>
+  <p>Only logged-in institutions can add customer credit status records.</p>
+
+  <div class="row">
+    <div>
+      <label for="fullName">Full name</label>
+      <input id="fullName" placeholder="e.g. Thato Molefe" />
+    </div>
+    <div>
+      <label for="nationalId">National ID</label>
+      <input id="nationalId" placeholder="e.g. 123456789" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
+    <div>
+      <label for="status">Credit Status</label>
+      <select id="status">
+        <option value="paid">paid</option>
+        <option value="owing">owing</option>
+        <option value="overdue">overdue</option>
+      </select>
+    </div>
+    <div>
+      <label for="dueDate">Due date (for owing/overdue)</label>
+      <input id="dueDate" type="date" />
+    </div>
+  </div>
 
       <!-- ✅ Consent evidence (checkbox + upload) -->
-      <div style="margin-top:12px;">
-        <label style="display:flex; gap:10px; align-items:center;">
-          <input id="consentCheck" type="checkbox" />
-          Borrower consent obtained (required)
-        </label>
+<div style="margin-top:12px;">
+  <label style="display:flex; gap:10px; align-items:center;">
+    <input id="consentCheck" type="checkbox" />
+    Customer consent obtained (required)
+  </label>
 
-        <div style="margin-top:10px;">
-          <label for="consentFile">Upload signed consent proof</label>
-          <input
-            id="consentFile"
-            type="file"
-            accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
-          />
-          <div class="small" style="opacity:.85; margin-top:6px;">
-            Required for compliance. Accepted: screenshots/photos/scans (any image) or PDF.
-          </div>
+  <div style="margin-top:10px;">
+    <label for="consentFile">Upload signed consent proof</label>
+    <input
+      id="consentFile"
+      type="file"
+      accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
+    />
+    <div class="small" style="opacity:.85; margin-top:6px;">
+      Required for compliance. Accepted: screenshots/photos/scans (any image) or PDF.
+    </div>
 
-          <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
-        </div>
+    <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
+  </div>
+</div>
+
+<div style="margin-top:12px;">
+  <button class="btn-primary" onclick="addClient()">Save record</button>
+</div>
+</div>
+
+   <!-- ✅ My Customers (smooth collapse) -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <h2 style="margin-bottom:4px;">My Customers</h2>
+      <p class="small" style="margin:0;">Your customer records only (added by your account).</p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div>
+        <label class="small" for="myClientsSearch">Search</label>
+        <input id="myClientsSearch" placeholder="Name or National ID" />
       </div>
 
-      <div style="margin-top:12px;">
-        <button class="btn-primary" onclick="addClient()">Save record</button>
+      <button class="btn-ghost btn-sm" id="toggleMyClientsBtn" type="button" title="Collapse/Expand">▲</button>
+      <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
+    </div>
+  </div>
+
+  <hr style="margin:14px 0;" />
+
+  <div id="myClientsWrap" class="collapse-wrap">
+    <div class="collapse-inner">
+      <div id="myClientsList" class="results"></div>
+    </div>
+  </div>
+</div>
+
+   <!-- ✅ Disputes loopback (admin notes appear here) -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <h2 style="margin-bottom:4px;">My Disputes (Admin Responses)</h2>
+      <p class="small" style="margin:0;">
+        When Admin marks a dispute as “Investigating”, you will see the note here.
+      </p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <button class="btn-ghost" id="reloadMyDisputesBtn" type="button">Refresh</button>
+    </div>
+  </div>
+
+  <hr style="margin:14px 0;" />
+  <div id="myDisputesList" class="results"></div>
+</div>
+
+<!-- ✅ Proof of Payment (billing) + loopback review -->
+<div class="card" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <h2 style="margin-bottom:4px;">Subscription & Proof of Payment</h2>
+      <p class="small" style="margin:0;">
+        Upload proof here. Admin review outcome will appear below.
+      </p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <button class="btn-ghost" id="reloadBillingBtn" type="button">Refresh</button>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
+    <div>
+      <label for="paymentProofFile">Proof of payment file</label>
+      <input
+        id="paymentProofFile"
+        type="file"
+        accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
+      />
+      <div class="small" style="opacity:.85; margin-top:6px;">
+        Accepted: screenshots/photos/scans (any image) or PDF. If the file is large, compress it slightly if upload fails.
       </div>
     </div>
 
-    <!-- ✅ My Clients (smooth collapse) -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-          <h2 style="margin-bottom:4px;">My Clients</h2>
-          <p class="small" style="margin:0;">Your borrower records only (added by your account).</p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-          <div>
-            <label class="small" for="myClientsSearch">Search</label>
-            <input id="myClientsSearch" placeholder="Name or National ID" />
-          </div>
-
-          <button class="btn-ghost btn-sm" id="toggleMyClientsBtn" type="button" title="Collapse/Expand">▲</button>
-          <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
-        </div>
-      </div>
-
-      <hr style="margin:14px 0;" />
-
-      <div id="myClientsWrap" class="collapse-wrap">
-        <div class="collapse-inner">
-          <div id="myClientsList" class="results"></div>
-        </div>
-      </div>
+    <div style="display:flex; align-items:flex-end;">
+      <button class="btn-primary" style="width:100%;" onclick="uploadPaymentProof()">Submit proof</button>
     </div>
-
-    <!-- ✅ Disputes loopback (admin notes appear here) -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-          <h2 style="margin-bottom:4px;">My Disputes (Admin Responses)</h2>
-          <p class="small" style="margin:0;">
-            When Admin marks a dispute as “Investigating”, you will see the note here.
-          </p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-          <button class="btn-ghost" id="reloadMyDisputesBtn" type="button">Refresh</button>
-        </div>
-      </div>
-
-      <hr style="margin:14px 0;" />
-      <div id="myDisputesList" class="results"></div>
-    </div>
-
-    <!-- ✅ Proof of Payment (billing) + loopback review -->
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-          <h2 style="margin-bottom:4px;">Subscription & Proof of Payment</h2>
-          <p class="small" style="margin:0;">
-            Upload proof here. Admin review outcome will appear below.
-          </p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-          <button class="btn-ghost" id="reloadBillingBtn" type="button">Refresh</button>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label for="paymentProofFile">Proof of payment file</label>
-          <input
-            id="paymentProofFile"
-            type="file"
-            accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
-          />
-          <div class="small" style="opacity:.85; margin-top:6px;">
-            Accepted: screenshots/photos/scans (any image) or PDF. If the file is huge, compress it slightly if upload fails.
-          </div>
-        </div>
-
-        <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" style="width:100%;" onclick="uploadPaymentProof()">Submit proof</button>
-        </div>
-      </div>
+  </div>
 
       <div id="paymentProofStatus"
            class="small"
