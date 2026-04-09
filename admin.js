@@ -1053,6 +1053,74 @@ ${against.email || against.phone ? `
     alert("Note sent ✅");
     loadDisputes("");
   };
+  
+/* =========================================================
+   🚨 RISK ENGINE (behavior detection)
+========================================================= */
+function runRiskEngine(rows) {
+  if (!Array.isArray(rows)) return;
+
+  const riskMap = {};
+  const alerts = [];
+
+  rows.forEach(a => {
+    const actor = a.actorEmail || "unknown";
+    const action = String(a.action || "").toUpperCase();
+    const ts = a.createdAt || a.timestamp;
+
+    if (!riskMap[actor]) {
+      riskMap[actor] = { score: 0, disputes: 0, oddLogins: 0 };
+    }
+
+    if (ts) {
+      const d = new Date(ts);
+      const hour = d.getHours();
+      const minutes = d.getMinutes();
+      const time = hour + (minutes / 60);
+
+      if (time < 7.5 || time > 18) {
+        riskMap[actor].score += 2;
+        riskMap[actor].oddLogins += 1;
+      }
+
+      if (time < 5 || time > 21) {
+        riskMap[actor].score += 3;
+      }
+    }
+
+    if (action.includes("DISPUTE")) {
+      riskMap[actor].disputes += 1;
+      riskMap[actor].score += 1;
+    }
+  });
+
+  Object.entries(riskMap).forEach(([actor, data]) => {
+    if (data.disputes >= 3) {
+      alerts.push(`🚨 ${actor} opened ${data.disputes} disputes`);
+    }
+
+    if (data.oddLogins >= 2) {
+      alerts.push(`🌙 ${actor} logged in at unusual times (${data.oddLogins})`);
+    }
+
+    if (data.score >= 6) {
+      alerts.push(`🔥 HIGH RISK: ${actor} (score ${data.score})`);
+    }
+  });
+
+  const box = document.getElementById("riskBox");
+  const list = document.getElementById("riskList");
+
+  if (!box || !list) return;
+
+  if (alerts.length === 0) {
+    box.style.display = "none";
+    return;
+  }
+
+  box.style.display = "block";
+  list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
+}
 
  async function loadAudit() {
   const list = $("auditList");
