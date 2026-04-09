@@ -226,42 +226,68 @@
     }
   }
 
-  /* ---------------- Collapsible helpers (smooth) ---------------- */
-  function ensureCollapseWrap(wrapEl) {
-    if (!wrapEl) return;
-    if (!wrapEl.classList.contains("collapse-wrap")) wrapEl.classList.add("collapse-wrap");
+  /* ---------------- Collapsible helpers (FIXED + BULLETPROOF) ---------------- */
+function ensureCollapseWrap(wrapEl) {
+  if (!wrapEl) return;
+
+  // remove any old inline hiding
+  wrapEl.style.display = "";
+  wrapEl.style.maxHeight = "";
+  wrapEl.style.overflow = "";
+
+  if (!wrapEl.classList.contains("collapse-wrap")) {
+    wrapEl.classList.add("collapse-wrap");
   }
+}
 
-  function setCollapsed(wrapEl, btnEl, collapsed) {
-    if (!wrapEl || !btnEl) return;
-    ensureCollapseWrap(wrapEl);
+function setCollapsed(wrapEl, btnEl, collapsed) {
+  if (!wrapEl || !btnEl) return;
 
-    btnEl.setAttribute("aria-controls", wrapEl.id || "");
-    btnEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  ensureCollapseWrap(wrapEl);
 
-    if (collapsed) {
-      wrapEl.classList.add("is-collapsed");
-      btnEl.textContent = "▼";
-      btnEl.title = "Expand";
-    } else {
-      wrapEl.classList.remove("is-collapsed");
-      btnEl.textContent = "▲";
-      btnEl.title = "Collapse";
-    }
+  btnEl.setAttribute("aria-controls", wrapEl.id || "");
+  btnEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+
+  if (collapsed) {
+    wrapEl.classList.add("is-collapsed");
+
+    // 🔥 FORCE HIDE
+    wrapEl.style.maxHeight = "0px";
+    wrapEl.style.overflow = "hidden";
+
+    btnEl.textContent = "▼";
+    btnEl.title = "Expand";
+  } else {
+    wrapEl.classList.remove("is-collapsed");
+
+    // 🔥 FORCE SHOW (this is the fix)
+    wrapEl.style.display = "block";
+    wrapEl.style.maxHeight = "2000px"; // large enough for content
+    wrapEl.style.overflow = "visible";
+
+    btnEl.textContent = "▲";
+    btnEl.title = "Collapse";
   }
+}
 
-  function bindToggle(btnId, wrapId, defaultCollapsed) {
-    const btn = $(btnId);
-    const wrap = $(wrapId);
-    if (!btn || !wrap) return;
+function bindToggle(btnId, wrapId, defaultCollapsed) {
+  const btn = $(btnId);
+  const wrap = $(wrapId);
+  if (!btn || !wrap) return;
 
-    setCollapsed(wrap, btn, !!defaultCollapsed);
+  // 🔥 ALWAYS RESET FIRST (critical fix)
+  wrap.classList.remove("is-collapsed");
+  wrap.style.display = "block";
+  wrap.style.maxHeight = "2000px";
 
-    btn.addEventListener("click", function () {
-      const isCollapsed = wrap.classList.contains("is-collapsed");
-      setCollapsed(wrap, btn, !isCollapsed);
-    });
-  }
+  // THEN apply state
+  setCollapsed(wrap, btn, !!defaultCollapsed);
+
+  btn.addEventListener("click", function () {
+    const isCollapsed = wrap.classList.contains("is-collapsed");
+    setCollapsed(wrap, btn, !isCollapsed);
+  });
+}
 
   /* =========================================================
      Toast Notifications (polling) — “Facebook pop-ups”
@@ -1028,58 +1054,59 @@ ${against.email || against.phone ? `
     loadDisputes("");
   };
 
-  /* =========================================================
-     AUDIT PAGE
-  ========================================================= */
-  async function loadAudit() {
-    const list = $("auditList");
-    if (!list) return;
+ async function loadAudit() {
+  const list = $("auditList");
+  if (!list) return;
 
-    const nationalId = String(($("auditNationalId") && $("auditNationalId").value) || "").trim();
-    const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
+  const nationalId = String(($("auditNationalId") && $("auditNationalId").value) || "").trim();
+  const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
 
-    list.innerHTML = `<div class="small">Loading...</div>`;
-    const q = [];
-    if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
-    if (limit) q.push(`limit=${encodeURIComponent(String(limit))}`);
+  list.innerHTML = `<div class="small">Loading...</div>`;
+  const q = [];
+  if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
+  if (limit) q.push(`limit=${encodeURIComponent(String(limit))}`);
 
-    const r = await fetchJson(`/api/admin/audit${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
-    if (!r.ok) {
-      list.innerHTML = "";
-      alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
-      return;
-    }
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    const countLine = $("auditCountLine");
-    if (countLine) countLine.textContent = `Logs: ${rows.length}`;
-
-    if (rows.length === 0) {
-      list.innerHTML = `<div class="result-item"><div class="small">No audit logs.</div></div>`;
-      return;
-    }
-
-    let html = "";
-    rows.forEach((a) => {
-      const ts = a.createdAt || a.timestamp || a.time || null;
-      const when = ts ? new Date(ts).toLocaleString() : "";
-      const actor = a.actorEmail || a.email || a.userEmail || a.actor || "—";
-      const action = a.action || a.event || "—";
-      const target = a.nationalId || a.targetNationalId || "";
-      const meta = a.meta || a.details || a.payload || null;
-
-      html += `
-        <div class="result-item">
-          <div><b>${escapeHtml(action)}</b></div>
-          <div class="small">By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}</div>
-          ${target ? `<div class="small">Omang: <b>${escapeHtml(target)}</b></div>` : ""}
-          ${meta ? `<div class="small" style="opacity:.9; margin-top:6px;"><pre style="white-space:pre-wrap; margin:0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre></div>` : ""}
-        </div>
-      `;
-    });
-
-    list.innerHTML = html;
+  const r = await fetchJson(`/api/admin/audit${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
+  if (!r.ok) {
+    list.innerHTML = "";
+    alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
+    return;
   }
+
+  const rows = Array.isArray(r.data) ? r.data : [];
+
+  // 🚨 ADD THIS LINE (THIS IS THE FIX)
+  runRiskEngine(rows);
+
+  const countLine = $("auditCountLine");
+  if (countLine) countLine.textContent = `Logs: ${rows.length}`;
+
+  if (rows.length === 0) {
+    list.innerHTML = `<div class="result-item"><div class="small">No audit logs.</div></div>`;
+    return;
+  }
+
+  let html = "";
+  rows.forEach((a) => {
+    const ts = a.createdAt || a.timestamp || a.time || null;
+    const when = ts ? new Date(ts).toLocaleString() : "";
+    const actor = a.actorEmail || a.email || a.userEmail || a.actor || "—";
+    const action = a.action || a.event || "—";
+    const target = a.nationalId || a.targetNationalId || "";
+    const meta = a.meta || a.details || a.payload || null;
+
+    html += `
+      <div class="result-item">
+        <div><b>${escapeHtml(action)}</b></div>
+        <div class="small">By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}</div>
+        ${target ? `<div class="small">Omang: <b>${escapeHtml(target)}</b></div>` : ""}
+        ${meta ? `<div class="small" style="opacity:.9; margin-top:6px;"><pre style="white-space:pre-wrap; margin:0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre></div>` : ""}
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+}
 
   /* =========================================================
      CONSENTS PAGE (consent approvals only)
@@ -1246,6 +1273,55 @@ try { loadLenders(); } catch(e) {}
   } catch (err) {
     console.error(err);
     alert("Server error uploading receipt");
+  }
+};
+
+// ✅ EXPORT AUDIT CSV
+window.exportAuditCSV = async function () {
+  try {
+    const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL;
+    const token = localStorage.getItem("authToken");
+
+    if (!API_BASE_URL) {
+      alert("API not configured");
+      return;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/audit`, {
+      headers: { Authorization: token }
+    });
+
+    const data = await res.json();
+    const rows = Array.isArray(data) ? data : [];
+
+    if (!rows.length) {
+      alert("No audit data to export");
+      return;
+    }
+
+    const csv = [
+      ["Date", "Actor", "Action", "Omang"].join(","),
+      ...rows.map(r => [
+        r.createdAt,
+        r.actorEmail,
+        r.action,
+        r.nationalId || ""
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "audit_logs.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error(err);
+    alert("Export failed");
   }
 };
 })();

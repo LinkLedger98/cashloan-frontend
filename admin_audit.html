@@ -24,45 +24,53 @@
         <span class="legacy-text">Legacy Mode</span>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span class="pill" id="adminPill">Logged in</span>
-        <a class="btn-ghost" href="welcome.html">Home</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
-      </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+  <span class="pill" id="adminPill">Logged in</span>
+  <a class="btn-ghost" href="welcome.html">Home</a>
+  <button class="btn-ghost" onclick="logout()">Logout</button>
+</div>
+</div>
+
+<div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+  <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
+  <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
+  <a class="btn-primary btn-sm" href="admin_audit.html">Audit</a>
+  <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+</div>
+
+<div class="card" style="margin-top:16px;">
+
+  <!-- ✅ HEADER (FIXED STRUCTURE) -->
+  <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Audit Logs</h2>
+      <p class="small" style="margin:6px 0 0 0;">
+        Hidden trail of logins, searches, edits (for inspections).
+      </p>
     </div>
 
-    <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
-      <a class="btn-ghost btn-sm" href="admin_clients.html">Clients</a>
-      <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
-      <a class="btn-primary btn-sm" href="admin_audit.html">Audit</a>
-      <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
+      <button class="btn-ghost btn-sm" onclick="exportAuditCSV()">Export CSV</button>
     </div>
+  </div>
 
-    <div class="card" style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-        <div>
-          <h2 style="margin:0;">Audit Logs</h2>
-          <p class="small" style="margin:6px 0 0 0;">
-            Hidden trail of logins, searches, edits (for inspections).
-          </p>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label>Omang (optional filter)</label>
-          <input id="auditNationalId" placeholder="e.g. 123456789" />
-        </div>
-        <div>
-          <label>Limit (max 200)</label>
-          <input id="auditLimit" type="number" min="1" max="200" value="100" />
-        </div>
-      </div>
+  <!-- ✅ FILTERS (NOW OUTSIDE HEADER — THIS WAS THE BUG) -->
+  <div class="row" style="margin-top:12px;">
+    <div>
+      <label>Omang (optional filter)</label>
+      <input id="auditNationalId" placeholder="e.g. 123456789" />
+    </div>
+    <div>
+      <label>Limit (max 200)</label>
+      <input id="auditLimit" type="number" min="1" max="200" value="100" />
+    </div>
+  </div>
+      <!-- 🚨 RISK ALERTS -->
+<div id="riskBox" style="display:none; margin-top:12px; padding:12px; border-radius:12px; border:1px solid #ff4d4f; background:rgba(255,77,79,0.08);">
+  <div style="font-weight:600; margin-bottom:6px;">⚠️ Risk Alerts</div>
+  <div id="riskList" class="small"></div>
+</div>
 
       <div class="small" id="auditCountLine" style="margin-top:10px;"></div>
       <div id="auditList" style="margin-top:12px;"></div>
