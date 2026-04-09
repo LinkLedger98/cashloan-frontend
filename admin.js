@@ -1060,16 +1060,21 @@ ${against.email || against.phone ? `
 function runRiskEngine(rows) {
   if (!Array.isArray(rows)) return;
 
-  const riskMap = {};
+  const userRisk = {};
+  const businessRisk = {};
+  const searchTracker = {};
   const alerts = [];
 
   rows.forEach(a => {
-    const actor = a.actorEmail || "unknown";
+    const actor = a.actorEmail || a.email || "unknown";
     const action = String(a.action || "").toUpperCase();
     const ts = a.createdAt || a.timestamp;
+    const nationalId = a.targetNationalId || a.nationalId;
+    const business = a.againstBusiness || a.targetBusiness || a.businessName;
 
-    if (!riskMap[actor]) {
-      riskMap[actor] = { score: 0, disputes: 0, oddLogins: 0 };
+    // 👤 USER LOGIN BEHAVIOR
+    if (!userRisk[actor]) {
+      userRisk[actor] = { score: 0, oddLogins: 0 };
     }
 
     if (ts) {
@@ -1079,32 +1084,70 @@ function runRiskEngine(rows) {
       const time = hour + (minutes / 60);
 
       if (time < 7.5 || time > 18) {
-        riskMap[actor].score += 2;
-        riskMap[actor].oddLogins += 1;
+        userRisk[actor].score += 2;
+        userRisk[actor].oddLogins += 1;
       }
 
       if (time < 5 || time > 21) {
-        riskMap[actor].score += 3;
+        userRisk[actor].score += 3;
       }
     }
 
-    if (action.includes("DISPUTE")) {
-      riskMap[actor].disputes += 1;
-      riskMap[actor].score += 1;
+    // 🏢 BUSINESS DISPUTES (MAIN RISK)
+    if (business) {
+      if (!businessRisk[business]) {
+        businessRisk[business] = { disputes: 0 };
+      }
+
+      if (action.includes("DISPUTE")) {
+        businessRisk[business].disputes += 1;
+      }
+    }
+
+    // 🔍 SEARCH ABUSE
+    if (action.includes("SEARCH") && nationalId) {
+      const key = actor + "_" + nationalId;
+
+      if (!searchTracker[key]) {
+        searchTracker[key] = 0;
+      }
+
+      searchTracker[key] += 1;
     }
   });
 
-  Object.entries(riskMap).forEach(([actor, data]) => {
-    if (data.disputes >= 3) {
-      alerts.push(`🚨 ${actor} opened ${data.disputes} disputes`);
-    }
-
+  // 🚨 USER LOGIN ALERTS
+  Object.entries(userRisk).forEach(([actor, data]) => {
     if (data.oddLogins >= 2) {
       alerts.push(`🌙 ${actor} logged in at unusual times (${data.oddLogins})`);
     }
 
     if (data.score >= 6) {
-      alerts.push(`🔥 HIGH RISK: ${actor} (score ${data.score})`);
+      alerts.push(`🔥 HIGH RISK LOGIN: ${actor} (score ${data.score})`);
+    }
+  });
+
+  // 🚨 BUSINESS ALERTS
+  Object.entries(businessRisk).forEach(([biz, data]) => {
+    if (data.disputes >= 3) {
+      alerts.push(`🏢 ${biz} has ${data.disputes} disputes against them`);
+    }
+
+    if (data.disputes >= 5) {
+      alerts.push(`🚨 HIGH RISK BUSINESS: ${biz} (${data.disputes} disputes)`);
+    }
+  });
+
+  // 🚨 SEARCH ABUSE ALERTS
+  Object.entries(searchTracker).forEach(([key, count]) => {
+    if (count >= 3) {
+      const [actor, id] = key.split("_");
+      alerts.push(`🔍 ${actor} searched ${id} ${count} times`);
+    }
+
+    if (count >= 5) {
+      const [actor, id] = key.split("_");
+      alerts.push(`🚨 SEARCH ABUSE: ${actor} repeatedly searched ${id}`);
     }
   });
 
@@ -1122,19 +1165,20 @@ function runRiskEngine(rows) {
   list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
 }
 
- async function loadAudit() {
+
+/* =========================================================
+   📊 LOAD AUDIT
+========================================================= */
+async function loadAudit() {
   const list = $("auditList");
   if (!list) return;
 
-  const nationalId = String(($("auditNationalId") && $("auditNationalId").value) || "").trim();
   const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
 
   list.innerHTML = `<div class="small">Loading...</div>`;
-  const q = [];
-  if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
-  if (limit) q.push(`limit=${encodeURIComponent(String(limit))}`);
 
-  const r = await fetchJson(`/api/admin/audit${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
+  const r = await fetchJson(`/api/admin/audit?limit=${limit}`, { method: "GET" });
+
   if (!r.ok) {
     list.innerHTML = "";
     alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
@@ -1143,7 +1187,7 @@ function runRiskEngine(rows) {
 
   const rows = Array.isArray(r.data) ? r.data : [];
 
-  // 🚨 ADD THIS LINE (THIS IS THE FIX)
+  // 🚨 RUN RISK ENGINE
   runRiskEngine(rows);
 
   const countLine = $("auditCountLine");
@@ -1155,6 +1199,7 @@ function runRiskEngine(rows) {
   }
 
   let html = "";
+
   rows.forEach((a) => {
     const ts = a.createdAt || a.timestamp || a.time || null;
     const when = ts ? new Date(ts).toLocaleString() : "";
@@ -1168,13 +1213,54 @@ function runRiskEngine(rows) {
         <div><b>${escapeHtml(action)}</b></div>
         <div class="small">By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}</div>
         ${target ? `<div class="small">Omang: <b>${escapeHtml(target)}</b></div>` : ""}
-        ${meta ? `<div class="small" style="opacity:.9; margin-top:6px;"><pre style="white-space:pre-wrap; margin:0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre></div>` : ""}
+
+        ${meta ? `<div class="small" style="opacity:.9; margin-top:6px;">
+          <pre style="white-space:pre-wrap; margin:0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
+        </div>` : ""}
+
+        <!-- ✅ ACTION TRACKING (NEW FEATURE) -->
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','CALL')">📞 Called</button>
+          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','EMAIL')">📧 Email Sent</button>
+          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','WARNING')">⚠️ Warning Issued</button>
+        </div>
       </div>
     `;
   });
 
   list.innerHTML = html;
 }
+
+
+/* =========================================================
+   📝 LOG ADMIN ACTION (call / email / warning)
+========================================================= */
+window.logAuditAction = async function (target, type) {
+  try {
+    const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": localStorage.getItem("authToken")
+      },
+      body: JSON.stringify({
+        target,
+        action: type,
+        note: "Admin follow-up action"
+      })
+    });
+
+    if (!res.ok) {
+      alert("Failed to log action");
+      return;
+    }
+
+    alert(`${type} logged ✅`);
+  } catch (e) {
+    console.error(e);
+    alert("Error logging action");
+  }
+};
 
   /* =========================================================
      CONSENTS PAGE (consent approvals only)
