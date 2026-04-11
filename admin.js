@@ -953,69 +953,90 @@ window.loadLenders = loadLenders;
       return;
     }
 
-    let html = "";
-    rows.forEach((d) => {
-      const id = escapeHtml(d._id);
-      const nationalId = escapeHtml(d.nationalId || "");
-      const status = escapeHtml(d.status || "pending");
-      const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
-      const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
-      const note = escapeHtml(d.adminNote || d.note || "");
+ let html = "";
 
-      const lender = pickLenderDisplay(d);
-      const against = d.against || {}; 
-      const client = d.client || {};
+rows.forEach((d) => {
+  const id = escapeHtml(d._id);
+  const nationalId = escapeHtml(d.nationalId || "");
+  const status = escapeHtml(d.status || "pending");
+  const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
+  const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
+  const note = escapeHtml(d.adminNote || d.note || "");
 
-      html += `
-        <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div>
-              <div><b>Dispute</b> • Omang: <b>${nationalId || "—"}</b></div>
-              <div class="small">Status: <b>${status}</b>${created ? ` • Opened: ${escapeHtml(created)}` : ""}${due ? ` • SLA due: ${escapeHtml(due)}` : ""}</div>
-            <div class="small" style="margin-top:6px;">
-  <b>From:</b> ${escapeHtml(lender.line1)}
-</div>
+  const lender = pickLenderDisplay(d);
+  const against = d.against || {}; 
+  const client = d.client || {};
 
-${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
+  html += `
+    <div class="result-item">
 
-<div class="small" style="margin-top:6px;">
-  <b>Against:</b> ${escapeHtml(
-    [against.name, against.branch].filter(Boolean).join(" • ") || "—"
-  )}
-</div>
+      <!-- 🔴 HEADER -->
+      <div><b>Dispute</b> • Omang: <b>${nationalId || "—"}</b></div>
+      <div class="small">
+        Status: <b>${status}</b>
+        ${created ? ` • Opened: ${escapeHtml(created)}` : ""}
+        ${due ? ` • SLA due: ${escapeHtml(due)}` : ""}
+      </div>
 
-${against.email || against.phone ? `
-  <div class="small" style="opacity:.9;">
-    ${escapeHtml([
-      against.email ? `Email: ${against.email}` : "",
-      against.phone ? `Phone: ${against.phone}` : ""
-    ].filter(Boolean).join(" • "))}
-  </div>
-` : ""}
+      <!-- 👤 FROM -->
+      <div class="small" style="margin-top:6px;">
+        <b>From:</b> ${escapeHtml(lender.line1)}
+      </div>
+      ${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
 
-<div class="small" style="margin-top:6px;">
-  <b>Client:</b> ${escapeHtml(
-    [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
-  )}
-</div>
-              ${d.notes ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
-              ${note ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${note}</div>` : ""}
-            </div>
+      <!-- 🏢 AGAINST -->
+      <div class="small" style="margin-top:6px;">
+        <b>Against:</b> ${escapeHtml(
+          [against.name, against.branch].filter(Boolean).join(" • ") || "—"
+        )}
+      </div>
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              <button class="btn-ghost btn-sm" type="button" onclick="markInvestigating('${id}')">Investigating</button>
-              <button class="btn-primary btn-sm" type="button" onclick="sendDisputeNote('${id}')">Send Note</button>
-            </div>
-          </div>
-          <div class="small" style="margin-top:10px; opacity:.8;">
-            Tip: “Investigating” sends acknowledgement to lender and starts the 5-day loop on your side.
-          </div>
+      ${against.email || against.phone ? `
+        <div class="small" style="opacity:.9;">
+          ${escapeHtml([
+            against.email ? `Email: ${against.email}` : "",
+            against.phone ? `Phone: ${against.phone}` : ""
+          ].filter(Boolean).join(" • "))}
         </div>
-      `;
-    });
+      ` : ""}
 
-    list.innerHTML = html;
-  }
+      <!-- 👤 CLIENT -->
+      <div class="small" style="margin-top:6px;">
+        <b>Client:</b> ${escapeHtml(
+          [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
+        )}
+      </div>
+
+      <!-- 📝 NOTES -->
+      ${d.notes ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+      ${note ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${note}</div>` : ""}
+
+      <!-- 🎯 ACTIONS -->
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn-ghost btn-sm" onclick="markInvestigating('${id}')">Investigating</button>
+        <button class="btn-primary btn-sm" onclick="sendDisputeNote('${id}')">Send Note</button>
+
+        <button class="btn-ghost btn-sm"
+          onclick="logAuditAction('${against.email || lender.line1}','CALL',{type:'dispute',id:'${id}'})">
+          📞 Call
+        </button>
+
+        <button class="btn-ghost btn-sm"
+          onclick="logAuditAction('${against.email || lender.line1}','EMAIL',{type:'dispute',id:'${id}'})">
+          📧 Email
+        </button>
+
+        <button class="btn-ghost btn-sm"
+          onclick="logAuditAction('${against.email || lender.line1}','WARNING',{type:'dispute',id:'${id}'})">
+          ⚠️ Warning
+        </button>
+      </div>
+
+    </div>
+  `;
+});
+
+list.innerHTML = html;
 
   window.markInvestigating = async function (id) {
     const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
@@ -1053,9 +1074,10 @@ ${against.email || against.phone ? `
     alert("Note sent ✅");
     loadDisputes("");
   };
+  } 
   
 /* =========================================================
-   🚨 RISK ENGINE (behavior detection)
+   🚨 RISK ENGINE (SAFE + BULLETPROOF)
 ========================================================= */
 function runRiskEngine(rows) {
   if (!Array.isArray(rows)) return;
@@ -1066,45 +1088,58 @@ function runRiskEngine(rows) {
   const alerts = [];
 
   rows.forEach(a => {
-    const actor = a.actorEmail || a.email || "unknown";
-    const action = String(a.action || "").toUpperCase();
-    const ts = a.createdAt || a.timestamp;
-    const nationalId = a.targetNationalId || a.nationalId;
-    const business = a.againstBusiness || a.targetBusiness || a.businessName;
+    if (!a || typeof a !== "object") return;
 
+    const actor = String(a.actorEmail || a.email || "unknown");
+    const action = String(a.action || "").toUpperCase();
+    const ts = a.createdAt || a.timestamp || null;
+    const nationalId = a.targetNationalId || a.nationalId || null;
+
+    // 🔒 ALWAYS FALL BACK TO ACTOR (NEVER BREAKS)
+    const business = String(
+      a.againstBusiness || a.targetBusiness || a.businessName || actor
+    );
+
+    // ================================
     // 👤 USER LOGIN BEHAVIOR
+    // ================================
     if (!userRisk[actor]) {
       userRisk[actor] = { score: 0, oddLogins: 0 };
     }
 
     if (ts) {
       const d = new Date(ts);
-      const hour = d.getHours();
-      const minutes = d.getMinutes();
-      const time = hour + (minutes / 60);
+      if (!isNaN(d.getTime())) {
+        const time = d.getHours() + (d.getMinutes() / 60);
 
-      if (time < 7.5 || time > 18) {
-        userRisk[actor].score += 2;
-        userRisk[actor].oddLogins += 1;
-      }
+        if (time < 7.5 || time > 18) {
+          userRisk[actor].score += 2;
+          userRisk[actor].oddLogins += 1;
+        }
 
-      if (time < 5 || time > 21) {
-        userRisk[actor].score += 3;
-      }
-    }
-
-    // 🏢 BUSINESS DISPUTES (MAIN RISK)
-    if (business) {
-      if (!businessRisk[business]) {
-        businessRisk[business] = { disputes: 0 };
-      }
-
-      if (action.includes("DISPUTE")) {
-        businessRisk[business].disputes += 1;
+        if (time < 5 || time > 21) {
+          userRisk[actor].score += 3;
+        }
       }
     }
 
+    // ================================
+    // 🏢 BUSINESS INIT (NEVER BREAKS)
+    // ================================
+    if (!businessRisk[business]) {
+      businessRisk[business] = { disputes: 0, searches: 0 };
+    }
+
+    // ================================
+    // 🏢 DISPUTES
+    // ================================
+    if (action.includes("DISPUTE")) {
+      businessRisk[business].disputes += 1;
+    }
+
+    // ================================
     // 🔍 SEARCH ABUSE
+    // ================================
     if (action.includes("SEARCH") && nationalId) {
       const key = actor + "_" + nationalId;
 
@@ -1113,58 +1148,86 @@ function runRiskEngine(rows) {
       }
 
       searchTracker[key] += 1;
+
+      // 🔥 ALWAYS SAFE
+      businessRisk[business].searches += 1;
+    }
+  }); // ← THIS closes rows.forEach
+
+  // ================================
+  // 🚨 USER ALERTS (SAFE)
+  // ================================
+  Object.entries(userRisk || {}).forEach(([actor, data]) => {
+    const odd = Number((data && data.oddLogins) || 0);
+    const score = Number((data && data.score) || 0);
+
+    if (odd >= 2) {
+      alerts.push(`🌙 ${actor} logged in at unusual times (${odd})`);
+    }
+
+    if (score >= 6) {
+      alerts.push(`🔥 HIGH RISK LOGIN: ${actor} (score ${score})`);
     }
   });
 
-  // 🚨 USER LOGIN ALERTS
-  Object.entries(userRisk).forEach(([actor, data]) => {
-    if (data.oddLogins >= 2) {
-      alerts.push(`🌙 ${actor} logged in at unusual times (${data.oddLogins})`);
+  // ================================
+  // 🚨 BUSINESS ALERTS (SAFE)
+  // ================================
+  Object.entries(businessRisk || {}).forEach(([biz, data]) => {
+    const disputes = Number((data && data.disputes) || 0);
+    const searches = Number((data && data.searches) || 0);
+
+    if (disputes >= 3) {
+      alerts.push(`🏢 ${biz} has ${disputes} disputes against them`);
     }
 
-    if (data.score >= 6) {
-      alerts.push(`🔥 HIGH RISK LOGIN: ${actor} (score ${data.score})`);
-    }
-  });
-
-  // 🚨 BUSINESS ALERTS
-  Object.entries(businessRisk).forEach(([biz, data]) => {
-    if (data.disputes >= 3) {
-      alerts.push(`🏢 ${biz} has ${data.disputes} disputes against them`);
+    if (disputes >= 5) {
+      alerts.push(`🚨 HIGH RISK BUSINESS: ${biz} (${disputes} disputes)`);
     }
 
-    if (data.disputes >= 5) {
-      alerts.push(`🚨 HIGH RISK BUSINESS: ${biz} (${data.disputes} disputes)`);
-    }
-  });
-
-  // 🚨 SEARCH ABUSE ALERTS
-  Object.entries(searchTracker).forEach(([key, count]) => {
-    if (count >= 3) {
-      const [actor, id] = key.split("_");
-      alerts.push(`🔍 ${actor} searched ${id} ${count} times`);
+    if (searches >= 5) {
+      alerts.push(`🔍 ${biz} is aggressively searching records (${searches})`);
     }
 
-    if (count >= 5) {
-      const [actor, id] = key.split("_");
-      alerts.push(`🚨 SEARCH ABUSE: ${actor} repeatedly searched ${id}`);
+    if (searches >= 10) {
+      alerts.push(`🚨 SEARCH ABUSE RISK: ${biz} (${searches})`);
     }
   });
 
+  // ================================
+  // 🚨 SEARCH PATTERN ALERTS (SAFE)
+  // ================================
+  Object.entries(searchTracker || {}).forEach(([key, count]) => {
+    const safeCount = Number(count || 0);
+
+    if (safeCount >= 5) {
+      const [actor, id] = String(key).split("_");
+      alerts.push(`🔍 ${actor} repeatedly searched ${id}`);
+    }
+  });
+
+  // ================================
+  // 🎯 UPDATE UI (SAFE)
+  // ================================
   const box = document.getElementById("riskBox");
   const list = document.getElementById("riskList");
 
-  if (!box || !list) return;
-
-  if (alerts.length === 0) {
-    box.style.display = "none";
-    return;
+  if (box && list) {
+    if (alerts.length === 0) {
+      box.style.display = "none";
+    } else {
+      box.style.display = "block";
+      list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
+    }
   }
 
-  box.style.display = "block";
-  list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
+  // ================================
+  // 🏢 DASHBOARD (SAFE)
+  // ================================
+  if (typeof renderRiskDashboard === "function") {
+    renderRiskDashboard(businessRisk);
+  }
 }
-
 
 /* =========================================================
    📊 LOAD AUDIT
@@ -1208,22 +1271,46 @@ async function loadAudit() {
     const target = a.nationalId || a.targetNationalId || "";
     const meta = a.meta || a.details || a.payload || null;
 
+    // 🔥 CLEAN META DISPLAY
+    const prettyMeta = meta
+      ? Object.entries(meta).map(([k, v]) => {
+          return `<div class="small"><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v))}</div>`;
+        }).join("")
+      : "";
+
     html += `
       <div class="result-item">
-        <div><b>${escapeHtml(action)}</b></div>
-        <div class="small">By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}</div>
+
+        <!-- 🔴 ACTION -->
+        <div style="font-weight:600;">
+          ${action.includes("DISPUTE") ? "🔴 " : ""}${escapeHtml(action)}
+        </div>
+
+        <!-- 👤 ACTOR + TIME -->
+        <div class="small">
+          By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}
+        </div>
+
+        <!-- 🪪 TARGET -->
         ${target ? `<div class="small">Omang: <b>${escapeHtml(target)}</b></div>` : ""}
 
-        ${meta ? `<div class="small" style="opacity:.9; margin-top:6px;">
-          <pre style="white-space:pre-wrap; margin:0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
-        </div>` : ""}
-
-        <!-- ✅ ACTION TRACKING (NEW FEATURE) -->
+        <!-- 🎯 ACTION BUTTONS -->
         <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','CALL')">📞 Called</button>
           <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','EMAIL')">📧 Email Sent</button>
           <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','WARNING')">⚠️ Warning Issued</button>
         </div>
+
+        <!-- 📂 DETAILS -->
+        ${prettyMeta ? `
+          <details style="margin-top:8px;">
+            <summary class="small" style="cursor:pointer;">Details</summary>
+            <div style="margin-top:6px;">
+              ${prettyMeta}
+            </div>
+          </details>
+        ` : ""}
+
       </div>
     `;
   });
@@ -1231,12 +1318,13 @@ async function loadAudit() {
   list.innerHTML = html;
 }
 
-
 /* =========================================================
-   📝 LOG ADMIN ACTION (call / email / warning)
+   📝 LOG ADMIN ACTION (UPGRADED)
 ========================================================= */
-window.logAuditAction = async function (target, type) {
+window.logAuditAction = async function (target, type, context = {}) {
   try {
+    const note = prompt(`Add a note for this action (${type})`, "e.g. Called client, no answer");
+
     const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
       method: "POST",
       headers: {
@@ -1246,16 +1334,23 @@ window.logAuditAction = async function (target, type) {
       body: JSON.stringify({
         target,
         action: type,
-        note: "Admin follow-up action"
+        note: note || "Admin follow-up action",
+        contextType: context.type || null,
+        contextId: context.id || null
       })
     });
 
     if (!res.ok) {
-      alert("Failed to log action");
+      alert("❌ Failed to log action");
       return;
     }
 
-    alert(`${type} logged ✅`);
+    // ✅ USE YOUR EXISTING TOAST SYSTEM
+    toast(`${type} logged successfully`, {
+      title: "Admin Action",
+      ttlMs: 3000
+    });
+
   } catch (e) {
     console.error(e);
     alert("Error logging action");
