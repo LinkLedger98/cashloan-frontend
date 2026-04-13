@@ -1100,7 +1100,7 @@ function setupMyClientsCollapse() {
   const bBtn = document.getElementById("reloadBillingBtn");
   if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
 
-    // initial data load
+      // initial data load
     loadMyClients();
     loadMyDisputes();
     loadBillingLoopback();
@@ -1115,4 +1115,6 @@ function setupMyClientsCollapse() {
       });
     }
 
-})();
+  });  // ✅ closes DOMContentLoaded
+
+})();   // ✅ closes IIFE 
