@@ -1100,18 +1100,19 @@ function setupMyClientsCollapse() {
   const bBtn = document.getElementById("reloadBillingBtn");
   if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
 
-  // initial data load
-  loadMyClients();
-  loadMyDisputes();
-  loadBillingLoopback();
+    // initial data load
+    loadMyClients();
+    loadMyDisputes();
+    loadBillingLoopback();
 
-  const input = document.getElementById("myClientsSearch");
-  if (input) {
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        loadMyClients();
-      }
-    });
-  }
+    const input = document.getElementById("myClientsSearch");
+    if (input) {
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          loadMyClients();
+        }
+      });
+    }
+
 })();
