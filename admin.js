@@ -1060,21 +1060,22 @@ list.innerHTML = html;
   const note = prompt("Send note to lender:", "") || "";
   if (!note.trim()) return;
 
-  try {
-    const res = await fetch(
-      window.APP_CONFIG.API_BASE_URL + `/api/admin/disputes/${encodeURIComponent(id)}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": localStorage.getItem("authToken")
-        },
-        body: JSON.stringify({
-          adminNote: note,
-          note: note
-        })
-      }
-    );
+  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
+    alert(m);
+    return;
+  }
+
+  alert("Note sent ✅");
+  loadDisputes("");
+};
 
     const data = await res.json().catch(() => ({}));
 
