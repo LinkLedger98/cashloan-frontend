@@ -903,12 +903,10 @@ window.loadLenders = loadLenders;
      DISPUTES PAGE (no /overdue endpoint → filter client-side)
   ========================================================= */
  function pickLenderDisplay(d) {
-  const rb = d.raisedBy || {};
-
-  const business = rb.name || "";
-  const branch = rb.branch || "";
-  const email = rb.email || "";
-  const phone = rb.phone || "";
+  const business = d.raisedByName || "";
+  const branch = d.raisedByBranch || "";
+  const email = d.raisedByEmail || "";
+  const phone = d.raisedByPhone || "";
 
   const line1 = [business, branch].filter(Boolean).join(" • ");
   const line2 = [
@@ -964,8 +962,16 @@ rows.forEach((d) => {
   const note = escapeHtml(d.adminNote || d.note || "");
 
   const lender = pickLenderDisplay(d);
-  const against = d.against || {}; 
-  const client = d.client || {};
+ const against = {
+  name: d.againstName,
+  branch: d.againstBranch,
+  email: d.againstEmail,
+  phone: d.againstPhone
+};
+
+const client = {
+  nationalId: d.nationalId
+};
 
   html += `
     <div class="result-item">
@@ -1077,22 +1083,7 @@ list.innerHTML = html;
   loadDisputes("");
 };
 
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(data.message || "Failed to update dispute");
-      return;
-    }
-
-    alert("Note sent ✅");
-    loadDisputes("");
-
-  } catch (e) {
-    console.error(e);
-    alert("Error sending note");
-  }
-};
-  } 
+   
   
 /* =========================================================
    🚨 RISK ENGINE (SAFE + BULLETPROOF)
