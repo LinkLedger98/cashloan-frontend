@@ -1082,7 +1082,7 @@ list.innerHTML = html;
   alert("Note sent ✅");
   loadDisputes("");
 };
-
+} 
    
   
 /* =========================================================
