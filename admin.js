@@ -11,7 +11,7 @@
    - Uses role in localStorage.userRole  ✅ (single source of truth)
    - Optional legacy ADMIN_KEY input (#adminKey) sent as x-admin-key
 ========================================================= */
-
+// deploy trigger
 (function () {
   const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
 
