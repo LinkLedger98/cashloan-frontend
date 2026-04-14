@@ -692,19 +692,22 @@ async function uploadPaymentProof() {
     alert("Payment confirmation submitted successfully. It will be reviewed shortly.");
     fileInput.value = "";
 
-    try { await loadBillingLoopback(); } catch (e) {}
+       try {
+      await loadBillingLoopback();
+    } catch (e) {}
+
   } catch (err) {
     console.error(err);
     setPaymentStatus("resend", "Upload failed due to a system error.");
     alert("Server error while submitting payment confirmation");
   }
-}
+} 
 
 
 /* ================================
    ✅ Verify Customer (status-only output)
 ================================ */
-async function searchClient() {
+window.searchClient = async function () {
   if (!requireLogin()) return;
 
   const nationalId = document.getElementById("searchNationalId").value.trim();
@@ -1038,7 +1041,6 @@ function logout() {
 }
 
 window.addClient = addClient;
-window.searchClient = searchClient;
 window.loadMyClients = loadMyClients;
 window.logout = logout;
 
@@ -1105,7 +1107,7 @@ function setupMyClientsCollapse() {
     loadMyDisputes();
     loadBillingLoopback();
 
-    const input = document.getElementById("myClientsSearch");
+        const input = document.getElementById("myClientsSearch");
     if (input) {
       input.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
@@ -1115,6 +1117,5 @@ function setupMyClientsCollapse() {
       });
     }
 
-  });  // ✅ closes DOMContentLoaded
+})();
 
-})();   // ✅ closes IIFE 
