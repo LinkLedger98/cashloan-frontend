@@ -787,7 +787,7 @@ creditRecords.forEach((r) => {
   const institutionName = r.cashloanName || "Unknown Institution";
   const branch = r.cashloanBranch ? ` – ${r.cashloanBranch}` : "";
   const phone = r.cashloanPhone ? ` | Tel: ${r.cashloanPhone}` : "";
-  const statusUpper = r.status || "";
+  const statusUpper = String(r.status || "").toUpperCase();
   const badgeClass = statusBadgeClass(statusUpper);
 
   const due = r.dueDate ? fmtDate(r.dueDate) : "";
@@ -801,30 +801,36 @@ creditRecords.forEach((r) => {
     dateLine = `<div class="small">Due date: ${due}</div>`;
   }
 
-  const recordId = r.id || "";
+ const recordId = r.id || "";
 
-  html += `
-    <div class="result-item" style="margin:0;">
-      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
-        <div>
-          <div><b>${escapeHtml(institutionName)}${escapeHtml(branch)}${escapeHtml(phone)}</b></div>
-          <div class="small">Credit Status: <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span></div>
-          ${dateLine}
+html += `
+  <div class="result-item" style="margin:0;">
+    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+      <div>
+        <div><b>${escapeHtml(institutionName)}${escapeHtml(branch)}${escapeHtml(phone)}</b></div>
+        <div class="small">
+          Credit Status: 
+          <span class="badge ${badgeClass}">${escapeHtml(statusUpper)}</span>
         </div>
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-ghost btn-sm" onclick="openDispute('${escapeHtml(nationalId)}','${escapeHtml(recordId)}')">
-            Raise Dispute
-          </button>
-        </div>
+        ${dateLine}
       </div>
-          </div>
-  `;
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button 
+          class="btn-ghost btn-sm" 
+          onclick="openDispute('${escapeHtml(nationalId)}','${escapeHtml(recordId)}')"
+        >
+          Raise Dispute
+        </button>
+      </div>
+    </div>
+  </div>
+`;
 });
 
 html += `
-    </div>
   </div>
+</div>
 `;
 
 resultsDiv.innerHTML = html;
@@ -835,24 +841,7 @@ resultsDiv.innerHTML = html;
   alert("Server error while verifying records");
 }
 
-} 
-
-      <div class="small" style="margin-top:8px; opacity:.8;">
-        Disputes are reviewed and resolved within <b>5 business days</b>.
-      </div>
-    </div>
-  `;
-});
-
-html += `</div></div>`;
-resultsDiv.innerHTML = html;
-
-} catch (err) {
-  console.error(err);
-  resultsDiv.innerHTML = "";
-  alert("Server error while verifying records");
-}
-
+} // ✅ closes searchClient
 
 /* ================================
    ✅ Toggle Edit Panel
@@ -975,98 +964,92 @@ async function loadMyClients() {
         dates = `<div class="small">Due date: ${due}</div>`;
       }
 
-      const dueInput = fmtDateInput(r.dueDate);
-      const paidInput = fmtDateInput(r.paidDate);
-      const currentStatus = String(r.status || "owing").toLowerCase();
+     const dueInput = fmtDateInput(r.dueDate);
+const paidInput = fmtDateInput(r.paidDate);
+const currentStatus = String(r.status || "owing").toLowerCase();
 
-      html += `
-        <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
-            <div>
-              <div><b>${escapeHtml(r.fullName || "Unknown")}</b></div>
-              <div class="small">National ID: <b>${escapeHtml(r.nationalId || "")}</b></div>
-              <div class="small">Credit Status: <span class="badge ${badgeClass}">${stUpper}</span></div>
-              ${dates}
-
-              ${r.consentStatus ? `
-                <div class="small" style="margin-top:6px;">
-                  <b>Consent Status:</b> ${escapeHtml(r.consentStatus)}
-                </div>
-              ` : ""}
-
-              ${r.consentNotes ? `
-                <div class="small" style="margin-top:4px; color:#2563eb;">
-                  ${escapeHtml(r.consentNotes)}
-                </div>
-              ` : ""}
-
-              <div class="small">Created: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn-ghost btn-sm" onclick="toggleEdit('${id}')">Edit Record</button>
-            </div>
-          </div>
-
-          <div id="edit-${id}" style="display:none; margin-top:12px;">
-            <div class="row" style="margin-top:8px;">
-              <div>
-                <label class="small">Credit Status</label>
-                <select id="uStatus-${id}">
-                  <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Paid (Settled)</option>
-                  <option value="owing" ${currentStatus === "owing" ? "selected" : ""}>Ongoing (Active)</option>
-                  <option value="overdue" ${currentStatus === "overdue" ? "selected" : ""}>Overdue (At Risk)</option>
-                </select>
-              </div>
-              <div>
-                <label class="small">Due Date</label>
-                <input id="uDue-${id}" type="date" value="${dueInput}" />
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:8px;">
-              <div>
-                <label class="small">Settlement Date (optional)</label>
-                <input id="uPaid-${id}" type="date" value="${paidInput}" />
-              </div>
-              <div style="display:flex; align-items:flex-end;">
-                <button class="btn-primary" style="width:100%;" onclick="updateClient('${id}')">Save Changes</button>
-              </div>
-            </div>
-
-            <div class="small" style="margin-top:8px; opacity:.8;">
-              Note: Setting the status to <b>Paid (Settled)</b> will automatically clear the due date.
-            </div>
-          </div>
+html += `
+  <div class="result-item">
+    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+      <div>
+        <div><b>${escapeHtml(r.fullName || "Unknown")}</b></div>
+        <div class="small">National ID: <b>${escapeHtml(r.nationalId || "")}</b></div>
+        <div class="small">
+          Credit Status: 
+          <span class="badge ${badgeClass}">${escapeHtml(stUpper)}</span>
         </div>
-      `;
-    });
+        ${dates}
 
-    list.innerHTML = html;
+        ${r.consentStatus ? `
+          <div class="small" style="margin-top:6px;">
+            <b>Consent Status:</b> ${escapeHtml(r.consentStatus)}
+          </div>
+        ` : ""}
 
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = "";
-    alert("Server error while loading records");
-  }
+        ${r.consentNotes ? `
+          <div class="small" style="margin-top:4px; color:#2563eb;">
+            ${escapeHtml(r.consentNotes)}
+          </div>
+        ` : ""}
+
+        <div class="small">
+          Created: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn-ghost btn-sm" onclick="toggleEdit('${id}')">
+          Edit Record
+        </button>
+      </div>
+    </div>
+  </div>
+`;
+
+html += `
+  <div id="edit-${id}" style="display:none; margin-top:12px;">
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label class="small">Credit Status</label>
+        <select id="uStatus-${id}">
+          <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Paid (Settled)</option>
+          <option value="owing" ${currentStatus === "owing" ? "selected" : ""}>Ongoing (Active)</option>
+          <option value="overdue" ${currentStatus === "overdue" ? "selected" : ""}>Overdue (At Risk)</option>
+        </select>
+      </div>
+      <div>
+        <label class="small">Due Date</label>
+        <input id="uDue-${id}" type="date" value="${dueInput}" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label class="small">Settlement Date (optional)</label>
+        <input id="uPaid-${id}" type="date" value="${paidInput}" />
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <button class="btn-primary" style="width:100%;" onclick="updateClient('${id}')">
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <div class="small" style="margin-top:8px; opacity:.8;">
+      Note: Setting the status to <b>Paid (Settled)</b> will automatically clear the due date.
+    </div>
+  </div>
+`;
+});
+
+list.innerHTML = html;
+
+} catch (err) {
+  console.error(err);
+  list.innerHTML = "";
+  alert("Server error while loading records");
 }
-
-function logout() {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userRole");
-  window.location.href = "login.html";
 }
-
-window.addClient = addClient;
-window.loadMyClients = loadMyClients;
-window.logout = logout;
-
-window.toggleEdit = toggleEdit;
-window.updateClient = updateClient;
-
-window.openDispute = openDispute;
-window.uploadPaymentProof = uploadPaymentProof;
 
 /* ================================
    ✅ Smooth collapse for My Records
@@ -1121,9 +1104,9 @@ function setupMyClientsCollapse() {
   if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
 
       // initial data load
-    loadMyClients();
-    loadMyDisputes();
-    loadBillingLoopback();
+loadMyClients();
+loadMyDisputes();
+loadBillingLoopback();
 
         const input = document.getElementById("myClientsSearch");
     if (input) {
