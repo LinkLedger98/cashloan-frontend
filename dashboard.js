@@ -818,6 +818,24 @@ creditRecords.forEach((r) => {
           </button>
         </div>
       </div>
+          </div>
+  `;
+});
+
+html += `
+    </div>
+  </div>
+`;
+
+resultsDiv.innerHTML = html;
+
+} catch (err) {
+  console.error(err);
+  resultsDiv.innerHTML = "";
+  alert("Server error while verifying records");
+}
+
+} 
 
       <div class="small" style="margin-top:8px; opacity:.8;">
         Disputes are reviewed and resolved within <b>5 business days</b>.
