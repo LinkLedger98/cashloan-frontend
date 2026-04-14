@@ -148,28 +148,27 @@
   }
 
   async function openFileWithAuth(pathOrUrl, fallbackName) {
-    try {
-      const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
-      const filename = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
-      const url = URL.createObjectURL(blob);
+  try {
+    const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
+    const filename = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
+    const url = URL.createObjectURL(blob);
 
-      const win = window.open(url, "_blank", "noopener,noreferrer");
-      if (!win) {
-        // Popup blocked: fallback to download
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
-    } catch (e) {
-      if (String((e && e.message) || "").toLowerCase().includes("redirect")) return;
-      console.error(e);
-      alert("Could not open file. " + (e && e.message ? e.message : ""));
-    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.download = filename; // ✅ fallback safety
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+  } catch (e) {
+    if (String((e && e.message) || "").toLowerCase().includes("redirect")) return;
+    console.error(e);
+    alert("Could not open file. " + (e && e.message ? e.message : ""));
   }
+}
 
   /* =========================================================
      ✅ SUPERADMIN ONLY gate (front-end)
