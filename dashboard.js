@@ -16,6 +16,15 @@ function requireLogin() {
   return true;
 }
 
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("role");
+
+  window.location.href = "login.html";
+}
+
 // ✅ auto-logout helper for suspended/invalid sessions
 async function handleAuthFailure(res, data) {
   if (res && res.status === 403) {
@@ -222,105 +231,237 @@ function mapProofToUiStatus(status) {
   return "pending";
 }
 
-/* ================================
-   ✅ Dispute loopback UI
-================================ */
-function adminTag(adminStatus, coreStatus) {
-  const a = String(adminStatus || "").toLowerCase();
-  const c = String(coreStatus || "").toLowerCase();
+function adminTag(adminStatus, status) {
+  const s = String(adminStatus || status || "").toLowerCase();
 
-  if (a === "resolved" || c === "resolved") return `<span class="tag good">Resolved</span>`;
-  if (a === "rejected" || c === "rejected") return `<span class="tag bad">Rejected</span>`;
-  if (a === "investigating") return `<span class="tag warn">Under Review</span>`;
-  return `<span class="tag">Pending</span>`;
+  if (s === "resolved") {
+    return `<span class="badge paid">Resolved</span>`;
+  }
+  if (s === "rejected") {
+    return `<span class="badge overdue">Rejected</span>`;
+  }
+  if (s === "investigating") {
+    return `<span class="badge owing">Investigating</span>`;
+  }
+  return `<span class="badge">Pending</span>`;
 }
 
-async function loadMyDisputes() {
-  const list = document.getElementById("myDisputesList");
-  if (!list) return;
+// 🔔 Toast popup
+function showToast(msg) {
+  let container = document.getElementById("toastContainer");
+
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.style.position = "fixed";
+    container.style.bottom = "20px";
+    container.style.right = "20px";
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "10px";
+    container.style.zIndex = "9999";
+    document.body.appendChild(container);
+  }
+
+  const t = document.createElement("div");
+  t.textContent = msg;
+
+  t.style.padding = "10px 14px";
+  t.style.background = "#0e1117";
+  t.style.border = "1px solid rgba(255,255,255,0.1)";
+  t.style.borderRadius = "12px";
+  t.style.fontSize = "13px";
+  t.style.color = "#e8eef7";
+  t.style.boxShadow = "0 10px 30px rgba(0,0,0,0.4)";
+
+  // animation start state
+  t.style.opacity = "0";
+  t.style.transform = "translateY(10px)";
+  t.style.transition = "all 0.25s ease";
+
+  container.appendChild(t);
+
+  // animate in
+  requestAnimationFrame(() => {
+    t.style.opacity = "1";
+    t.style.transform = "translateY(0)";
+  });
+
+  // animate out
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translateY(10px)";
+  }, 2500);
+
+  // remove
+  setTimeout(() => {
+    t.remove();
+  }, 3000);
+}
+
+/* ================================
+   ✅ Load My Disputes (FINAL CLEAN)
+================================ */
+async function loadMyDisputes(changedIds = []) {
+  const activeEl = document.getElementById("myDisputesActive");
+  const closedEl = document.getElementById("myDisputesClosed");
+  if (!activeEl || !closedEl) return;
   if (!requireLogin()) return;
 
-  list.innerHTML = `<div class="result-item"><div class="small">Loading dispute records...</div></div>`;
+  activeEl.innerHTML = `<div class="result-item"><div class="small">Loading dispute records...</div></div>`;
+  closedEl.innerHTML = "";
 
   try {
     const { res, data } = await apiJson("/api/disputes/mine", { method: "GET" });
     if (await handleAuthFailure(res, data)) return;
 
     if (!res.ok) {
-      list.innerHTML = "";
-      alert((data && data.message) ? data.message : "Unable to load dispute records");
+      activeEl.innerHTML = "";
+      alert(data.message || "Unable to load dispute records");
       return;
     }
 
     const rows = Array.isArray(data) ? data : [];
-    if (rows.length === 0) {
-      list.innerHTML = `<div class="result-item"><div class="small">No dispute records available.</div></div>`;
-      return;
-    }
 
-    let html = "";
+    const active = [];
+    const closed = [];
+    const now = new Date();
+
+    // ✅ SPLIT + 7 DAY FILTER
     rows.forEach((d) => {
-      const nationalId = escapeHtml(d.nationalId || "");
-      const submittedReason = escapeHtml(d.notes || "");
-      const adminNote = escapeHtml(d.adminNote || "");
-      const adminStatusRaw = d.adminStatus || "";
-      const coreStatusRaw = d.status || "";
-      const submitted = d.createdAt ? fmtDateTime(d.createdAt) : "";
-      const reviewedAt = d.adminUpdatedAt ? fmtDateTime(d.adminUpdatedAt) : "";
-      const reviewedBy = escapeHtml(d.adminUpdatedBy || "");
+      const s = String(d.adminStatus || "").toLowerCase();
 
-      html += `
-        <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div>
-              <div><b>Dispute Record</b> • National ID: <b>${nationalId || "—"}</b></div>
+      if (s === "resolved" || s === "rejected") {
+        const updatedAt = new Date(d.updatedAt || d.createdAt);
+        const diffDays = (now - updatedAt) / (1000 * 60 * 60 * 24);
 
-              <div class="small" style="margin-top:6px;">
-                ${adminTag(adminStatusRaw, coreStatusRaw)}
-                ${submitted ? `Submitted: ${escapeHtml(submitted)}` : ""}
-              </div>
-
-              ${
-                submittedReason
-                  ? `<div class="small" style="margin-top:10px; opacity:.9;">
-                       <b>Submitted Reason:</b> ${submittedReason}
-                     </div>`
-                  : ""
-              }
-
-              ${
-                (d.adminNote || d.adminStatus)
-                  ? `<div class="small" style="margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);">
-                      
-                      <div style="font-weight:800; margin-bottom:6px;">Review Outcome</div>
-
-                      <div>${escapeHtml(d.adminNote || "Update provided by review team.")}</div>
-
-                      <div class="small" style="margin-top:8px; opacity:.8;">
-                        ${d.adminStatus ? `Decision: ${escapeHtml(d.adminStatus)}` : ""}
-                        ${d.adminUpdatedAt ? ` • Updated: ${new Date(d.adminUpdatedAt).toLocaleString()}` : ""}
-                        ${d.adminUpdatedBy ? ` • Reviewed by: ${escapeHtml(d.adminUpdatedBy)}` : ""}
-                      </div>
-
-                    </div>`
-                  : `<div class="small" style="margin-top:10px; opacity:.75;">
-                       Awaiting review by the LinkLedger team.
-                     </div>`
-              }
-
-            </div>
-          </div>
-        </div>
-      `;
+        if (diffDays <= 7) {
+          closed.push(d);
+        }
+      } else {
+        active.push(d);
+      }
     });
 
-    list.innerHTML = html;
+    // ✅ RENDER FUNCTION
+    function render(d) {
+      const isChanged = changedIds.includes(d._id);
+
+      return `
+        <div class="result-item ${isChanged ? "highlight-update" : ""}">
+          <div style="font-weight:600; margin-bottom:4px;">
+            Dispute Record • National ID: <b>${escapeHtml(d.nationalId)}</b>
+          </div>
+
+          <div class="small">
+            ${adminTag(d.adminStatus, d.status)}
+            ${d.createdAt ? ` • Submitted: ${fmtDateTime(d.createdAt)}` : ""}
+            ${isChanged ? ` • <span class="just-now">updated just now</span>` : ""}
+          </div>
+
+          ${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+
+          ${d.adminNote ? `
+            <div class="small" style="margin-top:8px;">
+              <b>Admin Response:</b><br/>
+              ${escapeHtml(d.adminNote)}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
+
+    // ✅ ACTIVE
+    activeEl.innerHTML = active.length
+      ? active.map(render).join("")
+      : `<div class="result-item"><div class="small">No active disputes</div></div>`;
+
+    // ✅ CLOSED (WITH LABEL)
+    closedEl.innerHTML = `
+      <div class="section-sub">Showing recent closed disputes (last 7 days)</div>
+      ${
+        closed.length
+          ? closed.map(render).join("")
+          : `<div class="result-item"><div class="small">No closed disputes</div></div>`
+      }
+    `;
 
   } catch (err) {
     console.error(err);
-    list.innerHTML = "";
+    activeEl.innerHTML = "";
     alert("Server error while loading dispute records");
   }
+}
+
+let lastDisputesMap = {};
+
+/* ================================
+   🔄 Auto Refresh Disputes
+================================ */
+function startDisputesAutoRefresh() {
+  let lastHash = null;
+
+  setInterval(async () => {
+    try {
+      const { res, data } = await apiJson("/api/disputes/mine", { method: "GET" });
+      if (!res.ok) return;
+
+      const rows = Array.isArray(data) ? data : [];
+
+      const hash = JSON.stringify(
+        rows.map(d => ({
+          id: d._id,
+          status: d.adminStatus,
+          note: d.adminNote
+        }))
+      );
+
+      if (hash !== lastHash) {
+        // 🔥 detect changes
+        const changedIds = [];
+
+        rows.forEach(d => {
+          const prev = lastDisputesMap[d._id];
+          const curr = {
+            status: d.adminStatus,
+            note: d.adminNote
+          };
+
+          if (!prev) return;
+
+          if (prev.status !== curr.status || prev.note !== curr.note) {
+            changedIds.push(d._id);
+          }
+        });
+
+        // 🔔 POPUP
+        if (changedIds.length > 0) {
+        showToast(
+  changedIds.length === 1
+    ? "Dispute updated"
+    : `${changedIds.length} disputes updated`
+);
+        }
+
+        // update map
+        lastDisputesMap = {};
+        rows.forEach(d => {
+          lastDisputesMap[d._id] = {
+            status: d.adminStatus,
+            note: d.adminNote
+          };
+        });
+
+        lastHash = hash;
+
+        // pass changed IDs
+        loadMyDisputes(changedIds);
+      }
+
+    } catch (err) {
+      console.error("Auto refresh error:", err);
+    }
+  }, 5000);
 }
 
 /* ================================
@@ -853,7 +994,6 @@ function toggleEdit(recordId) {
   panel.style.display = isHidden ? "block" : "none";
 }
 
-
 /* ================================
    ✅ Update Record
 ================================ */
@@ -1081,6 +1221,37 @@ function setupMyClientsCollapse() {
   setCollapsed(false);
 }
 
+/* ================================
+   ✅ Smooth collapse for Closed Disputes
+================================ */
+function setupClosedDisputesCollapse() {
+  const btn = document.getElementById("toggleClosedDisputesBtn");
+  const wrap = document.getElementById("myDisputesClosedWrap");
+  if (!btn || !wrap) return;
+
+  function setCollapsed(collapsed) {
+    if (collapsed) {
+      wrap.classList.add("is-collapsed");
+      btn.textContent = "▼";
+      btn.title = "Expand section";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.remove("is-collapsed");
+      btn.textContent = "▲";
+      btn.title = "Collapse section";
+      btn.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  btn.addEventListener("click", function () {
+    const isCollapsed = wrap.classList.contains("is-collapsed");
+    setCollapsed(!isCollapsed);
+  });
+
+  // ✅ start collapsed
+  setCollapsed(true);
+}
+
 (async function () {
   if (!requireLogin()) return;
 
@@ -1091,32 +1262,30 @@ function setupMyClientsCollapse() {
   }
 
   setupMyClientsCollapse();
+  setupClosedDisputesCollapse();
 
-  // clear consent acknowledgment when file changes
   const cFile = document.getElementById("consentFile");
   if (cFile) cFile.addEventListener("change", clearConsentAck);
 
-  // refresh buttons
   const dBtn = document.getElementById("reloadMyDisputesBtn");
   if (dBtn) dBtn.addEventListener("click", loadMyDisputes);
 
   const bBtn = document.getElementById("reloadBillingBtn");
   if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
 
-      // initial data load
-loadMyClients();
-loadMyDisputes();
-loadBillingLoopback();
+  loadMyClients();
+  loadMyDisputes();
+  loadBillingLoopback();
 
-        const input = document.getElementById("myClientsSearch");
-    if (input) {
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          loadMyClients();
-        }
-      });
-    }
+  startDisputesAutoRefresh();
 
+  const input = document.getElementById("myClientsSearch");
+  if (input) {
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        loadMyClients();
+      }
+    });
+  }
 })();
-

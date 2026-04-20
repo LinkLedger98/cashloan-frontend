@@ -907,7 +907,15 @@ window.loadLenders = loadLenders;
   const email = d.raisedByEmail || "";
   const phone = d.raisedByPhone || "";
 
-  const line1 = [business, branch].filter(Boolean).join(" • ");
+  // 🔥 derive name from email if missing
+  let fallbackName = "";
+  if (!business && email) {
+    const namePart = email.split("@")[0];
+    const domainPart = email.split("@")[1]?.split(".")[0] || "";
+    fallbackName = (namePart + " " + domainPart).trim();
+  }
+
+  const line1 = [business || fallbackName, branch].filter(Boolean).join(" • ");
   const line2 = [
     email ? `Email: ${email}` : "",
     phone ? `Phone: ${phone}` : ""

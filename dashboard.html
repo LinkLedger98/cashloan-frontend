@@ -105,7 +105,7 @@
   <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
     <div>
       <h2 style="margin-bottom:4px;">My Customers</h2>
-      <p class="small" style="margin:0;">Your customer records only (added by your account).</p>
+     <p class="section-sub">Search by National ID to see...</p>
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
@@ -128,13 +128,13 @@
   </div>
 </div>
 
-   <!-- ✅ Disputes loopback (admin notes appear here) -->
+ <!-- ✅ Disputes loopback (clean + collapsible) -->
 <div class="card" style="margin-top:16px;">
   <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
     <div>
-      <h2 style="margin-bottom:4px;">My Disputes (Admin Responses)</h2>
+      <h2 style="margin-bottom:4px;">My Disputes</h2>
       <p class="small" style="margin:0;">
-        When Admin marks a dispute as “Investigating”, you will see the note here.
+        Active disputes require attention. Resolved cases are hidden below.
       </p>
     </div>
 
@@ -144,7 +144,24 @@
   </div>
 
   <hr style="margin:14px 0;" />
-  <div id="myDisputesList" class="results"></div>
+
+  <!-- 🔴 ACTIVE -->
+  <div>
+    <h3 style="margin-bottom:6px;">Active Disputes</h3>
+    <div id="myDisputesActive" class="results"></div>
+  </div>
+
+  <!-- ⚪ CLOSED (COLLAPSIBLE) -->
+  <div style="margin-top:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">Closed Disputes</h3>
+      <button class="btn-ghost btn-sm" id="toggleClosedDisputesBtn" type="button">▼</button>
+    </div>
+
+    <div id="myDisputesClosedWrap" class="collapse-wrap is-collapsed" style="margin-top:10px;">
+      <div id="myDisputesClosed" class="results"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ✅ Proof of Payment (billing) + loopback review -->
