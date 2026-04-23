@@ -213,7 +213,7 @@ async function apiJson(path, opts) {
   const isForm = (opts && opts.body && (opts.body instanceof FormData));
 
   const headers = Object.assign({}, (opts && opts.headers) || {}, {
-    "Authorization": token
+    "Authorization": `Bearer ${token}`
   });
 
   if (!isForm) headers["Content-Type"] = "application/json";
@@ -393,77 +393,6 @@ async function loadMyDisputes(changedIds = []) {
   }
 }
 
-let lastDisputesMap = {};
-
-/* ================================
-   🔄 Auto Refresh Disputes
-================================ */
-function startDisputesAutoRefresh() {
-  let lastHash = null;
-
-  setInterval(async () => {
-    try {
-      const { res, data } = await apiJson("/api/disputes/mine", { method: "GET" });
-      if (!res.ok) return;
-
-      const rows = Array.isArray(data) ? data : [];
-
-      const hash = JSON.stringify(
-        rows.map(d => ({
-          id: d._id,
-          status: d.adminStatus,
-          note: d.adminNote
-        }))
-      );
-
-      if (hash !== lastHash) {
-        // 🔥 detect changes
-        const changedIds = [];
-
-        rows.forEach(d => {
-          const prev = lastDisputesMap[d._id];
-          const curr = {
-            status: d.adminStatus,
-            note: d.adminNote
-          };
-
-          if (!prev) return;
-
-          if (prev.status !== curr.status || prev.note !== curr.note) {
-            changedIds.push(d._id);
-          }
-        });
-
-        // 🔔 POPUP
-        if (changedIds.length > 0) {
-        showToast(
-  changedIds.length === 1
-    ? "Dispute updated"
-    : `${changedIds.length} disputes updated`
-);
-        }
-
-        // update map
-        lastDisputesMap = {};
-        rows.forEach(d => {
-          lastDisputesMap[d._id] = {
-            status: d.adminStatus,
-            note: d.adminNote
-          };
-        });
-
-        lastHash = hash;
-
-        // pass changed IDs
-        loadMyDisputes(changedIds);
-      }
-
-    } catch (err) {
-      console.error("Auto refresh error:", err);
-    }
-  }, 5000);
-}
-
 /* ================================
    ✅ Billing loopback UI (FINAL FIXED)
 ================================ */
@@ -607,6 +536,65 @@ async function loadBillingLoopback() {
 }
 
 /* ================================
+   🔄 Auto Refresh Disputes
+================================ */
+let lastDisputesMap = {};
+function startDisputesAutoRefresh() {
+  let lastHash = null;
+
+  setInterval(async () => {
+    try {
+      const { res, data } = await apiJson("/api/disputes/mine", { method: "GET" });
+      if (!res.ok) return;
+
+      const rows = Array.isArray(data) ? data : [];
+
+      const hash = JSON.stringify(
+        rows.map(d => ({
+          id: d._id,
+          status: d.adminStatus,
+          note: d.adminNote
+        }))
+      );
+
+      if (hash !== lastHash) {
+        const changedIds = [];
+
+        rows.forEach(d => {
+          const prev = lastDisputesMap[d._id];
+
+          const curr = {
+            status: d.adminStatus,
+            note: d.adminNote
+          };
+
+          if (prev && (prev.status !== curr.status || prev.note !== curr.note)) {
+            changedIds.push(d._id);
+          }
+
+          lastDisputesMap[d._id] = curr;
+        });
+
+        if (changedIds.length > 0) {
+          showToast(
+            changedIds.length === 1
+              ? "Dispute updated"
+              : `${changedIds.length} disputes updated`
+          );
+        }
+
+        lastHash = hash;
+
+        loadMyDisputes(changedIds);
+      }
+
+    } catch (err) {
+      console.error("Auto refresh error:", err);
+    }
+  }, 5000);
+}
+
+/* ================================
    ✅ Dispute Action (5-day resolution workflow)
 ================================ */
 async function openDispute(nationalId, recordId) {
@@ -631,7 +619,7 @@ async function openDispute(nationalId, recordId) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token
+      "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
         nationalId: String(nationalId).trim(),
@@ -734,7 +722,7 @@ fd.append("consentFile", file);
 try {
   const res = await fetch(`${API_BASE_URL}/api/clients`, {
     method: "POST",
-    headers: { "Authorization": token },
+    headers: { "Authorization": `Bearer ${token}` },
     body: fd
   });
 
@@ -816,7 +804,7 @@ async function uploadPaymentProof() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
       method: "POST",
-      headers: { "Authorization": token },
+      headers: { "Authorization": `Bearer ${token}` },
       body: fd
     });
 
@@ -877,7 +865,7 @@ window.searchClient = async function () {
   try {
     const res = await fetch(
       `${API_BASE_URL}/api/clients/search?nationalId=${encodeURIComponent(nationalId)}`,
-      { headers: { "Authorization": token } }
+      { headers: { "Authorization": `Bearer ${token}` } }
     );
 
     const data = await res.json().catch(() => ({}));
@@ -1031,7 +1019,7 @@ try {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": token
+      "Authorization": `Bearer ${token}`
     },
     body: JSON.stringify(payload)
   });
@@ -1070,7 +1058,7 @@ async function loadMyClients() {
 
   try {
     const url = `${API_BASE_URL}/api/clients/mine${q ? `?q=${encodeURIComponent(q)}` : ""}`;
-    const res = await fetch(url, { headers: { "Authorization": token } });
+    const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
     const data = await res.json().catch(() => ([]));
 
     if (await handleAuthFailure(res, data)) return;
