@@ -147,7 +147,7 @@
     return fallback || "file";
   }
 
- async function openFileWithAuth(pathOrUrl, fallbackName) {
+ window.open(url, "_blank", "noopener,noreferrer");
   try {
     // ✅ Cloudinary: direct URL open (no fetchBlob needed)
     if (pathOrUrl) {
@@ -157,13 +157,19 @@
       a.href = url;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.download = fallbackName || "file"; // keep fallback behavior
+      // ❌ removed forced download to allow preview
       document.body.appendChild(a);
       a.click();
       a.remove();
     } else {
       alert("File not available");
     }
+  } catch (e) {
+    console.error(e);
+    alert("Could not open file. " + (e && e.message ? e.message : ""));
+  }
+}
+
   } catch (e) {
     console.error(e);
     alert("Could not open file. " + (e && e.message ? e.message : ""));
