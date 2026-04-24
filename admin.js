@@ -147,24 +147,24 @@
     return fallback || "file";
   }
 
-  async function openFileWithAuth(pathOrUrl, fallbackName) {
+ async function openFileWithAuth(pathOrUrl, fallbackName) {
   try {
-    const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
-    const filename = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
-    const url = URL.createObjectURL(blob);
+    // ✅ Cloudinary: direct URL open (no fetchBlob needed)
+    if (pathOrUrl) {
+      const url = pathOrUrl;
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.download = filename; // ✅ fallback safety
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.download = fallbackName || "file"; // keep fallback behavior
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      alert("File not available");
+    }
   } catch (e) {
-    if (String((e && e.message) || "").toLowerCase().includes("redirect")) return;
     console.error(e);
     alert("Could not open file. " + (e && e.message ? e.message : ""));
   }
@@ -697,12 +697,15 @@ window.loadLenders = loadLenders;
     // mark seen locally
     try { localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString()); } catch (e) {}
 
-    // IMPORTANT: popUrl can be "/api/..." or full URL — both are supported now
-    openFileWithAuth(url, "payment-proof");
+   // IMPORTANT: popUrl can be "/api/..." or full URL — both are supported now
+if (url) {
+  window.open(url, "_blank", "noopener,noreferrer");
+} else {
+  alert("File not available");
+}
 
-    // refresh after a moment
-    setTimeout(() => { try { loadLenders(); } catch (e) {} }, 600);
-  };
+// refresh after a moment
+setTimeout(() => { try { loadLenders(); } catch (e) {} }, 600);
 
   // ✅ Approve/Reject proof
   window.reviewPop = async function (proofId, status) {
@@ -1443,15 +1446,19 @@ window.logAuditAction = async function (target, type, context = {}) {
     list.innerHTML = html;
   }
 
-  // ✅ View consent file (token fetch → blob → open)
-  window.openConsentFile = function (id) {
-    openFileWithAuth(`/api/admin/consents/${encodeURIComponent(id)}/file`, "consent");
-  };
+  // ✅ View consent file (Cloudinary direct URL)
+window.openConsentFile = function (url) {
+  if (url) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  } else {
+    alert("File not available");
+  }
+};
 
-  window.setConsentStatus = async function (id, status) {
-    const note = status === "rejected"
-      ? (prompt("Rejection note (optional):", "Please re-upload a clear consent file.") || "")
-      : (prompt("Approval note (optional):", "Consent approved.") || "");
+window.setConsentStatus = async function (id, status) {
+  const note = status === "rejected"
+    ? (prompt("Rejection note (optional):", "Please re-upload a clear consent file.") || "")
+    : (prompt("Approval note (optional):", "Consent approved.") || "");
 
     const r = await fetchJson(`/api/admin/consents/${encodeURIComponent(id)}`, {
       method: "PATCH",
