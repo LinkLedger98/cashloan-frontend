@@ -41,7 +41,7 @@
   function authHeaders(extra) {
     const token = getToken();
     const headers = Object.assign({}, extra || {});
-    if (token) headers["Authorization"] = token;
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     // Optional legacy admin key input
     const adminKeyEl = $("adminKey");
