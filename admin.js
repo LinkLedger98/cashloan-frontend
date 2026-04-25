@@ -147,16 +147,24 @@
     return fallback || "file";
   }
 
-async function openFileWithAuth(pathOrUrl, fallbackName) {
+  async function openFileWithAuth(pathOrUrl, fallbackName) {
   try {
-    if (pathOrUrl) {
-      window.open(pathOrUrl, "_blank", "noopener,noreferrer");
-    } else {
-      alert("File not available");
+    const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
+
+    const fileName = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
+
+    const url = window.URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+
+    if (!win) {
+      alert("Popup blocked. Please allow popups.");
     }
+
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
   } catch (e) {
     console.error(e);
-    alert("Could not open file. " + (e && e.message ? e.message : ""));
+    alert("Could not open file: " + (e.message || ""));
   }
 }
 
@@ -680,22 +688,24 @@ window.loadLenders = loadLenders;
 
 
   // ✅ View proof of payment (token fetch → blob → open)
-  window.viewPopFile = async function (lenderId, popUrl) {
-    const url = String(popUrl || "");
-    if (!url) return;
+ window.viewPopFile = async function (lenderId, popUrl) {
+  const url = String(popUrl || "");
+  if (!url) return;
 
-    // mark seen locally
-    try { localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString()); } catch (e) {}
+  try {
+    localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString());
+  } catch (e) {}
 
-   // IMPORTANT: popUrl can be "/api/..." or full URL — both are supported now
-if (url) {
-  window.open(url, "_blank", "noopener,noreferrer");
-} else {
-  alert("File not available");
-}
+  if (url) {
+    openFileWithAuth(url, "proof-of-payment");
+  } else {
+    alert("File not available");
+  }
 
-// refresh after a moment
-setTimeout(() => { try { loadLenders(); } catch (e) {} }, 600);
+  setTimeout(() => {
+    try { loadLenders(); } catch (e) {}
+  }, 600);
+};
 
   // ✅ Approve/Reject proof
   window.reviewPop = async function (proofId, status) {
@@ -1044,25 +1054,25 @@ const client = {
 
 list.innerHTML = html;
 
-  window.markInvestigating = async function (id) {
-    const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
+ window.markInvestigating = async function (id) {
+  const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
 
-    const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "investigating", adminNote: note })
-    });
+  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "investigating", adminNote: note })
+  });
 
-    if (!r.ok) {
-      const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
-      alert(m);
-      return;
-    }
+  if (!r.ok) {
+    const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
+    alert(m);
+    return;
+  }
 
-    alert("Marked as investigating ✅");
-    loadDisputes("");
-  };
+  alert("Marked as investigating ✅");
+  loadDisputes("");
+};
 
- window.sendDisputeNote = async function (id) {
+window.sendDisputeNote = async function (id) {
   const note = prompt("Send note to lender:", "") || "";
   if (!note.trim()) return;
 
@@ -1082,9 +1092,9 @@ list.innerHTML = html;
   alert("Note sent ✅");
   loadDisputes("");
 };
+
 } 
    
-  
 /* =========================================================
    🚨 RISK ENGINE (SAFE + BULLETPROOF)
 ========================================================= */
@@ -1420,7 +1430,7 @@ window.logAuditAction = async function (target, type, context = {}) {
               <div class="small">From: <b>${fromLine || lenderEmail}</b>${lenderEmail ? ` • ${lenderEmail}` : ""}</div>
 
               <div style="margin-top:10px;">
-                <button class="btn-ghost btn-sm" type="button" onclick="openConsentFile('${id}')">View Consent</button>
+                <button class="btn-ghost btn-sm" type="button" onclick="openConsentFile('/api/admin/consents/${id}/file')">View Consent</button>
               </div>
             </div>
 
@@ -1438,11 +1448,7 @@ window.logAuditAction = async function (target, type, context = {}) {
 
   // ✅ View consent file (Cloudinary direct URL)
 window.openConsentFile = function (url) {
-  if (url) {
-    window.open(url, "_blank", "noopener,noreferrer");
-  } else {
-    alert("File not available");
-  }
+  openFileWithAuth(url, "consent-file");
 };
 
 window.setConsentStatus = async function (id, status) {
@@ -1586,4 +1592,3 @@ window.exportAuditCSV = async function () {
     alert("Export failed");
   }
 };
-})();
