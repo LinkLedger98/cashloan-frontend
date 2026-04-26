@@ -1344,11 +1344,11 @@ window.logAuditAction = async function (target, type, context = {}) {
   try {
     const note = prompt(`Add a note for this action (${type})`, "e.g. Called client, no answer");
 
-    const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
+   const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": localStorage.getItem("authToken")
+        "Authorization": "Bearer " + localStorage.getItem("authToken")
       },
       body: JSON.stringify({
         target,
@@ -1519,14 +1519,14 @@ window.uploadReceipt = async function (id) {
   const fd = new FormData();
   fd.append("receipt", file);
 
-  try {
-    const res = await fetch(window.APP_CONFIG.API_BASE_URL + `/api/admin/payment-proofs/${encodeURIComponent(id)}/receipt`, {
-      method: "POST",
-      headers: {
-        "Authorization": localStorage.getItem("authToken")
-      },
-      body: fd
-    });
+ try {
+  const res = await fetch(window.APP_CONFIG.API_BASE_URL + `/api/admin/payment-proofs/${encodeURIComponent(id)}/receipt`, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + localStorage.getItem("authToken")
+    },
+    body: fd
+  });
 
     const data = await res.json().catch(() => ({}));
 
@@ -1556,7 +1556,7 @@ window.exportAuditCSV = async function () {
     }
 
     const res = await fetch(`${API_BASE_URL}/api/admin/audit`, {
-      headers: { Authorization: token }
+      headers: { Authorization: "Bearer " + token }
     });
 
     const data = await res.json();
