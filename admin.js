@@ -101,7 +101,10 @@
     );
 
     const res = await fetch(API_BASE_URL + path, Object.assign({}, opts || {}, { headers }));
-    const data = await res.json().catch(() => ({}));
+    let data = {};
+try {
+  data = await res.json();
+} catch (e) {}
 
     // ✅ auto-handle backend redirectTo/alert
     if (handleAdminForbiddenMaybe(data, res.status)) {
@@ -122,13 +125,13 @@
 
     if (!res.ok) {
       let text = "";
-      try { text = await res.text(); } catch (e) {}
+      try { text = await res.text(); } catch (e) { }
 
       // try parse json style
       try {
         const j = JSON.parse(text || "{}");
         if (handleAdminForbiddenMaybe(j, res.status)) throw new Error("redirect");
-      } catch (e) {}
+      } catch (e) { }
 
       throw new Error(text || "Failed to fetch file");
     }
@@ -143,30 +146,30 @@
     try {
       const m = /filename\*?=(?:UTF-8''|")?([^;"\n]+)"?/i.exec(cd || "");
       if (m && m[1]) return decodeURIComponent(m[1].trim());
-    } catch (e) {}
+    } catch (e) { }
     return fallback || "file";
   }
 
   async function openFileWithAuth(pathOrUrl, fallbackName) {
-  try {
-    const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
+    try {
+      const { blob, contentDisposition } = await fetchBlob(pathOrUrl);
 
-    const fileName = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
+      const fileName = filenameFromContentDisposition(contentDisposition, fallbackName || "file");
 
-    const url = window.URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
+      const url = window.URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
 
-    if (!win) {
-      alert("Popup blocked. Please allow popups.");
+      if (!win) {
+        alert("Popup blocked. Please allow popups.");
+      }
+
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    } catch (e) {
+      console.error(e);
+      alert("Could not open file: " + (e.message || ""));
     }
-
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-  } catch (e) {
-    console.error(e);
-    alert("Could not open file: " + (e.message || ""));
   }
-}
 
   /* =========================================================
      ✅ SUPERADMIN ONLY gate (front-end)
@@ -224,67 +227,67 @@
   }
 
   /* ---------------- Collapsible helpers (FIXED + BULLETPROOF) ---------------- */
-function ensureCollapseWrap(wrapEl) {
-  if (!wrapEl) return;
+  function ensureCollapseWrap(wrapEl) {
+    if (!wrapEl) return;
 
-  // remove any old inline hiding
-  wrapEl.style.display = "";
-  wrapEl.style.maxHeight = "";
-  wrapEl.style.overflow = "";
+    // remove any old inline hiding
+    wrapEl.style.display = "";
+    wrapEl.style.maxHeight = "";
+    wrapEl.style.overflow = "";
 
-  if (!wrapEl.classList.contains("collapse-wrap")) {
-    wrapEl.classList.add("collapse-wrap");
+    if (!wrapEl.classList.contains("collapse-wrap")) {
+      wrapEl.classList.add("collapse-wrap");
+    }
   }
-}
 
-function setCollapsed(wrapEl, btnEl, collapsed) {
-  if (!wrapEl || !btnEl) return;
+  function setCollapsed(wrapEl, btnEl, collapsed) {
+    if (!wrapEl || !btnEl) return;
 
-  ensureCollapseWrap(wrapEl);
+    ensureCollapseWrap(wrapEl);
 
-  btnEl.setAttribute("aria-controls", wrapEl.id || "");
-  btnEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btnEl.setAttribute("aria-controls", wrapEl.id || "");
+    btnEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
 
-  if (collapsed) {
-    wrapEl.classList.add("is-collapsed");
+    if (collapsed) {
+      wrapEl.classList.add("is-collapsed");
 
-    // 🔥 FORCE HIDE
-    wrapEl.style.maxHeight = "0px";
-    wrapEl.style.overflow = "hidden";
+      // 🔥 FORCE HIDE
+      wrapEl.style.maxHeight = "0px";
+      wrapEl.style.overflow = "hidden";
 
-    btnEl.textContent = "▼";
-    btnEl.title = "Expand";
-  } else {
-    wrapEl.classList.remove("is-collapsed");
+      btnEl.textContent = "▼";
+      btnEl.title = "Expand";
+    } else {
+      wrapEl.classList.remove("is-collapsed");
 
-    // 🔥 FORCE SHOW (this is the fix)
-    wrapEl.style.display = "block";
-    wrapEl.style.maxHeight = "2000px"; // large enough for content
-    wrapEl.style.overflow = "visible";
+      // 🔥 FORCE SHOW (this is the fix)
+      wrapEl.style.display = "block";
+      wrapEl.style.maxHeight = "2000px"; // large enough for content
+      wrapEl.style.overflow = "visible";
 
-    btnEl.textContent = "▲";
-    btnEl.title = "Collapse";
+      btnEl.textContent = "▲";
+      btnEl.title = "Collapse";
+    }
   }
-}
 
-function bindToggle(btnId, wrapId, defaultCollapsed) {
-  const btn = $(btnId);
-  const wrap = $(wrapId);
-  if (!btn || !wrap) return;
+  function bindToggle(btnId, wrapId, defaultCollapsed) {
+    const btn = $(btnId);
+    const wrap = $(wrapId);
+    if (!btn || !wrap) return;
 
-  // 🔥 ALWAYS RESET FIRST (critical fix)
-  wrap.classList.remove("is-collapsed");
-  wrap.style.display = "block";
-  wrap.style.maxHeight = "2000px";
+    // 🔥 ALWAYS RESET FIRST (critical fix)
+    wrap.classList.remove("is-collapsed");
+    wrap.style.display = "block";
+    wrap.style.maxHeight = "2000px";
 
-  // THEN apply state
-  setCollapsed(wrap, btn, !!defaultCollapsed);
+    // THEN apply state
+    setCollapsed(wrap, btn, !!defaultCollapsed);
 
-  btn.addEventListener("click", function () {
-    const isCollapsed = wrap.classList.contains("is-collapsed");
-    setCollapsed(wrap, btn, !isCollapsed);
-  });
-}
+    btn.addEventListener("click", function () {
+      const isCollapsed = wrap.classList.contains("is-collapsed");
+      setCollapsed(wrap, btn, !isCollapsed);
+    });
+  }
 
   /* =========================================================
      Toast Notifications (polling) — “Facebook pop-ups”
@@ -323,7 +326,7 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
     const actionBtn = t.querySelector(".ll-toast-action");
     if (actionBtn && opts && typeof opts.onAction === "function") {
       actionBtn.addEventListener("click", function () {
-        try { opts.onAction(); } catch (e) {}
+        try { opts.onAction(); } catch (e) { }
         close();
       });
     }
@@ -345,7 +348,7 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
   }
 
   function storeLastSeen(key, ids) {
-    try { localStorage.setItem(key, JSON.stringify(ids || [])); } catch (e) {}
+    try { localStorage.setItem(key, JSON.stringify(ids || [])); } catch (e) { }
   }
 
   function loadLastSeen(key) {
@@ -383,7 +386,7 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
         }
         storeLastSeen("ll_seen_requests", ids.slice(0, 200));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Disputes
     try {
@@ -402,7 +405,7 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
         }
         storeLastSeen("ll_seen_disputes", ids.slice(0, 200));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Consents (pending only)
     try {
@@ -421,7 +424,7 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
         }
         storeLastSeen("ll_seen_consents_pending", ids.slice(0, 200));
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   function startNotifications() {
@@ -572,64 +575,64 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
   }
 
   async function loadLenders() {
-  const lendersList = $("lendersList");
-  const lendersCount = $("lendersCount");
-  const lendersSearch = $("lendersSearch");
-  if (!lendersList) return;
+    const lendersList = $("lendersList");
+    const lendersCount = $("lendersCount");
+    const lendersSearch = $("lendersSearch");
+    if (!lendersList) return;
 
-  lendersList.innerHTML = `<div class="small">Loading...</div>`;
-  if (lendersCount) lendersCount.textContent = "";
+    lendersList.innerHTML = `<div class="small">Loading...</div>`;
+    if (lendersCount) lendersCount.textContent = "";
 
-  const r = await fetchJson("/api/admin/lenders", { method: "GET" });
-  if (!r.ok) {
-    lendersList.innerHTML = "";
-    alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
-    return;
-  }
+    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
+    if (!r.ok) {
+      lendersList.innerHTML = "";
+      alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
+      return;
+    }
 
-  let rows = Array.isArray(r.data) ? r.data : [];
-  const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
-  if (q) {
-    rows = rows.filter(u => {
-      const hay = [
-        u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
-        u.status, u.billingStatus, u.paymentProofStatus
-      ].map(x => String(x || "").toLowerCase()).join(" ");
-      return hay.includes(q);
-    });
-  }
+    let rows = Array.isArray(r.data) ? r.data : [];
+    const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(u => {
+        const hay = [
+          u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
+          u.status, u.billingStatus, u.paymentProofStatus
+        ].map(x => String(x || "").toLowerCase()).join(" ");
+        return hay.includes(q);
+      });
+    }
 
-  if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
+    if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
 
-  if (rows.length === 0) {
-    lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
-    return;
-  }
+    if (rows.length === 0) {
+      lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
+      return;
+    }
 
-  let html = "";
-  rows.forEach((u) => {
-    const id = escapeHtml(u._id);
-    const businessName = escapeHtml(u.businessName || "—");
-    const branchName = escapeHtml(u.branchName || "—");
-    const phone = escapeHtml(u.phone || "—");
-    const licenseNo = escapeHtml(u.licenseNo || "—");
-    const email = escapeHtml(u.email || "—");
-    const st = escapeHtml(u.status || "active");
+    let html = "";
+    rows.forEach((u) => {
+      const id = escapeHtml(u._id);
+      const businessName = escapeHtml(u.businessName || "—");
+      const branchName = escapeHtml(u.branchName || "—");
+      const phone = escapeHtml(u.phone || "—");
+      const licenseNo = escapeHtml(u.licenseNo || "—");
+      const email = escapeHtml(u.email || "—");
+      const st = escapeHtml(u.status || "active");
 
-    const popStatus = String(u.paymentProofStatus || "").toLowerCase();
-    const popUpdatedAt = u.paymentProofUpdatedAt || null;
-    const popUrl = u.paymentProofUrl || "";
-    const popId = parseIdFromUrl(popUrl);
+      const popStatus = String(u.paymentProofStatus || "").toLowerCase();
+      const popUpdatedAt = u.paymentProofUpdatedAt || null;
+      const popUrl = u.paymentProofUrl || "";
+      const popId = parseIdFromUrl(popUrl);
 
-    const popIsNew = isProofNewForUser(u._id, popUpdatedAt);
+      const popIsNew = isProofNewForUser(u._id, popUpdatedAt);
 
-    const popTag = popStatus
-      ? `<span class="tag ${popStatus === "approved" ? "active" : popStatus === "rejected" ? "suspended" : ""}">
+      const popTag = popStatus
+        ? `<span class="tag ${popStatus === "approved" ? "active" : popStatus === "rejected" ? "suspended" : ""}">
            PoP: ${escapeHtml(popStatus)}
          </span>`
-      : "";
+        : "";
 
-    html += `
+      html += `
       <div class="result-item ${popIsNew ? "ll-new-highlight" : ""}">
         <div class="admin-row">
           <div>
@@ -677,35 +680,35 @@ function bindToggle(btnId, wrapId, defaultCollapsed) {
         </div>
       </div>
     `;
-  });
+    });
 
-  lendersList.innerHTML = html;
+    lendersList.innerHTML = html;
 
-  try { mountPopAckUI(); } catch (e) {}
-}
+    try { mountPopAckUI(); } catch (e) { }
+  }
 
-window.loadLenders = loadLenders;
+  window.loadLenders = loadLenders;
 
 
   // ✅ View proof of payment (token fetch → blob → open)
- window.viewPopFile = async function (lenderId, popUrl) {
-  const url = String(popUrl || "");
-  if (!url) return;
+  window.viewPopFile = async function (lenderId, popUrl) {
+    const url = String(popUrl || "");
+    if (!url) return;
 
-  try {
-    localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString());
-  } catch (e) {}
+    try {
+      localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString());
+    } catch (e) { }
 
-  if (url) {
-    openFileWithAuth(url, "proof-of-payment");
-  } else {
-    alert("File not available");
-  }
+    if (url) {
+      openFileWithAuth(url, "proof-of-payment");
+    } else {
+      alert("File not available");
+    }
 
-  setTimeout(() => {
-    try { loadLenders(); } catch (e) {}
-  }, 600);
-};
+    setTimeout(() => {
+      try { loadLenders(); } catch (e) { }
+    }, 600);
+  };
 
   // ✅ Approve/Reject proof
   window.reviewPop = async function (proofId, status) {
@@ -844,8 +847,8 @@ window.loadLenders = loadLenders;
     alert("Lender created ✅");
     clearForm();
 
-    try { loadLenders(); } catch (e) {}
-    try { loadRequests(); } catch (e) {}
+    try { loadLenders(); } catch (e) { }
+    try { loadRequests(); } catch (e) { }
   }
 
   /* ---------------- Billing Acknowledgement UI ---------------- */
@@ -888,7 +891,7 @@ window.loadLenders = loadLenders;
 
           msgDiv.textContent = "✅ Sent";
           msgDiv.classList.add("good");
-          try { loadLenders(); } catch (e) {}
+          try { loadLenders(); } catch (e) { }
         } catch (e) {
           console.error(e);
           msgDiv.textContent = "❌ Server/network error";
@@ -904,31 +907,31 @@ window.loadLenders = loadLenders;
   /* =========================================================
      DISPUTES PAGE (no /overdue endpoint → filter client-side)
   ========================================================= */
- function pickLenderDisplay(d) {
-  const business = d.raisedByName || "";
-  const branch = d.raisedByBranch || "";
-  const email = d.raisedByEmail || "";
-  const phone = d.raisedByPhone || "";
+  function pickLenderDisplay(d) {
+    const business = d.raisedByName || "";
+    const branch = d.raisedByBranch || "";
+    const email = d.raisedByEmail || "";
+    const phone = d.raisedByPhone || "";
 
-  // 🔥 derive name from email if missing
-  let fallbackName = "";
-  if (!business && email) {
-    const namePart = email.split("@")[0];
-    const domainPart = email.split("@")[1]?.split(".")[0] || "";
-    fallbackName = (namePart + " " + domainPart).trim();
+    // 🔥 derive name from email if missing
+    let fallbackName = "";
+    if (!business && email) {
+      const namePart = email.split("@")[0];
+      const domainPart = email.split("@")[1]?.split(".")[0] || "";
+      fallbackName = (namePart + " " + domainPart).trim();
+    }
+
+    const line1 = [business || fallbackName, branch].filter(Boolean).join(" • ");
+    const line2 = [
+      email ? `Email: ${email}` : "",
+      phone ? `Phone: ${phone}` : ""
+    ].filter(Boolean).join(" • ");
+
+    return {
+      line1: line1 || "Unknown lender",
+      line2
+    };
   }
-
-  const line1 = [business || fallbackName, branch].filter(Boolean).join(" • ");
-  const line2 = [
-    email ? `Email: ${email}` : "",
-    phone ? `Phone: ${phone}` : ""
-  ].filter(Boolean).join(" • ");
-
-  return {
-    line1: line1 || "Unknown lender",
-    line2
-  };
-}
 
   async function loadDisputes(mode) {
     const list = $("disputesList");
@@ -961,29 +964,29 @@ window.loadLenders = loadLenders;
       return;
     }
 
- let html = "";
+    let html = "";
 
-rows.forEach((d) => {
-  const id = escapeHtml(d._id);
-  const nationalId = escapeHtml(d.nationalId || "");
-  const status = escapeHtml(d.status || "pending");
-  const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
-  const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
-  const note = escapeHtml(d.adminNote || d.note || "");
+    rows.forEach((d) => {
+      const id = escapeHtml(d._id);
+      const nationalId = escapeHtml(d.nationalId || "");
+      const status = escapeHtml(d.status || "pending");
+      const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
+      const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
+      const note = escapeHtml(d.adminNote || d.note || "");
 
-  const lender = pickLenderDisplay(d);
- const against = {
-  name: d.againstName,
-  branch: d.againstBranch,
-  email: d.againstEmail,
-  phone: d.againstPhone
-};
+      const lender = pickLenderDisplay(d);
+      const against = {
+        name: d.againstName,
+        branch: d.againstBranch,
+        email: d.againstEmail,
+        phone: d.againstPhone
+      };
 
-const client = {
-  nationalId: d.nationalId
-};
+      const client = {
+        nationalId: d.nationalId
+      };
 
-  html += `
+      html += `
     <div class="result-item">
 
       <!-- 🔴 HEADER -->
@@ -1003,24 +1006,24 @@ const client = {
       <!-- 🏢 AGAINST -->
       <div class="small" style="margin-top:6px;">
         <b>Against:</b> ${escapeHtml(
-          [against.name, against.branch].filter(Boolean).join(" • ") || "—"
-        )}
+        [against.name, against.branch].filter(Boolean).join(" • ") || "—"
+      )}
       </div>
 
       ${against.email || against.phone ? `
         <div class="small" style="opacity:.9;">
           ${escapeHtml([
-            against.email ? `Email: ${against.email}` : "",
-            against.phone ? `Phone: ${against.phone}` : ""
-          ].filter(Boolean).join(" • "))}
+        against.email ? `Email: ${against.email}` : "",
+        against.phone ? `Phone: ${against.phone}` : ""
+      ].filter(Boolean).join(" • "))}
         </div>
       ` : ""}
 
       <!-- 👤 CLIENT -->
       <div class="small" style="margin-top:6px;">
         <b>Client:</b> ${escapeHtml(
-          [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
-        )}
+        [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
+      )}
       </div>
 
       <!-- 📝 NOTES -->
@@ -1050,254 +1053,255 @@ const client = {
 
     </div>
   `;
-});
+    });
 
-list.innerHTML = html;
-
- window.markInvestigating = async function (id) {
-  const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
-
-  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status: "investigating", adminNote: note })
-  });
-
-  if (!r.ok) {
-    const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
-    alert(m);
-    return;
-  }
-
-  alert("Marked as investigating ✅");
-  loadDisputes("");
-};
-
-window.sendDisputeNote = async function (id) {
-  const note = prompt("Send note to lender:", "") || "";
-  if (!note.trim()) return;
-
-  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      adminNote: note
-    })
-  });
-
-  if (!r.ok) {
-    const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
-    alert(m);
-    return;
-  }
-
-  alert("Note sent ✅");
-  loadDisputes("");
-};
-
-} 
-   
-/* =========================================================
-   🚨 RISK ENGINE (SAFE + BULLETPROOF)
-========================================================= */
-function runRiskEngine(rows) {
-  if (!Array.isArray(rows)) return;
-
-  const userRisk = {};
-  const businessRisk = {};
-  const searchTracker = {};
-  const alerts = [];
-
-  rows.forEach(a => {
-    if (!a || typeof a !== "object") return;
-
-    const actor = String(a.actorEmail || a.email || "unknown");
-    const action = String(a.action || "").toUpperCase();
-    const ts = a.createdAt || a.timestamp || null;
-    const nationalId = a.targetNationalId || a.nationalId || null;
-
-    // 🔒 ALWAYS FALL BACK TO ACTOR (NEVER BREAKS)
-    const business = String(
-      a.againstBusiness || a.targetBusiness || a.businessName || actor
-    );
-
-    // ================================
-    // 👤 USER LOGIN BEHAVIOR
-    // ================================
-    if (!userRisk[actor]) {
-      userRisk[actor] = { score: 0, oddLogins: 0 };
+    list.innerHTML = html;
     }
 
-    if (ts) {
-      const d = new Date(ts);
-      if (!isNaN(d.getTime())) {
-        const time = d.getHours() + (d.getMinutes() / 60);
+    window.markInvestigating = async function (id) {
+      const note = prompt("Note to lender (optional):", "We have received your dispute and are investigating.") || "";
 
-        if (time < 7.5 || time > 18) {
-          userRisk[actor].score += 2;
-          userRisk[actor].oddLogins += 1;
+      const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "investigating", adminNote: note })
+      });
+
+      if (!r.ok) {
+        const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
+        alert(m);
+        return;
+      }
+
+      alert("Marked as investigating ✅");
+      loadDisputes("");
+    };
+
+    window.sendDisputeNote = async function (id) {
+      const note = prompt("Send note to lender:", "") || "";
+      if (!note.trim()) return;
+
+      const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          adminNote: note
+        })
+      });
+
+      if (!r.ok) {
+        const m = (r.data && r.data.message) ? r.data.message : "Failed to update dispute";
+        alert(m);
+        return;
+      }
+
+      alert("Note sent ✅");
+      loadDisputes("");
+    };
+
+
+
+    /* =========================================================
+       🚨 RISK ENGINE (SAFE + BULLETPROOF)
+    ========================================================= */
+    function runRiskEngine(rows) {
+      if (!Array.isArray(rows)) return;
+
+      const userRisk = {};
+      const businessRisk = {};
+      const searchTracker = {};
+      const alerts = [];
+
+      rows.forEach(a => {
+        if (!a || typeof a !== "object") return;
+
+        const actor = String(a.actorEmail || a.email || "unknown");
+        const action = String(a.action || "").toUpperCase();
+        const ts = a.createdAt || a.timestamp || null;
+        const nationalId = a.targetNationalId || a.nationalId || null;
+
+        // 🔒 ALWAYS FALL BACK TO ACTOR (NEVER BREAKS)
+        const business = String(
+          a.againstBusiness || a.targetBusiness || a.businessName || actor
+        );
+
+        // ================================
+        // 👤 USER LOGIN BEHAVIOR
+        // ================================
+        if (!userRisk[actor]) {
+          userRisk[actor] = { score: 0, oddLogins: 0 };
         }
 
-        if (time < 5 || time > 21) {
-          userRisk[actor].score += 3;
+        if (ts) {
+          const d = new Date(ts);
+          if (!isNaN(d.getTime())) {
+            const time = d.getHours() + (d.getMinutes() / 60);
+
+            if (time < 7.5 || time > 18) {
+              userRisk[actor].score += 2;
+              userRisk[actor].oddLogins += 1;
+            }
+
+            if (time < 5 || time > 21) {
+              userRisk[actor].score += 3;
+            }
+          }
         }
+
+        // ================================
+        // 🏢 BUSINESS INIT (NEVER BREAKS)
+        // ================================
+        if (!businessRisk[business]) {
+          businessRisk[business] = { disputes: 0, searches: 0 };
+        }
+
+        // ================================
+        // 🏢 DISPUTES
+        // ================================
+        if (action.includes("DISPUTE")) {
+          businessRisk[business].disputes += 1;
+        }
+
+        // ================================
+        // 🔍 SEARCH ABUSE
+        // ================================
+        if (action.includes("SEARCH") && nationalId) {
+          const key = actor + "_" + nationalId;
+
+          if (!searchTracker[key]) {
+            searchTracker[key] = 0;
+          }
+
+          searchTracker[key] += 1;
+
+          // 🔥 ALWAYS SAFE
+          businessRisk[business].searches += 1;
+        }
+      }); // ← THIS closes rows.forEach
+
+      // ================================
+      // 🚨 USER ALERTS (SAFE)
+      // ================================
+      Object.entries(userRisk || {}).forEach(([actor, data]) => {
+        const odd = Number((data && data.oddLogins) || 0);
+        const score = Number((data && data.score) || 0);
+
+        if (odd >= 2) {
+          alerts.push(`🌙 ${actor} logged in at unusual times (${odd})`);
+        }
+
+        if (score >= 6) {
+          alerts.push(`🔥 HIGH RISK LOGIN: ${actor} (score ${score})`);
+        }
+      });
+
+      // ================================
+      // 🚨 BUSINESS ALERTS (SAFE)
+      // ================================
+      Object.entries(businessRisk || {}).forEach(([biz, data]) => {
+        const disputes = Number((data && data.disputes) || 0);
+        const searches = Number((data && data.searches) || 0);
+
+        if (disputes >= 3) {
+          alerts.push(`🏢 ${biz} has ${disputes} disputes against them`);
+        }
+
+        if (disputes >= 5) {
+          alerts.push(`🚨 HIGH RISK BUSINESS: ${biz} (${disputes} disputes)`);
+        }
+
+        if (searches >= 5) {
+          alerts.push(`🔍 ${biz} is aggressively searching records (${searches})`);
+        }
+
+        if (searches >= 10) {
+          alerts.push(`🚨 SEARCH ABUSE RISK: ${biz} (${searches})`);
+        }
+      });
+
+      // ================================
+      // 🚨 SEARCH PATTERN ALERTS (SAFE)
+      // ================================
+      Object.entries(searchTracker || {}).forEach(([key, count]) => {
+        const safeCount = Number(count || 0);
+
+        if (safeCount >= 5) {
+          const [actor, id] = String(key).split("_");
+          alerts.push(`🔍 ${actor} repeatedly searched ${id}`);
+        }
+      });
+
+      // ================================
+      // 🎯 UPDATE UI (SAFE)
+      // ================================
+      const box = document.getElementById("riskBox");
+      const list = document.getElementById("riskList");
+
+      if (box && list) {
+        if (alerts.length === 0) {
+          box.style.display = "none";
+        } else {
+          box.style.display = "block";
+          list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
+        }
+      }
+
+      // ================================
+      // 🏢 DASHBOARD (SAFE)
+      // ================================
+      if (typeof renderRiskDashboard === "function") {
+        renderRiskDashboard(businessRisk);
       }
     }
 
-    // ================================
-    // 🏢 BUSINESS INIT (NEVER BREAKS)
-    // ================================
-    if (!businessRisk[business]) {
-      businessRisk[business] = { disputes: 0, searches: 0 };
-    }
+    /* =========================================================
+       📊 LOAD AUDIT
+    ========================================================= */
+    async function loadAudit() {
+      const list = $("auditList");
+      if (!list) return;
 
-    // ================================
-    // 🏢 DISPUTES
-    // ================================
-    if (action.includes("DISPUTE")) {
-      businessRisk[business].disputes += 1;
-    }
+      const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
 
-    // ================================
-    // 🔍 SEARCH ABUSE
-    // ================================
-    if (action.includes("SEARCH") && nationalId) {
-      const key = actor + "_" + nationalId;
+      list.innerHTML = `<div class="small">Loading...</div>`;
 
-      if (!searchTracker[key]) {
-        searchTracker[key] = 0;
+      const r = await fetchJson(`/api/admin/audit?limit=${limit}`, { method: "GET" });
+
+      if (!r.ok) {
+        list.innerHTML = "";
+        alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
+        return;
       }
 
-      searchTracker[key] += 1;
+      const rows = Array.isArray(r.data) ? r.data : [];
 
-      // 🔥 ALWAYS SAFE
-      businessRisk[business].searches += 1;
-    }
-  }); // ← THIS closes rows.forEach
+      // 🚨 RUN RISK ENGINE
+      runRiskEngine(rows);
 
-  // ================================
-  // 🚨 USER ALERTS (SAFE)
-  // ================================
-  Object.entries(userRisk || {}).forEach(([actor, data]) => {
-    const odd = Number((data && data.oddLogins) || 0);
-    const score = Number((data && data.score) || 0);
+      const countLine = $("auditCountLine");
+      if (countLine) countLine.textContent = `Logs: ${rows.length}`;
 
-    if (odd >= 2) {
-      alerts.push(`🌙 ${actor} logged in at unusual times (${odd})`);
-    }
+      if (rows.length === 0) {
+        list.innerHTML = `<div class="result-item"><div class="small">No audit logs.</div></div>`;
+        return;
+      }
 
-    if (score >= 6) {
-      alerts.push(`🔥 HIGH RISK LOGIN: ${actor} (score ${score})`);
-    }
-  });
+      let html = "";
 
-  // ================================
-  // 🚨 BUSINESS ALERTS (SAFE)
-  // ================================
-  Object.entries(businessRisk || {}).forEach(([biz, data]) => {
-    const disputes = Number((data && data.disputes) || 0);
-    const searches = Number((data && data.searches) || 0);
+      rows.forEach((a) => {
+        const ts = a.createdAt || a.timestamp || a.time || null;
+        const when = ts ? new Date(ts).toLocaleString() : "";
+        const actor = a.actorEmail || a.email || a.userEmail || a.actor || "—";
+        const action = a.action || a.event || "—";
+        const target = a.nationalId || a.targetNationalId || "";
+        const meta = a.meta || a.details || a.payload || null;
 
-    if (disputes >= 3) {
-      alerts.push(`🏢 ${biz} has ${disputes} disputes against them`);
-    }
+        // 🔥 CLEAN META DISPLAY
+        const prettyMeta = meta
+          ? Object.entries(meta).map(([k, v]) => {
+            return `<div class="small"><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v))}</div>`;
+          }).join("")
+          : "";
 
-    if (disputes >= 5) {
-      alerts.push(`🚨 HIGH RISK BUSINESS: ${biz} (${disputes} disputes)`);
-    }
-
-    if (searches >= 5) {
-      alerts.push(`🔍 ${biz} is aggressively searching records (${searches})`);
-    }
-
-    if (searches >= 10) {
-      alerts.push(`🚨 SEARCH ABUSE RISK: ${biz} (${searches})`);
-    }
-  });
-
-  // ================================
-  // 🚨 SEARCH PATTERN ALERTS (SAFE)
-  // ================================
-  Object.entries(searchTracker || {}).forEach(([key, count]) => {
-    const safeCount = Number(count || 0);
-
-    if (safeCount >= 5) {
-      const [actor, id] = String(key).split("_");
-      alerts.push(`🔍 ${actor} repeatedly searched ${id}`);
-    }
-  });
-
-  // ================================
-  // 🎯 UPDATE UI (SAFE)
-  // ================================
-  const box = document.getElementById("riskBox");
-  const list = document.getElementById("riskList");
-
-  if (box && list) {
-    if (alerts.length === 0) {
-      box.style.display = "none";
-    } else {
-      box.style.display = "block";
-      list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
-    }
-  }
-
-  // ================================
-  // 🏢 DASHBOARD (SAFE)
-  // ================================
-  if (typeof renderRiskDashboard === "function") {
-    renderRiskDashboard(businessRisk);
-  }
-}
-
-/* =========================================================
-   📊 LOAD AUDIT
-========================================================= */
-async function loadAudit() {
-  const list = $("auditList");
-  if (!list) return;
-
-  const limit = Math.min(200, Math.max(1, parseInt((($("auditLimit") && $("auditLimit").value) || "100"), 10) || 100));
-
-  list.innerHTML = `<div class="small">Loading...</div>`;
-
-  const r = await fetchJson(`/api/admin/audit?limit=${limit}`, { method: "GET" });
-
-  if (!r.ok) {
-    list.innerHTML = "";
-    alert((r.data && r.data.message) ? r.data.message : "Failed to load audit logs");
-    return;
-  }
-
-  const rows = Array.isArray(r.data) ? r.data : [];
-
-  // 🚨 RUN RISK ENGINE
-  runRiskEngine(rows);
-
-  const countLine = $("auditCountLine");
-  if (countLine) countLine.textContent = `Logs: ${rows.length}`;
-
-  if (rows.length === 0) {
-    list.innerHTML = `<div class="result-item"><div class="small">No audit logs.</div></div>`;
-    return;
-  }
-
-  let html = "";
-
-  rows.forEach((a) => {
-    const ts = a.createdAt || a.timestamp || a.time || null;
-    const when = ts ? new Date(ts).toLocaleString() : "";
-    const actor = a.actorEmail || a.email || a.userEmail || a.actor || "—";
-    const action = a.action || a.event || "—";
-    const target = a.nationalId || a.targetNationalId || "";
-    const meta = a.meta || a.details || a.payload || null;
-
-    // 🔥 CLEAN META DISPLAY
-    const prettyMeta = meta
-      ? Object.entries(meta).map(([k, v]) => {
-          return `<div class="small"><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v))}</div>`;
-        }).join("")
-      : "";
-
-    html += `
+        html += `
       <div class="result-item">
 
         <!-- 🔴 ACTION -->
@@ -1332,96 +1336,96 @@ async function loadAudit() {
 
       </div>
     `;
-  });
+      });
 
-  list.innerHTML = html;
-}
-
-/* =========================================================
-   📝 LOG ADMIN ACTION (UPGRADED)
-========================================================= */
-window.logAuditAction = async function (target, type, context = {}) {
-  try {
-    const note = prompt(`Add a note for this action (${type})`, "e.g. Called client, no answer");
-
-   const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + localStorage.getItem("authToken")
-      },
-      body: JSON.stringify({
-        target,
-        action: type,
-        note: note || "Admin follow-up action",
-        contextType: context.type || null,
-        contextId: context.id || null
-      })
-    });
-
-    if (!res.ok) {
-      alert("❌ Failed to log action");
-      return;
+      list.innerHTML = html;
     }
 
-    // ✅ USE YOUR EXISTING TOAST SYSTEM
-    toast(`${type} logged successfully`, {
-      title: "Admin Action",
-      ttlMs: 3000
-    });
+    /* =========================================================
+       📝 LOG ADMIN ACTION (UPGRADED)
+    ========================================================= */
+    window.logAuditAction = async function (target, type, context = {}) {
+      try {
+        const note = prompt(`Add a note for this action (${type})`, "e.g. Called client, no answer");
 
-  } catch (e) {
-    console.error(e);
-    alert("Error logging action");
-  }
-};
+        const res = await fetch(window.APP_CONFIG.API_BASE_URL + "/api/admin/audit/action", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("authToken")
+          },
+          body: JSON.stringify({
+            target,
+            action: type,
+            note: note || "Admin follow-up action",
+            contextType: context.type || null,
+            contextId: context.id || null
+          })
+        });
 
-  /* =========================================================
-     CONSENTS PAGE (consent approvals only)
-  ========================================================= */
-  async function loadConsents() {
-    const list = $("consentsList");
-    if (!list) return;
+        if (!res.ok) {
+          alert("❌ Failed to log action");
+          return;
+        }
 
-    const status = String(($("statusFilter") && $("statusFilter").value) || "pending").trim();
-    const nationalId = String(($("nationalIdFilter") && $("nationalIdFilter").value) || "").trim();
+        // ✅ USE YOUR EXISTING TOAST SYSTEM
+        toast(`${type} logged successfully`, {
+          title: "Admin Action",
+          ttlMs: 3000
+        });
 
-    list.innerHTML = `<div class="small">Loading...</div>`;
+      } catch (e) {
+        console.error(e);
+        alert("Error logging action");
+      }
+    };
 
-    const q = [];
-    if (status) q.push(`status=${encodeURIComponent(status)}`);
-    if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
+    /* =========================================================
+       CONSENTS PAGE (consent approvals only)
+    ========================================================= */
+    async function loadConsents() {
+      const list = $("consentsList");
+      if (!list) return;
 
-    const r = await fetchJson(`/api/admin/consents${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
-    if (!r.ok) {
-      list.innerHTML = "";
-      alert((r.data && r.data.message) ? r.data.message : "Failed to load consents");
-      return;
-    }
+      const status = String(($("statusFilter") && $("statusFilter").value) || "pending").trim();
+      const nationalId = String(($("nationalIdFilter") && $("nationalIdFilter").value) || "").trim();
 
-    const rows = Array.isArray(r.data) ? r.data : [];
-    const countLine = $("countLine");
-    if (countLine) countLine.textContent = `Items: ${rows.length}`;
+      list.innerHTML = `<div class="small">Loading...</div>`;
 
-    if (rows.length === 0) {
-      list.innerHTML = `<div class="result-item"><div class="small">No consent items.</div></div>`;
-      return;
-    }
+      const q = [];
+      if (status) q.push(`status=${encodeURIComponent(status)}`);
+      if (nationalId) q.push(`nationalId=${encodeURIComponent(nationalId)}`);
 
-    let html = "";
-    rows.forEach((c) => {
-      const id = escapeHtml(c._id);
-      const omang = escapeHtml(c.nationalId || "");
-      const fullName = escapeHtml(c.fullName || "");
-      const st = escapeHtml(c.consentStatus || c.status || "pending");
-      const created = c.createdAt ? new Date(c.createdAt).toLocaleString() : "";
+      const r = await fetchJson(`/api/admin/consents${q.length ? "?" + q.join("&") : ""}`, { method: "GET" });
+      if (!r.ok) {
+        list.innerHTML = "";
+        alert((r.data && r.data.message) ? r.data.message : "Failed to load consents");
+        return;
+      }
 
-      const lenderName = escapeHtml(c.lenderName || "—");
-      const lenderBranch = escapeHtml(c.lenderBranch || "");
-      const lenderEmail = escapeHtml(c.lenderEmail || "—");
-      const fromLine = [lenderName, lenderBranch].filter(Boolean).join(" • ");
+      const rows = Array.isArray(r.data) ? r.data : [];
+      const countLine = $("countLine");
+      if (countLine) countLine.textContent = `Items: ${rows.length}`;
 
-      html += `
+      if (rows.length === 0) {
+        list.innerHTML = `<div class="result-item"><div class="small">No consent items.</div></div>`;
+        return;
+      }
+
+      let html = "";
+      rows.forEach((c) => {
+        const id = escapeHtml(c._id);
+        const omang = escapeHtml(c.nationalId || "");
+        const fullName = escapeHtml(c.fullName || "");
+        const st = escapeHtml(c.consentStatus || c.status || "pending");
+        const created = c.createdAt ? new Date(c.createdAt).toLocaleString() : "";
+
+        const lenderName = escapeHtml(c.lenderName || "—");
+        const lenderBranch = escapeHtml(c.lenderBranch || "");
+        const lenderEmail = escapeHtml(c.lenderEmail || "—");
+        const fromLine = [lenderName, lenderBranch].filter(Boolean).join(" • ");
+
+        html += `
         <div class="result-item">
           <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
             <div>
@@ -1441,72 +1445,73 @@ window.logAuditAction = async function (target, type, context = {}) {
           </div>
         </div>
       `;
-    });
+      });
 
-    list.innerHTML = html;
-  }
+      list.innerHTML = html;
+    }
 
-  // ✅ View consent file (Cloudinary direct URL)
-window.openConsentFile = function (url) {
-  openFileWithAuth(url, "consent-file");
-};
+    // ✅ View consent file (Cloudinary direct URL)
+    window.openConsentFile = function (url) {
+      openFileWithAuth(url, "consent-file");
+    };
 
-window.setConsentStatus = async function (id, status) {
+  window.setConsentStatus = async function (id, status) {
   const note = status === "rejected"
     ? (prompt("Rejection note (optional):", "Please re-upload a clear consent file.") || "")
     : (prompt("Approval note (optional):", "Consent approved.") || "");
 
-    const r = await fetchJson(`/api/admin/consents/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ consentStatus: status, notes: note })
+  const r = await fetchJson(`/api/admin/consents/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ consentStatus: status, notes: note })
+  });
+
+  if (!r.ok) {
+    const m = (r.data && r.data.message) ? r.data.message : "Failed to update consent";
+    alert(m);
+    return;
+  }
+
+  alert(`Consent ${status} ✅`);
+  loadConsents();
+};
+
+    /* =========================================================
+       Boot
+    ========================================================= */
+    document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await requireSuperAdmin();
+      if (!ok) return;
+
+      startNotifications();
+
+      bindToggle("toggleRequestsBtn", "requestsWrap", false);
+      bindToggle("toggleLendersBtn", "lendersWrap", false);
+
+      if ($("fillFormBtn")) $("fillFormBtn").addEventListener("click", fillFormDemo);
+      if ($("clearFormBtn")) $("clearFormBtn").addEventListener("click", clearForm);
+
+      if ($("reloadRequestsBtn")) $("reloadRequestsBtn").addEventListener("click", loadRequests);
+      if ($("reloadLendersBtn")) $("reloadLendersBtn").addEventListener("click", loadLenders);
+      if ($("lendersSearch")) $("lendersSearch").addEventListener("input", function () { loadLenders(); });
+
+      if ($("adminForm")) $("adminForm").addEventListener("submit", handleCreateLenderSubmit);
+
+      if ($("loadDisputesBtn")) $("loadDisputesBtn").addEventListener("click", function () { loadDisputes(""); });
+      if ($("loadDisputesOverdueBtn")) $("loadDisputesOverdueBtn").addEventListener("click", function () { loadDisputes("overdue"); });
+
+      if ($("loadAuditBtn")) $("loadAuditBtn").addEventListener("click", loadAudit);
+
+      if ($("reloadBtn")) $("reloadBtn").addEventListener("click", loadConsents);
+      if ($("statusFilter")) $("statusFilter").addEventListener("change", loadConsents);
+
+      try { if ($("requestsList")) loadRequests(); } catch (e) { }
+      try { if ($("lendersList")) loadLenders(); } catch (e) { }
+      try { if ($("disputesList")) loadDisputes(""); } catch (e) { }
+      try { if ($("auditList")) loadAudit(); } catch (e) { }
+      try { if ($("consentsList")) loadConsents(); } catch (e) { }
     });
 
-    if (!r.ok) {
-      const m = (r.data && r.data.message) ? r.data.message : "Failed to update consent";
-      alert(m);
-      return;
-    }
-
-    alert(`Consent ${status} ✅`);
-    loadConsents();
-  };
-
-  /* =========================================================
-     Boot
-  ========================================================= */
-  document.addEventListener("DOMContentLoaded", async function () {
-    const ok = await requireSuperAdmin();
-    if (!ok) return;
-
-    startNotifications();
-
-    bindToggle("toggleRequestsBtn", "requestsWrap", false);
-    bindToggle("toggleLendersBtn", "lendersWrap", false);
-
-    if ($("fillFormBtn")) $("fillFormBtn").addEventListener("click", fillFormDemo);
-    if ($("clearFormBtn")) $("clearFormBtn").addEventListener("click", clearForm);
-
-    if ($("reloadRequestsBtn")) $("reloadRequestsBtn").addEventListener("click", loadRequests);
-    if ($("reloadLendersBtn")) $("reloadLendersBtn").addEventListener("click", loadLenders);
-    if ($("lendersSearch")) $("lendersSearch").addEventListener("input", function () { loadLenders(); });
-
-    if ($("adminForm")) $("adminForm").addEventListener("submit", handleCreateLenderSubmit);
-
-    if ($("loadDisputesBtn")) $("loadDisputesBtn").addEventListener("click", function () { loadDisputes(""); });
-    if ($("loadDisputesOverdueBtn")) $("loadDisputesOverdueBtn").addEventListener("click", function () { loadDisputes("overdue"); });
-
-    if ($("loadAuditBtn")) $("loadAuditBtn").addEventListener("click", loadAudit);
-
-    if ($("reloadBtn")) $("reloadBtn").addEventListener("click", loadConsents);
-    if ($("statusFilter")) $("statusFilter").addEventListener("change", loadConsents);
-
-    try { if ($("requestsList")) loadRequests(); } catch (e) {}
-    try { if ($("lendersList")) loadLenders(); } catch (e) {}
-    try { if ($("disputesList")) loadDisputes(""); } catch (e) {}
-    try { if ($("auditList")) loadAudit(); } catch (e) {}
-    try { if ($("consentsList")) loadConsents(); } catch (e) {}
-  });
-window.uploadReceipt = async function (id) {
+   window.uploadReceipt = async function (id) {
   const input = document.getElementById(`receipt-${id}`);
 
   if (!input || !input.files.length) {
@@ -1519,14 +1524,14 @@ window.uploadReceipt = async function (id) {
   const fd = new FormData();
   fd.append("receipt", file);
 
- try {
-  const res = await fetch(window.APP_CONFIG.API_BASE_URL + `/api/admin/payment-proofs/${encodeURIComponent(id)}/receipt`, {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + localStorage.getItem("authToken")
-    },
-    body: fd
-  });
+  try {
+    const res = await fetch(window.APP_CONFIG.API_BASE_URL + `/api/admin/payment-proofs/${encodeURIComponent(id)}/receipt`, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + localStorage.getItem("authToken")
+      },
+      body: fd
+    });
 
     const data = await res.json().catch(() => ({}));
 
@@ -1536,7 +1541,7 @@ window.uploadReceipt = async function (id) {
     }
 
     alert("Receipt uploaded ✅");
-try { loadLenders(); } catch(e) {}
+    try { loadLenders(); } catch (e) {}
 
   } catch (err) {
     console.error(err);
@@ -1592,3 +1597,4 @@ window.exportAuditCSV = async function () {
     alert("Export failed");
   }
 };
+})();
