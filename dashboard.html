@@ -128,13 +128,13 @@
   </div>
 </div>
 
- <!-- ✅ Disputes loopback (clean + collapsible) -->
+<!-- ✅ Disputes (structured + compliant) -->
 <div class="card" style="margin-top:16px;">
   <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
     <div>
       <h2 style="margin-bottom:4px;">My Disputes</h2>
       <p class="small" style="margin:0;">
-        Active disputes require attention. Resolved cases are hidden below.
+        Track and monitor disputes you have raised. Admin will review and update the status.
       </p>
     </div>
 
@@ -163,49 +163,6 @@
     </div>
   </div>
 </div>
-
-<!-- ✅ Proof of Payment (billing) + loopback review -->
-<div class="card" style="margin-top:16px;">
-  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-    <div>
-      <h2 style="margin-bottom:4px;">Subscription & Proof of Payment</h2>
-      <p class="small" style="margin:0;">
-        Upload proof here. Admin review outcome will appear below.
-      </p>
-    </div>
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-      <button class="btn-ghost" id="reloadBillingBtn" type="button">Refresh</button>
-    </div>
-  </div>
-
-  <div class="row" style="margin-top:12px;">
-    <div>
-      <label for="paymentProofFile">Proof of payment file</label>
-      <input
-        id="paymentProofFile"
-        type="file"
-        accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
-      />
-      <div class="small" style="opacity:.85; margin-top:6px;">
-        Accepted: screenshots/photos/scans (any image) or PDF. If the file is large, compress it slightly if upload fails.
-      </div>
-    </div>
-
-    <div style="display:flex; align-items:flex-end;">
-      <button class="btn-primary" style="width:100%;" onclick="uploadPaymentProof()">Submit proof</button>
-    </div>
-  </div>
-
-      <div id="paymentProofStatus"
-           class="small"
-           style="margin-top:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.03); display:none;">
-      </div>
-
-      <div id="billingLoopback" class="small" style="margin-top:12px; display:none;"></div>
-    </div>
-
-  </div>
 
   <script src="config.js?v=7"></script>
   <script src="dashboard.js?v=7"></script>

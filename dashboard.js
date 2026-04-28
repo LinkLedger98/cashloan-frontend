@@ -343,33 +343,50 @@ async function loadMyDisputes(changedIds = []) {
       }
     });
 
-    // ✅ RENDER FUNCTION
-    function render(d) {
-      const isChanged = changedIds.includes(d._id);
+   // ✅ RENDER FUNCTION (FINAL CLEAN)
+function render(d) {
+  const isChanged = changedIds.includes(d._id);
 
-      return `
-        <div class="result-item ${isChanged ? "highlight-update" : ""}">
-          <div style="font-weight:600; margin-bottom:4px;">
-            Dispute Record • National ID: <b>${escapeHtml(d.nationalId)}</b>
-          </div>
+  return `
+    <div class="result-item ${isChanged ? "highlight-update" : ""}">
 
-          <div class="small">
-            ${adminTag(d.adminStatus, d.status)}
-            ${d.createdAt ? ` • Submitted: ${fmtDateTime(d.createdAt)}` : ""}
-            ${isChanged ? ` • <span class="just-now">updated just now</span>` : ""}
-          </div>
+      <div style="font-weight:600; margin-bottom:4px;">
+        Dispute Record • National ID: <b>${escapeHtml(d.nationalId)}</b>
+      </div>
 
-          ${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+      <div class="small">
+        <b>Customer:</b> ${escapeHtml(d.nationalId)}
+      </div>
 
-          ${d.adminNote ? `
-            <div class="small" style="margin-top:8px;">
-              <b>Admin Response:</b><br/>
-              ${escapeHtml(d.adminNote)}
-            </div>
-          ` : ""}
+      <div class="small" style="margin-top:4px;">
+        <b>Against:</b> 
+        ${escapeHtml(d.againstName || "Unknown")}
+        ${d.againstBranch ? ` • ${escapeHtml(d.againstBranch)}` : ""}
+        ${d.againstPhone ? ` • ${escapeHtml(d.againstPhone)}` : ""}
+      </div>
+
+      <div class="small">
+        ${adminTag(d.adminStatus, d.status)}
+        ${d.createdAt ? ` • Submitted: ${fmtDateTime(d.createdAt)}` : ""}
+        ${isChanged ? ` • <span class="just-now">updated just now</span>` : ""}
+      </div>
+
+      ${d.notes ? `
+        <div class="small">
+          <b>Reason:</b> ${escapeHtml(d.notes)}
         </div>
-      `;
-    }
+      ` : ""}
+
+      ${d.adminNote ? `
+        <div class="small" style="margin-top:8px;">
+          <b>Admin Response:</b><br/>
+          ${escapeHtml(d.adminNote)}
+        </div>
+      ` : ""}
+
+    </div>
+  `;
+}
 
     // ✅ ACTIVE
     activeEl.innerHTML = active.length
@@ -390,148 +407,6 @@ async function loadMyDisputes(changedIds = []) {
     console.error(err);
     activeEl.innerHTML = "";
     alert("Server error while loading dispute records");
-  }
-}
-
-/* ================================
-   ✅ Billing loopback UI (FINAL FIXED)
-================================ */
-function setBillingLoopbackBox(html, kind) {
-  const el = document.getElementById("billingLoopback");
-  if (!el) return;
-
-  el.style.display = "block";
-  el.style.padding = "10px 12px";
-  el.style.borderRadius = "12px";
-  el.style.border = "1px solid rgba(255,255,255,.12)";
-
-  const k = String(kind || "").toLowerCase();
-  if (k === "approved") el.style.background = "rgba(0,255,140,0.10)";
-  else if (k === "past_due") el.style.background = "rgba(255,70,70,0.10)";
-  else el.style.background = "rgba(255,205,0,0.10)";
-
-  el.innerHTML = html;
-}
-
-async function loadBillingLoopback() {
-  if (!requireLogin()) return;
-
-  try {
-    const { res, data } = await apiJson("/api/billing/proofs/mine", { method: "GET" });
-    if (await handleAuthFailure(res, data)) return;
-
-    if (res.ok && data && data.ok && data.hasProof) {
-      const p = data.proof || {};
-      const ui = mapProofToUiStatus(p.status);
-
-      const reviewedAt = p.reviewedAt ? fmtDateTime(p.reviewedAt) : "";
-      const createdAt = p.createdAt ? fmtDateTime(p.createdAt) : "";
-      const notes = escapeHtml(p.notes || "");
-
-      const API_BASE_URL = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL;
-
-      // ✅ FIX: SAFE URL BUILDING
-      let fullFileUrl = "";
-      if (p.fileUrl) {
-        if (p.fileUrl.startsWith("http")) {
-          fullFileUrl = p.fileUrl; // already full
-        } else if (API_BASE_URL) {
-          fullFileUrl = `${API_BASE_URL}${p.fileUrl}`;
-        }
-      }
-
-      const receiptUrl = (API_BASE_URL && p._id)
-        ? `${API_BASE_URL}/api/billing/proofs/${p._id}/receipt`
-        : "";
-
-      // ✅ status text upgrade
-      if (ui === "approved") setPaymentStatus("approved", "Payment confirmation approved.");
-      else if (ui === "pending") setPaymentStatus("pending", "Awaiting review.");
-      else setPaymentStatus("resend", "Action required.");
-
-      setBillingLoopbackBox(`
-        <div style="font-weight:900; margin-bottom:6px;">Payment Confirmation — Review Outcome</div>
-
-        <div class="small" style="opacity:.9;">
-          Status: <b>${escapeHtml(String(p.status || "").toUpperCase())}</b>
-          ${createdAt ? ` • Submitted: ${escapeHtml(createdAt)}` : ""}
-          ${reviewedAt ? ` • Reviewed: ${escapeHtml(reviewedAt)}` : ""}
-        </div>
-
-        ${
-          notes
-            ? `<div style="margin-top:10px;"><b>Review Notes:</b> ${notes}</div>`
-            : `<div style="margin-top:10px; opacity:.8;">No review notes provided.</div>`
-        }
-
-        ${
-          fullFileUrl
-            ? `<div style="margin-top:10px;">
-                 <button class="btn-ghost btn-sm"
-                   onclick="window.open('${escapeHtml(fullFileUrl)}', '_blank')">
-                   View Submitted Document
-                 </button>
-               </div>`
-            : `<div class="small" style="margin-top:10px; opacity:.7;">
-                 Document not available.
-               </div>`
-        }
-
-        ${
-          receiptUrl
-            ? `<div style="margin-top:10px;">
-                 <a class="btn-primary btn-sm"
-                    href="${escapeHtml(receiptUrl)}">
-                    Download Receipt
-                 </a>
-               </div>`
-            : ``
-        }
-      `, ui === "approved" ? "approved" : (ui === "pending" ? "resend" : "resend"));
-
-      return;
-    }
-
-    if (res.ok && data && data.ok && data.hasProof === false) {
-      setBillingLoopbackBox(`
-        <div style="font-weight:900; margin-bottom:6px;">Payment Confirmation</div>
-        <div class="small" style="opacity:.85;">No payment confirmation submitted.</div>
-      `, "resend");
-      clearPaymentStatus();
-      return;
-    }
-  } catch (e) {
-    // silent
-  }
-
-  // fallback
-  try {
-    const { res, data } = await apiJson("/api/auth/me", { method: "GET" });
-    if (await handleAuthFailure(res, data)) return;
-
-    if (res.ok && data) {
-      const billing = String(data.billingStatus || "").toLowerCase();
-      const note = escapeHtml(data.notes || "");
-
-      const kind = billing === "paid" ? "approved" : (billing === "overdue" ? "past_due" : "resend");
-
-      setBillingLoopbackBox(`
-        <div style="font-weight:900; margin-bottom:6px;">Subscription Status</div>
-        <div class="small" style="opacity:.9;">
-          Status: <b>${escapeHtml(billing || "unknown")}</b>
-        </div>
-
-        ${
-          note
-            ? `<div style="margin-top:10px;"><b>Notes:</b><br/>
-                 <span class="small" style="opacity:.9; white-space:pre-wrap;">${note}</span>
-               </div>`
-            : ""
-        }
-      `, kind);
-    }
-  } catch (err) {
-    // silent
   }
 }
 
@@ -820,16 +695,6 @@ async function uploadPaymentProof() {
 
     alert("Payment confirmation submitted successfully. It will be reviewed shortly.");
     fileInput.value = "";
-
-       try {
-      await loadBillingLoopback();
-    } catch (e) {}
-
-  } catch (err) {
-    console.error(err);
-    setPaymentStatus("resend", "Upload failed due to a system error.");
-    alert("Server error while submitting payment confirmation");
-  }
 } 
 
 
@@ -1258,12 +1123,8 @@ function setupClosedDisputesCollapse() {
   const dBtn = document.getElementById("reloadMyDisputesBtn");
   if (dBtn) dBtn.addEventListener("click", loadMyDisputes);
 
-  const bBtn = document.getElementById("reloadBillingBtn");
-  if (bBtn) bBtn.addEventListener("click", loadBillingLoopback);
-
   loadMyClients();
   loadMyDisputes();
-  loadBillingLoopback();
 
   startDisputesAutoRefresh();
 
