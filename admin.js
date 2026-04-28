@@ -629,4 +629,12 @@ document.addEventListener("DOMContentLoaded", function () {
   } catch (e) {}
 });
 
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("role");
+
+  window.location.href = "login.html";
+}
+
 window.loadDisputes = loadDisputes;
