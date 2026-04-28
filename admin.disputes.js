@@ -64,7 +64,7 @@
     rows.forEach((d) => {
       const id = escapeHtml(d._id);
       const nationalId = escapeHtml(d.nationalId || "");
-      const status = escapeHtml(d.status || "pending");
+      const status = escapeHtml(d.adminStatus || d.status || "pending");
       const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : "";
       const due = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
       const note = escapeHtml(d.adminNote || d.note || "");
@@ -81,73 +81,81 @@
         nationalId: d.nationalId
       };
 
-      html += `
-    <div class="result-item">
+     html += `
+<div class="result-item" style="padding:14px;">
 
-      <!-- 🔴 HEADER -->
-      <div><b>Dispute</b> • Omang: <b>${nationalId || "—"}</b></div>
-      <div class="small">
-        Status: <b>${status}</b>
-        ${created ? ` • Opened: ${escapeHtml(created)}` : ""}
-        ${due ? ` • SLA due: ${escapeHtml(due)}` : ""}
-      </div>
+  <!-- 🔴 HEADER -->
+  <div style="font-weight:700; margin-bottom:6px;">
+    Dispute • Omang: <b>${nationalId || "—"}</b>
+  </div>
 
-      <!-- 👤 FROM -->
-      <div class="small" style="margin-top:6px;">
-        <b>From:</b> ${escapeHtml(lender.line1)}
-      </div>
-      ${lender.line2 ? `<div class="small" style="opacity:.9;">${escapeHtml(lender.line2)}</div>` : ""}
+  <div class="small" style="margin-bottom:8px;">
+    <b>Status:</b> ${status}
+    ${created ? ` • Opened: ${escapeHtml(created)}` : ""}
+    ${due ? ` • SLA: ${escapeHtml(due)}` : ""}
+  </div>
 
-      <!-- 🏢 AGAINST -->
-      <div class="small" style="margin-top:6px;">
-        <b>Against:</b> ${escapeHtml(
-        [against.name, against.branch].filter(Boolean).join(" • ") || "—"
-      )}
-      </div>
+  <!-- 👤 CLIENT -->
+  <div class="small" style="margin-bottom:6px;">
+    <b>Client:</b> ${escapeHtml(d.fullName || nationalId)}
+  </div>
 
-      ${against.email || against.phone ? `
-        <div class="small" style="opacity:.9;">
-          ${escapeHtml([
-        against.email ? `Email: ${against.email}` : "",
-        against.phone ? `Phone: ${against.phone}` : ""
-      ].filter(Boolean).join(" • "))}
-        </div>
-      ` : ""}
+  <!-- 🏢 AGAINST -->
+  <div class="small" style="margin-bottom:6px;">
+    <b>Against:</b> 
+    ${escapeHtml(
+      [d.againstCashloanName, d.againstCashloanBranch]
+        .filter(Boolean)
+        .join(" • ") || "—"
+    )}
+  </div>
 
-      <!-- 👤 CLIENT -->
-      <div class="small" style="margin-top:6px;">
-        <b>Client:</b> ${escapeHtml(
-        [client.name, client.nationalId].filter(Boolean).join(" • ") || nationalId
-      )}
-      </div>
+  <!-- 👤 FROM -->
+  <div class="small" style="margin-bottom:6px;">
+    <b>Raised by:</b> ${escapeHtml(lender.line1)}
+  </div>
 
-      <!-- 📝 NOTES -->
-      ${d.notes ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
-      ${note ? `<div class="small" style="margin-top:6px; opacity:.9;"><b>Admin note:</b> ${note}</div>` : ""}
-
-      <!-- 🎯 ACTIONS -->
-      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn-ghost btn-sm" onclick="markInvestigating('${id}')">Investigating</button>
-        <button class="btn-primary btn-sm" onclick="sendDisputeNote('${id}')">Send Note</button>
-
-        <button class="btn-ghost btn-sm"
-          onclick="logAuditAction('${against.email || lender.line1}','CALL',{type:'dispute',id:'${id}'})">
-          📞 Call
-        </button>
-
-        <button class="btn-ghost btn-sm"
-          onclick="logAuditAction('${against.email || lender.line1}','EMAIL',{type:'dispute',id:'${id}'})">
-          📧 Email
-        </button>
-
-        <button class="btn-ghost btn-sm"
-          onclick="logAuditAction('${against.email || lender.line1}','WARNING',{type:'dispute',id:'${id}'})">
-          ⚠️ Warning
-        </button>
-      </div>
-
+  ${lender.line2 ? `
+    <div class="small" style="opacity:.8; margin-bottom:6px;">
+      ${escapeHtml(lender.line2)}
     </div>
-  `;
+  ` : ""}
+
+  <!-- 📝 NOTES -->
+  ${d.notes ? `
+    <div class="small" style="margin-top:6px;">
+      <b>Reason:</b> ${escapeHtml(d.notes)}
+    </div>
+  ` : ""}
+
+  ${note ? `
+    <div class="small" style="margin-top:6px;">
+      <b>Admin:</b> ${note}
+    </div>
+  ` : ""}
+
+  <!-- 🎯 ACTIONS -->
+  <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+
+    <button class="btn-ghost btn-sm"
+      onclick="markInvestigating('${id}')">
+      Investigating
+    </button>
+
+    <button class="btn-primary btn-sm"
+      onclick="resolveDispute('${id}')">
+      Resolve
+    </button>
+
+    <button class="btn-ghost btn-sm"
+      onclick="sendDisputeNote('${id}')">
+      Add Note
+    </button>
+
+  </div>
+
+</div>
+`;
     });
 
     list.innerHTML = html;
@@ -189,6 +197,27 @@
   }
 
   alert("Note sent ✅");
+  loadDisputes("");
+};
+
+window.resolveDispute = async function (id) {
+  const note = prompt("Resolution note:", "Issue resolved and record corrected.") || "";
+
+  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status: "resolved",   // 🔥 THIS IS THE KEY
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    const m = (r.data && r.data.message) ? r.data.message : "Failed to resolve dispute";
+    alert(m);
+    return;
+  }
+
+  alert("Dispute resolved ✅");
   loadDisputes("");
 };
 
