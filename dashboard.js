@@ -16,7 +16,7 @@ function requireLogin() {
   return true;
 }
 
-function logout() {
+  window.logout = function () {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userEmail");
   localStorage.removeItem("userRole");
@@ -671,32 +671,44 @@ async function uploadPaymentProof() {
     return;
   }
 
-  const fd = new FormData();
-  fd.append("paymentProofFile", file);
+ const fd = new FormData();
+fd.append("paymentProofFile", file);
 
+// ✅ guard added here
+if (typeof setPaymentStatus === "function") {
   setPaymentStatus("pending", "Uploading document...");
+}
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: fd
-    });
+try {
+  const res = await fetch(`${API_BASE_URL}/api/billing/proofs`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` },
+    body: fd
+  });
 
-    const data = await res.json().catch(() => ({}));
-    if (await handleAuthFailure(res, data)) return;
+  const data = await res.json().catch(() => ({}));
+  if (await handleAuthFailure(res, data)) return;
 
-    if (!res.ok) {
-      const msg = (data && data.message) ? String(data.message) : "Upload failed";
+  if (!res.ok) {
+    const msg = (data && data.message) ? String(data.message) : "Upload failed";
+
+    // ✅ already guarded (kept)
+    if (typeof setPaymentStatus === "function") {
       setPaymentStatus("resend", msg);
-      alert(msg);
-      return;
     }
 
-    alert("Payment confirmation submitted successfully. It will be reviewed shortly.");
-    fileInput.value = "";
-} 
+    alert(msg);
+    return;
+  }
 
+  alert("Payment confirmation submitted successfully. It will be reviewed shortly.");
+  fileInput.value = "";
+
+} catch (err) {
+  console.error(err);
+  alert("Server error while uploading payment proof");
+}
+}
 
 /* ================================
    ✅ Verify Customer (status-only output)
