@@ -872,7 +872,7 @@ async function updateClient(recordId) {
     return;
   }
 
-  const statusEl = document.getElementById(`uStatus-${recordId}`);
+const statusEl = document.getElementById(`uStatus-${recordId}`);
 const dueEl = document.getElementById(`uDue-${recordId}`);
 const paidEl = document.getElementById(`uPaid-${recordId}`);
 

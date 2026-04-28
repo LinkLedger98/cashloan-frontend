@@ -238,3 +238,78 @@ hr {
     background: rgba(34, 197, 94, 0.02);
   }
 }
+
+.dispute-header .status {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ================================
+   ✅ DISPUTE CARD LAYOUT FIX
+================================ */
+
+.dispute-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* 🔹 Header row */
+.dispute-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dispute-header .title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status.pending {
+  background: rgba(255,205,0,0.12);
+  border: 1px solid rgba(255,205,0,0.28);
+}
+
+.status.resolved {
+  background: rgba(0,255,140,0.12);
+  border: 1px solid rgba(0,255,140,0.28);
+}
+
+.status.investigating {
+  background: rgba(255,79,216,0.12);
+  border: 1px solid rgba(255,79,216,0.28);
+}
+
+/* 🔹 Grid layout (this fixes alignment) */
+.dispute-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  row-gap: 6px;
+  column-gap: 10px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+/* 🔹 Labels aligned left */
+.dispute-grid .label {
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+/* 🔹 Sections (reason/admin) */
+.dispute-section {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.dispute-section .label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 600;
+  opacity: 0.85;
+}

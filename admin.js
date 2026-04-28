@@ -557,4 +557,76 @@
         console.error(e);
         alert("Error logging action");
       }
-    };
+
+      };
+
+      /* ================================
+   DISPUTES (SUPER ADMIN)
+================================ */
+async function loadDisputes() {
+  const list = $("disputesList");
+  if (!list) return;
+
+  list.innerHTML = `<div class="small">Loading...</div>`;
+
+  const r = await fetchJson("/api/admin/disputes", { method: "GET" });
+
+  if (!r.ok) {
+    list.innerHTML = "";
+    alert("Failed to load disputes");
+    return;
+  }
+
+  const rows = Array.isArray(r.data) ? r.data : [];
+
+  if (rows.length === 0) {
+    list.innerHTML = `<div class="result-item"><div class="small">No disputes.</div></div>`;
+    return;
+  }
+
+  let html = "";
+
+  rows.forEach((d) => {
+    const id = d._id;
+    const nationalId = escapeHtml(d.nationalId || "");
+
+    const status = escapeHtml(d.adminStatus || d.status || "pending");
+    const rawStatus = (d.adminStatus || d.status || "pending").toLowerCase();
+
+    const statusClass =
+      rawStatus === "resolved" ? "resolved" :
+      rawStatus === "investigating" ? "investigating" :
+      "pending";
+
+    const statusIcon =
+      rawStatus === "resolved" ? "✔" :
+      rawStatus === "investigating" ? "⏳" :
+      "⚠";
+
+    html += `
+      <div class="result-item">
+        <div><b>Dispute</b> • ${nationalId}</div>
+
+        <div class="status ${statusClass}">
+          <span>${statusIcon}</span> ${status}
+        </div>
+
+        ${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  if ($("loadDisputesBtn")) {
+    $("loadDisputesBtn").addEventListener("click", loadDisputes);
+  }
+
+  try {
+    if ($("disputesList")) loadDisputes();
+  } catch (e) {}
+});
+
+window.loadDisputes = loadDisputes;
