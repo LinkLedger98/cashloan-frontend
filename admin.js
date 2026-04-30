@@ -1,5 +1,8 @@
 
   /* ---------------- Collapsible helpers (FIXED + BULLETPROOF) ---------------- */
+  function $(id) {
+  return document.getElementById(id);
+}
   function ensureCollapseWrap(wrapEl) {
     if (!wrapEl) return;
 
