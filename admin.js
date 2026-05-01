@@ -654,28 +654,33 @@ const clientBranch = escapeHtml(
   "-"
 );
 
-// 🔥 AGAINST SIDE
 const againstName = escapeHtml(
   d.againstCashloanName ||
+  d.againstCashloan ||
   d.againstName ||
+  d.cashloanName ||
   "Unknown"
 );
 
 const againstEmail = escapeHtml(
   d.againstCashloanEmail ||
   d.againstEmail ||
+  d.cashloanEmail ||
   "-"
 );
 
 const againstPhone = escapeHtml(
   d.againstCashloanPhone ||
   d.againstPhone ||
+  d.cashloanPhone ||
   "-"
 );
 
 const againstBranch = escapeHtml(
   d.againstCashloanBranch ||
   d.againstBranch ||
+  d.cashloanBranch ||
+  d.branch ||
   "-"
 );
 
