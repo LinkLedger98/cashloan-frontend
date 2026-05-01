@@ -794,7 +794,7 @@ function logout() {
 
 window.loadDisputes = loadDisputes;
 
- window.resolveDispute = async function (id) {
+window.resolveDispute = async function (id) {
   const note = prompt("Enter action taken:", "");
 
   if (note === null) return;
@@ -802,7 +802,7 @@ window.loadDisputes = loadDisputes;
   const r = await fetchJson(`/api/admin/disputes/${id}`, {
     method: "PATCH",
     body: JSON.stringify({
-      adminStatus: "resolved",
+      adminStatus: "resolved", // 🔥 THIS WAS MISSING
       adminNote: note
     })
   });
