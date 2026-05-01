@@ -626,6 +626,58 @@ async function loadDisputes() {
   rows.forEach((d) => {
     const id = d._id;
     const nationalId = escapeHtml(d.nationalId || "");
+    const clientName = escapeHtml(
+  d.raisedByCashloanName ||
+  d.cashloanName ||
+  d.name ||
+  "Unknown"
+);
+
+const clientEmail = escapeHtml(
+  d.raisedByCashloanEmail ||
+  d.cashloanEmail ||
+  d.email ||
+  "-"
+);
+
+const clientPhone = escapeHtml(
+  d.raisedByCashloanPhone ||
+  d.cashloanPhone ||
+  d.phone ||
+  "-"
+);
+
+const clientBranch = escapeHtml(
+  d.raisedByCashloanBranch ||
+  d.cashloanBranch ||
+  d.branch ||
+  "-"
+);
+
+// 🔥 AGAINST SIDE
+const againstName = escapeHtml(
+  d.againstCashloanName ||
+  d.againstName ||
+  "Unknown"
+);
+
+const againstEmail = escapeHtml(
+  d.againstCashloanEmail ||
+  d.againstEmail ||
+  "-"
+);
+
+const againstPhone = escapeHtml(
+  d.againstCashloanPhone ||
+  d.againstPhone ||
+  "-"
+);
+
+const againstBranch = escapeHtml(
+  d.againstCashloanBranch ||
+  d.againstBranch ||
+  "-"
+);
 
     const status = escapeHtml(d.adminStatus || d.status || "pending");
     const rawStatus = (d.adminStatus || d.status || "pending").toLowerCase();
@@ -640,7 +692,7 @@ async function loadDisputes() {
       rawStatus === "investigating" ? "⏳" :
       "⚠";
 
-   html += `
+  html += `
   <div class="result-item">
 
     <div style="font-weight:700;">
@@ -648,31 +700,31 @@ async function loadDisputes() {
     </div>
 
     <div class="small">
-      <b>Client:</b> ${escapeHtml(d.raisedByCashloanName || "Unknown")}
+      <b>Client:</b> ${clientName}
     </div>
     <div class="small">
-      <b>Email:</b> ${escapeHtml(d.raisedByCashloanEmail || "-")}
+      <b>Email:</b> ${clientEmail}
     </div>
     <div class="small">
-      <b>Phone:</b> ${escapeHtml(d.raisedByCashloanPhone || "-")}
+      <b>Phone:</b> ${clientPhone}
     </div>
     <div class="small">
-      <b>Branch:</b> ${escapeHtml(d.raisedByCashloanBranch || "-")}
+      <b>Branch:</b> ${clientBranch}
     </div>
 
     <hr style="margin:10px 0; opacity:.2;" />
 
     <div class="small">
-      <b>Against:</b> ${escapeHtml(d.againstCashloanName || "Unknown")}
+      <b>Against:</b> ${againstName}
     </div>
     <div class="small">
-      <b>Branch:</b> ${escapeHtml(d.againstCashloanBranch || "-")}
+      <b>Branch:</b> ${againstBranch}
     </div>
     <div class="small">
-      <b>Email:</b> ${escapeHtml(d.againstCashloanEmail || "-")}
+      <b>Email:</b> ${againstEmail}
     </div>
     <div class="small">
-      <b>Phone:</b> ${escapeHtml(d.againstCashloanPhone || "-")}
+      <b>Phone:</b> ${againstPhone}
     </div>
 
     <div class="status ${statusClass}" style="margin-top:10px;">
