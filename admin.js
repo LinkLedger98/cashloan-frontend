@@ -648,7 +648,18 @@ async function loadDisputes() {
           <span>${statusIcon}</span> ${status}
         </div>
 
-        ${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+
+${d.adminNote ? `
+  <div class="small" style="margin-top:10px; border-top:1px solid rgba(255,255,255,.1); padding-top:8px;">
+    <b>Action Taken:</b><br/>
+    ${escapeHtml(d.adminNote)}
+  </div>
+` : `
+  <div class="small" style="margin-top:10px; opacity:.6;">
+    No action recorded yet.
+  </div>
+`}
       </div>
     `;
   });
