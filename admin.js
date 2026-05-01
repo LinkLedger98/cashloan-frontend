@@ -754,13 +754,19 @@ const againstBranch = escapeHtml(
     `}
 
     <div style="margin-top:12px; display:flex; gap:8px;">
-      ${
-        rawStatus !== "resolved"
-          ? `<button class="btn-primary btn-sm" onclick="resolveDispute('${d._id}')">
-               Resolve
-             </button>`
-          : ""
-      }
+     ${
+  rawStatus !== "resolved"
+    ? `
+      <button class="btn-ghost btn-sm" onclick="investigateDispute('${d._id}')">
+        Investigate
+      </button>
+
+      <button class="btn-primary btn-sm" onclick="resolveDispute('${d._id}')">
+        Resolve
+      </button>
+    `
+    : ""
+}
 
       <button class="btn-ghost btn-sm" onclick="openInbox('${d.nationalId}')">
         Open Inbox
@@ -813,6 +819,28 @@ window.resolveDispute = async function (id) {
   }
 
   alert("Resolved ✅");
+  loadDisputes();
+};
+
+window.investigateDispute = async function (id) {
+  const note = prompt("Enter investigation note:", "");
+
+  if (note === null) return;
+
+  const r = await fetchJson(`/api/admin/disputes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      adminStatus: "investigating",
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    alert("Failed");
+    return;
+  }
+
+  alert("Marked as Investigating 🟠");
   loadDisputes();
 };
 
