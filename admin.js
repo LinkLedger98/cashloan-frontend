@@ -1,5 +1,14 @@
 
   /* ---------------- Collapsible helpers (FIXED + BULLETPROOF) ---------------- */
+ function escapeHtml(x) {
+  return String(x || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
   function $(id) {
   return document.getElementById(id);
 }
