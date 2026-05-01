@@ -640,28 +640,78 @@ async function loadDisputes() {
       rawStatus === "investigating" ? "⏳" :
       "⚠";
 
-    html += `
-      <div class="result-item">
-        <div><b>Dispute</b> • ${nationalId}</div>
+   html += `
+  <div class="result-item">
 
-        <div class="status ${statusClass}">
-          <span>${statusIcon}</span> ${status}
-        </div>
+    <div style="font-weight:700;">
+      Client ID: ${escapeHtml(d.nationalId)}
+    </div>
 
-${d.notes ? `<div class="small"><b>Reason:</b> ${escapeHtml(d.notes)}</div>` : ""}
+    <div class="small">
+      <b>Client:</b> ${escapeHtml(d.raisedByCashloanName || "Unknown")}
+    </div>
+    <div class="small">
+      <b>Email:</b> ${escapeHtml(d.raisedByCashloanEmail || "-")}
+    </div>
+    <div class="small">
+      <b>Phone:</b> ${escapeHtml(d.raisedByCashloanPhone || "-")}
+    </div>
+    <div class="small">
+      <b>Branch:</b> ${escapeHtml(d.raisedByCashloanBranch || "-")}
+    </div>
 
-${d.adminNote ? `
-  <div class="small" style="margin-top:10px; border-top:1px solid rgba(255,255,255,.1); padding-top:8px;">
-    <b>Action Taken:</b><br/>
-    ${escapeHtml(d.adminNote)}
-  </div>
-` : `
-  <div class="small" style="margin-top:10px; opacity:.6;">
-    No action recorded yet.
-  </div>
-`}
+    <hr style="margin:10px 0; opacity:.2;" />
+
+    <div class="small">
+      <b>Against:</b> ${escapeHtml(d.againstCashloanName || "Unknown")}
+    </div>
+    <div class="small">
+      <b>Branch:</b> ${escapeHtml(d.againstCashloanBranch || "-")}
+    </div>
+    <div class="small">
+      <b>Email:</b> ${escapeHtml(d.againstCashloanEmail || "-")}
+    </div>
+    <div class="small">
+      <b>Phone:</b> ${escapeHtml(d.againstCashloanPhone || "-")}
+    </div>
+
+    <div class="status ${statusClass}" style="margin-top:10px;">
+      <span>${statusIcon}</span> ${status}
+    </div>
+
+    ${d.notes ? `
+      <div class="small" style="margin-top:8px;">
+        <b>Reason:</b> ${escapeHtml(d.notes)}
       </div>
-    `;
+    ` : ""}
+
+    ${d.adminNote ? `
+      <div class="small" style="margin-top:10px; border-top:1px solid rgba(255,255,255,.1); padding-top:8px;">
+        <b>Action Taken:</b><br/>
+        ${escapeHtml(d.adminNote)}
+      </div>
+    ` : `
+      <div class="small" style="margin-top:10px; opacity:.6;">
+        No action recorded yet.
+      </div>
+    `}
+
+    <div style="margin-top:12px; display:flex; gap:8px;">
+      ${
+        rawStatus !== "resolved"
+          ? `<button class="btn-primary btn-sm" onclick="resolveDispute('${d._id}')">
+               Resolve
+             </button>`
+          : ""
+      }
+
+      <button class="btn-ghost btn-sm" onclick="openInbox('${d.nationalId}')">
+        Open Inbox
+      </button>
+    </div>
+
+  </div>
+`;
   });
 
   list.innerHTML = html;
@@ -686,3 +736,29 @@ function logout() {
 }
 
 window.loadDisputes = loadDisputes;
+
+ window.resolveDispute = async function (id) {
+  const note = prompt("Enter action taken:", "");
+
+  if (note === null) return;
+
+  const r = await fetchJson(`/api/admin/disputes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      adminStatus: "resolved",
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    alert("Failed");
+    return;
+  }
+
+  alert("Resolved ✅");
+  loadDisputes();
+};
+
+function openInbox(nationalId) {
+  window.location.href = `admin_consents.html?search=${encodeURIComponent(nationalId)}`;
+}
