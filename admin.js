@@ -3,6 +3,31 @@
   function $(id) {
   return document.getElementById(id);
 }
+
+async function fetchJson(url, options = {}) {
+  const API_BASE_URL =
+    (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "";
+
+  const token = localStorage.getItem("authToken");
+
+  const res = await fetch(`${API_BASE_URL}${url}`, {
+    method: options.method || "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    },
+    body: options.body || null
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch (e) {}
+
+  return { ok: res.ok, data };
+}
+
   function ensureCollapseWrap(wrapEl) {
     if (!wrapEl) return;
 
