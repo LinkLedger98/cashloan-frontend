@@ -1057,64 +1057,26 @@ list.innerHTML = html;
 }
 
 /* ================================
-   ✅ Smooth collapse for My Records
+   ✅ Premium closed sections
 ================================ */
-function setupMyClientsCollapse() {
-  const btn = document.getElementById("toggleMyClientsBtn");
-  const wrap = document.getElementById("myClientsWrap");
+function setupPremiumCollapse(buttonId, wrapId) {
+  const btn = document.getElementById(buttonId);
+  const wrap = document.getElementById(wrapId);
   if (!btn || !wrap) return;
 
-  function setCollapsed(collapsed) {
-    if (collapsed) {
-      wrap.classList.add("is-collapsed");
-      btn.textContent = "▼";
-      btn.title = "Expand section";
-      btn.setAttribute("aria-expanded", "false");
-    } else {
-      wrap.classList.remove("is-collapsed");
-      btn.textContent = "▲";
-      btn.title = "Collapse section";
-      btn.setAttribute("aria-expanded", "true");
-    }
+  function setClosed(closed) {
+    wrap.classList.toggle("is-collapsed", closed);
+    btn.classList.toggle("is-open", !closed);
+    btn.setAttribute("aria-expanded", String(!closed));
   }
 
   btn.addEventListener("click", function () {
-    const isCollapsed = wrap.classList.contains("is-collapsed");
-    setCollapsed(!isCollapsed);
+    const isClosed = wrap.classList.contains("is-collapsed");
+    setClosed(!isClosed);
   });
 
-  setCollapsed(false);
-}
-
-/* ================================
-   ✅ Smooth collapse for Closed Disputes
-================================ */
-function setupClosedDisputesCollapse() {
-  const btn = document.getElementById("toggleClosedDisputesBtn");
-  const wrap = document.getElementById("myDisputesClosedWrap");
-  if (!btn || !wrap) return;
-
-  function setCollapsed(collapsed) {
-    if (collapsed) {
-      wrap.classList.add("is-collapsed");
-      btn.textContent = "▼";
-      btn.title = "Expand section";
-      btn.setAttribute("aria-expanded", "false");
-    } else {
-      wrap.classList.remove("is-collapsed");
-      btn.textContent = "▲";
-      btn.title = "Collapse section";
-      btn.setAttribute("aria-expanded", "true");
-    }
-  }
-
-  btn.addEventListener("click", function () {
-    const isCollapsed = wrap.classList.contains("is-collapsed");
-    setCollapsed(!isCollapsed);
-  });
-
-  // ✅ start collapsed
-  setCollapsed(true);
+  // ✅ this makes it CLOSED when page first opens
+  setClosed(true);
 }
 
 (async function () {
@@ -1126,8 +1088,8 @@ function setupClosedDisputesCollapse() {
     pill.textContent = email ? `Account: ${email}` : "Account";
   }
 
-  setupMyClientsCollapse();
-  setupClosedDisputesCollapse();
+  setupPremiumCollapse("toggleMyClientsBtn", "myClientsWrap");
+setupPremiumCollapse("toggleMyDisputesBtn", "myDisputesWrap");
 
   const cFile = document.getElementById("consentFile");
   if (cFile) cFile.addEventListener("change", clearConsentAck);

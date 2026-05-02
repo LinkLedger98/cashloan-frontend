@@ -100,65 +100,46 @@
 </div>
 </div>
 
-   <!-- ✅ My Customers (smooth collapse) -->
-<div class="card" style="margin-top:16px;">
-  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+ <!-- ✅ My Customers -->
+<div class="card premium-section" style="margin-top:16px;">
+  <button class="section-toggle" id="toggleMyClientsBtn" type="button">
     <div>
-      <h2 style="margin-bottom:4px;">My Customers</h2>
-     <p class="section-sub">Search by National ID to see...</p>
+      <h2>My Customers</h2>
+      <p class="section-sub">View and manage your saved customer records.</p>
     </div>
+    <span class="chev">⌄</span>
+  </button>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-      <div>
-        <label class="small" for="myClientsSearch">Search</label>
-        <input id="myClientsSearch" placeholder="Name or National ID" />
-      </div>
-
-      <button class="btn-ghost btn-sm" id="toggleMyClientsBtn" type="button" title="Collapse/Expand">▲</button>
+  <div id="myClientsWrap" class="collapse-wrap is-collapsed">
+    <div class="section-tools">
+      <input id="myClientsSearch" placeholder="Search name or National ID" />
       <button class="btn-ghost" onclick="loadMyClients()">Refresh</button>
     </div>
-  </div>
 
-  <hr style="margin:14px 0;" />
-
-  <div id="myClientsWrap" class="collapse-wrap">
-    <div class="collapse-inner">
-      <div id="myClientsList" class="results"></div>
-    </div>
+    <div id="myClientsList" class="results"></div>
   </div>
 </div>
 
-<!-- ✅ Disputes (structured + compliant) -->
-<div class="card" style="margin-top:16px;">
-  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+<!-- ✅ My Disputes -->
+<div class="card premium-section" style="margin-top:16px;">
+  <button class="section-toggle" id="toggleMyDisputesBtn" type="button">
     <div>
-      <h2 style="margin-bottom:4px;">My Disputes</h2>
-      <p class="small" style="margin:0;">
-        Track and monitor disputes you have raised. Admin will review and update the status.
-      </p>
+      <h2>My Disputes</h2>
+      <p class="section-sub">Track active and recently closed dispute records.</p>
     </div>
+    <span class="chev">⌄</span>
+  </button>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+  <div id="myDisputesWrap" class="collapse-wrap is-collapsed">
+    <div class="section-tools">
       <button class="btn-ghost" id="reloadMyDisputesBtn" type="button">Refresh</button>
     </div>
-  </div>
 
-  <hr style="margin:14px 0;" />
-
-  <!-- 🔴 ACTIVE -->
-  <div>
-    <h3 style="margin-bottom:6px;">Active Disputes</h3>
+    <h3>Active Disputes</h3>
     <div id="myDisputesActive" class="results"></div>
-  </div>
 
-  <!-- ⚪ CLOSED (COLLAPSIBLE) -->
-  <div style="margin-top:16px;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="margin:0;">Closed Disputes</h3>
-      <button class="btn-ghost btn-sm" id="toggleClosedDisputesBtn" type="button">▼</button>
-    </div>
-
-    <div id="myDisputesClosedWrap" class="collapse-wrap is-collapsed" style="margin-top:10px;">
+    <div style="margin-top:16px;">
+      <h3>Closed Disputes</h3>
       <div id="myDisputesClosed" class="results"></div>
     </div>
   </div>

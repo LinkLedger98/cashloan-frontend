@@ -313,3 +313,93 @@ hr {
   font-weight: 600;
   opacity: 0.85;
 }
+
+/* ================================
+   ✅ Premium dashboard sections
+================================ */
+
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+}
+
+.premium-section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.section-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #e8eef7;
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.section-toggle h2 {
+  margin: 0 0 5px;
+  font-size: 16px;
+}
+
+.section-toggle .section-sub {
+  margin: 0;
+}
+
+.chev {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 220ms ease, background 220ms ease;
+}
+
+.section-toggle.is-open .chev {
+  transform: rotate(180deg);
+  background: rgba(224,72,192,0.16);
+  border-color: rgba(224,72,192,0.35);
+}
+
+.section-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 18px 16px;
+  flex-wrap: wrap;
+}
+
+.section-tools input {
+  max-width: 260px;
+}
+
+.collapse-wrap {
+  padding: 0 18px 18px;
+  overflow: hidden;
+  max-height: 2500px;
+  transition: max-height 280ms ease, opacity 220ms ease, transform 220ms ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.collapse-wrap.is-collapsed {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  padding-bottom: 0;
+}
+
+.result-item {
+  border-radius: 18px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.075);
+}
