@@ -796,11 +796,24 @@ const against = escapeHtml(
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  
+  // ✅ ACCOUNTS PAGE
+  bindToggle("toggleRequestsBtn", "requestsWrap", true);
+  bindToggle("toggleLendersBtn", "lendersWrap", true);
 
-  // ✅ ACCOUNTS PAGE TOGGLES (ADD THIS)
-bindToggle("toggleRequestsBtn", "requestsWrap", true);
-bindToggle("toggleLendersBtn", "lendersWrap", true);
+  if ($("fillFormBtn")) $("fillFormBtn").addEventListener("click", fillFormDemo);
+  if ($("clearFormBtn")) $("clearFormBtn").addEventListener("click", clearForm);
 
+  if ($("reloadRequestsBtn")) $("reloadRequestsBtn").addEventListener("click", loadRequests);
+  if ($("reloadLendersBtn")) $("reloadLendersBtn").addEventListener("click", loadLenders);
+  if ($("lendersSearch")) $("lendersSearch").addEventListener("input", function () { loadLenders(); });
+
+  if ($("adminForm")) $("adminForm").addEventListener("submit", handleCreateLenderSubmit);
+
+  try { if ($("requestsList")) loadRequests(); } catch (e) {}
+  try { if ($("lendersList")) loadLenders(); } catch (e) {}
+
+  // ✅ DISPUTES PAGE
   if ($("loadDisputesBtn")) {
     $("loadDisputesBtn").addEventListener("click", () => loadDisputes(""));
   }
@@ -864,7 +877,7 @@ window.investigateDispute = async function (id) {
 
 function openInbox(nationalId) {
   window.location.href = `admin_consents.html?search=${encodeURIComponent(nationalId)}`;
-} 
+}
 
 function logout() {
   localStorage.removeItem("authToken");
