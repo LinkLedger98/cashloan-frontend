@@ -482,3 +482,67 @@ input::placeholder{ color: rgba(185,188,198,.65); }
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================
+   Premium Accounts Page
+================================ */
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.admin-stat-card {
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.collapsible-head {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.collapsible {
+  transition: max-height 260ms ease, opacity 220ms ease, transform 220ms ease;
+}
+
+.result-item {
+  border-radius: 18px;
+}
+
+@media (max-width: 720px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Support existing collapsible class (accounts page) */
+.collapsible.is-collapsed {
+  max-height: 0px;
+  opacity: 0;
+  transform: translateY(-4px);
+  overflow: hidden;
+}
+
+.collapsible:not(.is-collapsed) {
+  max-height: 5000px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow: visible;
+}

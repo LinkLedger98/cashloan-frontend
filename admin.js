@@ -154,6 +154,8 @@ async function fetchJson(url, options = {}) {
     }
 
     const rows = Array.isArray(r.data) ? r.data : [];
+    const statRequests = $("statRequests");
+if (statRequests) statRequests.textContent = rows.length;
     if (rows.length === 0) {
       list.innerHTML = `<div class="result-item"><div class="small">No signup requests.</div></div>`;
       return;
@@ -255,6 +257,18 @@ async function fetchJson(url, options = {}) {
     }
 
     let rows = Array.isArray(r.data) ? r.data : [];
+    const statInstitutions = $("statInstitutions");
+const statPendingPayments = $("statPendingPayments");
+
+if (statInstitutions) statInstitutions.textContent = rows.length;
+
+if (statPendingPayments) {
+  const pendingCount = rows.filter(u =>
+    String(u.paymentProofStatus || "").toLowerCase() === "pending"
+  ).length;
+
+  statPendingPayments.textContent = pendingCount;
+}
     const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
     if (q) {
       rows = rows.filter(u => {
