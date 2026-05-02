@@ -42,62 +42,69 @@
   <div id="results" class="results"></div>
 </div>
 
-   <!-- ✅ Add customer record -->
-<div class="card" style="margin-top:16px;">
-  <h2>Add Customer Record</h2>
-  <p>Only logged-in institutions can add customer credit status records.</p>
+  <!-- ✅ Add Customer Record -->
+<div class="card premium-section" style="margin-top:16px;">
+  <button class="section-toggle" id="toggleAddClientBtn" type="button">
+    <div>
+      <h2>Add Customer Record</h2>
+      <p class="section-sub">Add new customer credit data with consent.</p>
+    </div>
+    <span class="chev">⌄</span>
+  </button>
 
-  <div class="row">
-    <div>
-      <label for="fullName">Full name</label>
-      <input id="fullName" placeholder="e.g. Thato Molefe" />
+  <div id="addClientWrap" class="collapse-wrap is-collapsed">
+
+    <div style="padding: 0 18px 18px;">
+
+      <div class="row">
+        <div>
+          <label for="fullName">Full name</label>
+          <input id="fullName" placeholder="e.g. Thato Molefe" />
+        </div>
+        <div>
+          <label for="nationalId">National ID</label>
+          <input id="nationalId" placeholder="e.g. 123456789" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label for="status">Credit Status</label>
+          <select id="status">
+            <option value="paid">paid</option>
+            <option value="owing">owing</option>
+            <option value="overdue">overdue</option>
+          </select>
+        </div>
+        <div>
+          <label for="dueDate">Due date</label>
+          <input id="dueDate" type="date" />
+        </div>
+      </div>
+
+      <!-- Consent -->
+      <div style="margin-top:12px;">
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input id="consentCheck" type="checkbox" />
+          Customer consent obtained (required)
+        </label>
+
+        <div style="margin-top:10px;">
+          <label for="consentFile">Upload signed consent proof</label>
+          <input id="consentFile" type="file" />
+          <div class="small" style="margin-top:6px;">
+            Upload image or PDF
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn-primary" onclick="addClient()">Save record</button>
+      </div>
+
     </div>
-    <div>
-      <label for="nationalId">National ID</label>
-      <input id="nationalId" placeholder="e.g. 123456789" />
-    </div>
+
   </div>
-
-  <div class="row" style="margin-top:12px;">
-    <div>
-      <label for="status">Credit Status</label>
-      <select id="status">
-        <option value="paid">paid</option>
-        <option value="owing">owing</option>
-        <option value="overdue">overdue</option>
-      </select>
-    </div>
-    <div>
-      <label for="dueDate">Due date (for owing/overdue)</label>
-      <input id="dueDate" type="date" />
-    </div>
-  </div>
-
-      <!-- ✅ Consent evidence (checkbox + upload) -->
-<div style="margin-top:12px;">
-  <label style="display:flex; gap:10px; align-items:center;">
-    <input id="consentCheck" type="checkbox" />
-    Customer consent obtained (required)
-  </label>
-
-  <div style="margin-top:10px;">
-    <label for="consentFile">Upload signed consent proof</label>
-    <input
-      id="consentFile"
-      type="file"
-      accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.heic,.heif,.tif,.tiff,application/pdf"
-    />
-    <div class="small" style="opacity:.85; margin-top:6px;">
-      Required for compliance. Accepted: screenshots/photos/scans (any image) or PDF.
-    </div>
-
-    <div id="consentAck" class="small" style="margin-top:8px; display:none;"></div>
-  </div>
-</div>
-
-<div style="margin-top:12px;">
-  <button class="btn-primary" onclick="addClient()">Save record</button>
-</div>
 </div>
 
  <!-- ✅ My Customers -->

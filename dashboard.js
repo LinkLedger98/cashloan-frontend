@@ -1089,7 +1089,8 @@ function setupPremiumCollapse(buttonId, wrapId) {
   }
 
   setupPremiumCollapse("toggleMyClientsBtn", "myClientsWrap");
-setupPremiumCollapse("toggleMyDisputesBtn", "myDisputesWrap");
+  setupPremiumCollapse("toggleMyDisputesBtn", "myDisputesWrap");
+  setupPremiumCollapse("toggleAddClientBtn", "addClientWrap");
 
   const cFile = document.getElementById("consentFile");
   if (cFile) cFile.addEventListener("change", clearConsentAck);
