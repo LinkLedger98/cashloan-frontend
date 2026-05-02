@@ -264,78 +264,67 @@ if (statRequests) statRequests.textContent = rows.length;
     return ts > seenTs;
   }
 
-  async function loadLenders() {
-    const lendersList = $("lendersList");
-    const lendersCount = $("lendersCount");
-    const lendersSearch = $("lendersSearch");
-    if (!lendersList) return;
+ async function loadLenders() {
+  const lendersList = $("lendersList");
+  const lendersCount = $("lendersCount");
+  const lendersSearch = $("lendersSearch");
+  if (!lendersList) return;
 
-    lendersList.innerHTML = `<div class="small">Loading...</div>`;
-    if (lendersCount) lendersCount.textContent = "";
+  lendersList.innerHTML = `<div class="small">Loading...</div>`;
+  if (lendersCount) lendersCount.textContent = "";
 
-    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
-    if (!r.ok) {
-      lendersList.innerHTML = "";
-      alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
-      return;
-    }
+  const r = await fetchJson("/api/admin/lenders", { method: "GET" });
+  if (!r.ok) {
+    lendersList.innerHTML = "";
+    alert((r.data && r.data.message) ? r.data.message : "Failed to load lenders");
+    return;
+  }
 
-    let rows = Array.isArray(r.data) ? r.data : [];
-    const statInstitutions = $("statInstitutions");
-const statPendingPayments = $("statPendingPayments");
+  let rows = Array.isArray(r.data) ? r.data : [];
 
-if (statInstitutions) statInstitutions.textContent = rows.length;
+  const statInstitutions = $("statInstitutions");
+  if (statInstitutions) statInstitutions.textContent = rows.length;
 
-if (statPendingPayments) {
-  const pendingCount = rows.filter(u =>
-    String(u.paymentProofStatus || "").toLowerCase() === "pending"
-  ).length;
+  const statPendingPayments = $("statPendingPayments");
+  if (statPendingPayments) statPendingPayments.textContent = "—";
 
-  statPendingPayments.textContent = pendingCount;
-}
-    const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
-    if (q) {
-      rows = rows.filter(u => {
-        const hay = [
-          u.businessName, u.branchName, u.phone, u.licenseNo, u.email,
-          u.status, u.billingStatus, u.paymentProofStatus
-        ].map(x => String(x || "").toLowerCase()).join(" ");
-        return hay.includes(q);
-      });
-    }
+  const q = String((lendersSearch && lendersSearch.value) || "").trim().toLowerCase();
+  if (q) {
+    rows = rows.filter(u => {
+      const hay = [
+        u.businessName,
+        u.branchName,
+        u.phone,
+        u.licenseNo,
+        u.email,
+        u.status,
+        u.billingStatus
+      ].map(x => String(x || "").toLowerCase()).join(" ");
 
-    if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
+      return hay.includes(q);
+    });
+  }
 
-    if (rows.length === 0) {
-      lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
-      return;
-    }
+  if (lendersCount) lendersCount.textContent = `Accounts: ${rows.length}`;
 
-    let html = "";
-    rows.forEach((u) => {
-      const id = u._id;
-      const businessName = escapeHtml(u.businessName || "—");
-      const branchName = escapeHtml(u.branchName || "—");
-      const phone = escapeHtml(u.phone || "—");
-      const licenseNo = escapeHtml(u.licenseNo || "—");
-      const email = escapeHtml(u.email || "—");
-      const st = escapeHtml(u.status || "active");
+  if (rows.length === 0) {
+    lendersList.innerHTML = `<div class="result-item"><div class="small">No lenders found.</div></div>`;
+    return;
+  }
 
-      const popStatus = String(u.paymentProofStatus || "").toLowerCase();
-      const popUpdatedAt = u.paymentProofUpdatedAt || null;
-      const popUrl = u.paymentProofUrl || "";
-      const popId = parseIdFromUrl(popUrl);
+  let html = "";
 
-      const popIsNew = isProofNewForUser(u._id, popUpdatedAt);
+  rows.forEach((u) => {
+    const id = u._id;
+    const businessName = escapeHtml(u.businessName || "—");
+    const branchName = escapeHtml(u.branchName || "—");
+    const phone = escapeHtml(u.phone || "—");
+    const licenseNo = escapeHtml(u.licenseNo || "—");
+    const email = escapeHtml(u.email || "—");
+    const st = escapeHtml(u.status || "active");
 
-      const popTag = popStatus
-        ? `<span class="tag ${popStatus === "approved" ? "active" : popStatus === "rejected" ? "suspended" : ""}">
-           PoP: ${escapeHtml(popStatus)}
-         </span>`
-        : "";
-
-      html += `
-      <div class="result-item ${popIsNew ? "ll-new-highlight" : ""}">
+    html += `
+      <div class="result-item">
         <div class="admin-row">
           <div>
             <div><b>${businessName}</b> • ${branchName}</div>
@@ -346,18 +335,6 @@ if (statPendingPayments) {
               ${statusTag(st)}
               ${u.billingStatus ? `<span class="tag">${escapeHtml(String(u.billingStatus))}</span>` : ""}
               ${u.mustChangePassword ? `<span class="tag" title="User must change password on next login">mustChangePassword</span>` : ""}
-              ${popTag}
-              ${popUpdatedAt ? `<span class="small" style="opacity:.8;">PoP updated: ${escapeHtml(new Date(popUpdatedAt).toLocaleString())}</span>` : ""}
-            </div>
-
-            <!-- ✅ UPDATED BUTTON BLOCK -->
-<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-  ${popUrl ? `<button class="btn-ghost btn-sm" type="button" onclick="viewPopFile('${id}','${escapeHtml(popUrl)}')">View PoP</button>` : ""}
-</div>
-
-            <div class="pop-box" style="margin-top:10px;">
-              <div class="small" style="margin-bottom:8px;"><b>Billing Acknowledgement</b></div>
-              <div class="pop-ack-host" data-lender-id="${id}"></div>
             </div>
           </div>
 
@@ -370,131 +347,79 @@ if (statPendingPayments) {
         </div>
       </div>
     `;
-    });
+  });
 
-    lendersList.innerHTML = html;
+  lendersList.innerHTML = html;
+}
 
-    try { mountPopAckUI(); } catch (e) { }
+window.loadLenders = loadLenders;
+
+window.setLenderStatus = async function (id, status) {
+  if (!confirm(`Set account status to "${status}"?`)) return;
+
+  const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status })
+  });
+
+  if (!r.ok) {
+    alert((r.data && r.data.message) ? r.data.message : "Status update failed");
+    return;
   }
 
-  window.loadLenders = loadLenders;
+  loadLenders();
+};
 
+window.secureLender = async function (id, email) {
+  const tempPassword = prompt(
+    `Set a TEMP password for:\n${email || id}\n\nRules:\n- At least 8 chars\n- They will be forced to change it on next login`,
+    ""
+  ) || "";
 
-  // ✅ View proof of payment (token fetch → blob → open)
-  window.viewPopFile = async function (lenderId, popUrl) {
-    const url = String(popUrl || "");
-    if (!url) return;
+  const pw = String(tempPassword || "").trim();
+  if (!pw) return;
 
-    try {
-      localStorage.setItem(proofSeenKey(lenderId), new Date().toISOString());
-    } catch (e) { }
+  if (pw.length < 8) {
+    alert("Temp password must be at least 8 characters.");
+    return;
+  }
 
-    if (url) {
-      openFileWithAuth(url, "proof-of-payment");
-    } else {
-      alert("File not available");
-    }
+  const ok = confirm("Confirm: set this temporary password and force password change on next login?");
+  if (!ok) return;
 
-    setTimeout(() => {
-      try { loadLenders(); } catch (e) { }
-    }, 600);
-  };
+  const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/secure`, {
+    method: "PATCH",
+    body: JSON.stringify({ tempPassword: pw })
+  });
 
-  // ✅ Approve/Reject proof
-  window.reviewPop = async function (proofId, status) {
-    const st = String(status || "").toLowerCase();
-    if (!["approved", "rejected"].includes(st)) return;
+  if (!r.ok) {
+    alert((r.data && r.data.message) ? r.data.message : "Secure failed");
+    return;
+  }
 
-    const note = prompt(
-      st === "approved" ? "Approval note (optional):" : "Rejection note (required):",
-      st === "approved" ? "Approved." : "Please resend a clearer receipt."
-    ) || "";
+  alert("Temporary password set ✅");
+  loadLenders();
+};
 
-    if (st === "rejected" && !String(note).trim()) {
-      alert("Rejection note is required.");
-      return;
-    }
+window.openUpdateLender = async function (id) {
+  const r = await fetchJson("/api/admin/lenders", { method: "GET" });
+  if (!r.ok) return alert("Could not load lender details");
 
-    const r = await fetchJson(`/api/admin/payment-proofs/${encodeURIComponent(proofId)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: st, notes: String(note || "").trim() })
-    });
+  const rows = Array.isArray(r.data) ? r.data : [];
+  const u = rows.find(x => String(x._id) === String(id));
+  if (!u) return alert("Lender not found");
 
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Failed to update PoP");
-      return;
-    }
+  setVal("businessName", u.businessName || "");
+  setVal("branchName", u.branchName || "");
+  setVal("phone", u.phone || "");
+  setVal("licenseNo", u.licenseNo || "");
+  setVal("email", u.email || "");
+  setVal("tempPassword", "");
 
-    alert(`PoP ${st} ✅`);
-    loadLenders();
-  };
-
-  window.setLenderStatus = async function (id, status) {
-    if (!confirm(`Set account status to "${status}"?`)) return;
-
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status })
-    });
-
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Status update failed");
-      return;
-    }
-
-    loadLenders();
-  };
-
-  window.secureLender = async function (id, email) {
-    const tempPassword = prompt(
-      `Set a TEMP password for:\n${email || id}\n\nRules:\n- At least 8 chars\n- They will be forced to change it on next login`,
-      ""
-    ) || "";
-
-    const pw = String(tempPassword || "").trim();
-    if (!pw) return;
-
-    if (pw.length < 8) {
-      alert("Temp password must be at least 8 characters.");
-      return;
-    }
-
-    const ok = confirm("Confirm: set this temporary password and force password change on next login?");
-    if (!ok) return;
-
-    const r = await fetchJson(`/api/admin/users/${encodeURIComponent(id)}/secure`, {
-      method: "PATCH",
-      body: JSON.stringify({ tempPassword: pw })
-    });
-
-    if (!r.ok) {
-      alert((r.data && r.data.message) ? r.data.message : "Secure failed");
-      return;
-    }
-
-    alert("Temporary password set ✅");
-    loadLenders();
-  };
-
-  window.openUpdateLender = async function (id) {
-    const r = await fetchJson("/api/admin/lenders", { method: "GET" });
-    if (!r.ok) return alert("Could not load lender details");
-
-    const rows = Array.isArray(r.data) ? r.data : [];
-    const u = rows.find(x => String(x._id) === String(id));
-    if (!u) return alert("Lender not found");
-
-    setVal("businessName", u.businessName || "");
-    setVal("branchName", u.branchName || "");
-    setVal("phone", u.phone || "");
-    setVal("licenseNo", u.licenseNo || "");
-    setVal("email", u.email || "");
-    setVal("tempPassword", "");
-
-    const msg = $("msg");
-    if (msg) msg.textContent = "Loaded lender into form ✅";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const msg = $("msg");
+  if (msg) msg.textContent = "Loaded lender into form ✅";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
   async function handleCreateLenderSubmit(e) {
     e.preventDefault();
@@ -539,59 +464,6 @@ if (statPendingPayments) {
 
     try { loadLenders(); } catch (e) { }
     try { loadRequests(); } catch (e) { }
-  }
-
-  /* ---------------- Billing Acknowledgement UI ---------------- */
-  function mountPopAckUI() {
-    const tpl = document.getElementById("popAckTemplate");
-    if (!tpl) return;
-
-    document.querySelectorAll(".pop-ack-host").forEach((host) => {
-      if (host.__mounted) return;
-      host.__mounted = true;
-
-      const lenderId = host.getAttribute("data-lender-id");
-      const node = tpl.content.cloneNode(true);
-
-      const statusSel = node.querySelector(".popAckStatus");
-      const noteInp = node.querySelector(".popAckNote");
-      const saveBtn = node.querySelector(".popAckSave");
-      const msgDiv = node.querySelector(".popAckMsg");
-
-      saveBtn.addEventListener("click", async () => {
-        const billingStatus = String(statusSel.value || "").trim(); // approved/resend/past_due
-        const billingNote = String(noteInp.value || "").trim();
-
-        msgDiv.textContent = "Sending...";
-        msgDiv.className = "popAckMsg";
-
-        try {
-          const r = await fetchJson(`/api/admin/lenders/${encodeURIComponent(lenderId)}/billing`, {
-            method: "PATCH",
-            body: JSON.stringify({ billingStatus, billingNote })
-          });
-
-          if (!r.ok) {
-            const m = (r.data && r.data.message) ? r.data.message : "Failed to send acknowledgement";
-            msgDiv.textContent = "❌ " + m;
-            msgDiv.classList.add("bad");
-            alert(m);
-            return;
-          }
-
-          msgDiv.textContent = "✅ Sent";
-          msgDiv.classList.add("good");
-          try { loadLenders(); } catch (e) { }
-        } catch (e) {
-          console.error(e);
-          msgDiv.textContent = "❌ Server/network error";
-          msgDiv.classList.add("bad");
-          alert("Server/network error while sending acknowledgement");
-        }
-      });
-
-      host.appendChild(node);
-    });
   }
 
     
@@ -796,7 +668,6 @@ const against = escapeHtml(
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  
   // ✅ ACCOUNTS PAGE
   bindToggle("toggleRequestsBtn", "requestsWrap", true);
   bindToggle("toggleLendersBtn", "lendersWrap", true);
