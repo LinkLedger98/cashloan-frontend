@@ -601,3 +601,51 @@ input::placeholder{ color: rgba(185,188,198,.65); }
 #riskDashboardList .result-item {
   border-radius: 16px;
 }
+
+/* ================================
+   Premium Consents Page
+================================ */
+
+.consent-premium-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.075);
+  margin-bottom: 12px;
+}
+
+.consent-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.consent-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.consent-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 12px;
+}
+
+.consent-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .consent-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}

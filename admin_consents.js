@@ -44,32 +44,59 @@
       const lenderEmail = escapeHtml(c.lenderEmail || "—");
       const fromLine = [lenderName, lenderBranch].filter(Boolean).join(" • ");
 
-      html += `
-        <div class="result-item">
-          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div>
-              <div><b>Consent</b> • Omang: <b>${omang || "—"}</b>${fullName ? ` • ${fullName}` : ""}</div>
-              <div class="small">Status: <b>${st}</b>${created ? ` • Uploaded: ${escapeHtml(created)}` : ""}</div>
-              <div class="small">From: <b>${fromLine || lenderEmail}</b>${lenderEmail ? ` • ${lenderEmail}` : ""}</div>
+     html += `
+  <div class="consent-premium-card">
 
-              <div style="margin-top:10px;">
-                <button class="btn-ghost btn-sm" type="button"
-                  onclick="openConsentFile('/api/admin/consents/${id}/file')">
-                  View Consent
-                </button>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-              <button class="btn-ghost btn-sm" type="button"
-                onclick="setConsentStatus('${id}','approved')">Approve</button>
-
-              <button class="btn-ghost btn-sm" type="button"
-                onclick="setConsentStatus('${id}','rejected')">Reject</button>
-            </div>
-          </div>
+    <div class="consent-topline">
+      <div>
+        <div class="consent-title">
+          Consent Evidence • Omang: ${omang || "—"}
         </div>
-      `;
+
+        <div class="small">
+          ${fullName ? `Customer: <b>${fullName}</b> • ` : ""}
+          Uploaded: ${created ? escapeHtml(created) : "—"}
+        </div>
+      </div>
+
+      <span class="badge ${
+        st.toLowerCase() === "approved" ? "badge-green" :
+        st.toLowerCase() === "rejected" ? "badge-red" :
+        "badge-yellow"
+      }">${st}</span>
+    </div>
+
+    <div class="consent-meta-grid">
+      <div>
+        <div class="mini-label">Submitted by</div>
+        <div class="mini-value">${fromLine || lenderEmail}</div>
+      </div>
+
+      <div>
+        <div class="mini-label">Email</div>
+        <div class="mini-value">${lenderEmail}</div>
+      </div>
+    </div>
+
+    <div class="consent-actions">
+      <button class="btn-ghost btn-sm" type="button"
+        onclick="openConsentFile('/api/admin/consents/${id}/file')">
+        View Consent
+      </button>
+
+      <button class="btn-primary btn-sm" type="button"
+        onclick="setConsentStatus('${id}','approved')">
+        Approve
+      </button>
+
+      <button class="btn-ghost btn-sm" type="button"
+        onclick="setConsentStatus('${id}','rejected')">
+        Reject
+      </button>
+    </div>
+
+  </div>
+`;
     });
 
     list.innerHTML = html;
@@ -112,6 +139,12 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   if ($("reloadBtn")) $("reloadBtn").addEventListener("click", loadConsents);
   if ($("statusFilter")) $("statusFilter").addEventListener("change", loadConsents);
+
+  if ($("nationalIdFilter")) {
+  $("nationalIdFilter").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") loadConsents();
+  });
+}
 
   try { if ($("consentsList")) loadConsents(); } catch (e) {}
 });
