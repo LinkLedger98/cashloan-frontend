@@ -1,6 +1,5 @@
-
-  /* ---------------- Collapsible helpers (FIXED + BULLETPROOF) ---------------- */
- function escapeHtml(x) {
+/* ---------------- Global admin helpers ---------------- */
+function escapeHtml(x) {
   return String(x || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -9,7 +8,7 @@
     .replaceAll("'", "&#039;");
 }
 
-  function $(id) {
+function $(id) {
   return document.getElementById(id);
 }
 
@@ -37,18 +36,43 @@ async function fetchJson(url, options = {}) {
   return { ok: res.ok, data };
 }
 
-  function ensureCollapseWrap(wrapEl) {
-    if (!wrapEl) return;
+async function requireSuperAdmin() {
+  const token = localStorage.getItem("authToken");
+  const role = String(
+    localStorage.getItem("userRole") || localStorage.getItem("role") || ""
+  ).toLowerCase();
 
-    // remove any old inline hiding
-    wrapEl.style.display = "";
-    wrapEl.style.maxHeight = "";
-    wrapEl.style.overflow = "";
-
-    if (!wrapEl.classList.contains("collapse-wrap")) {
-      wrapEl.classList.add("collapse-wrap");
-    }
+  if (!token) {
+    window.location.href = "login.html";
+    return false;
   }
+
+  if (role !== "superadmin") {
+    alert("Access Denied");
+    window.location.href = "dashboard.html";
+    return false;
+  }
+
+  return true;
+}
+
+window.escapeHtml = escapeHtml;
+window.$ = $;
+window.fetchJson = fetchJson;
+window.requireSuperAdmin = requireSuperAdmin;
+
+function ensureCollapseWrap(wrapEl) {
+  if (!wrapEl) return;
+
+  // remove any old inline hiding
+  wrapEl.style.display = "";
+  wrapEl.style.maxHeight = "";
+  wrapEl.style.overflow = "";
+
+  if (!wrapEl.classList.contains("collapse-wrap")) {
+    wrapEl.classList.add("collapse-wrap");
+  }
+}
 
   function setCollapsed(wrapEl, btnEl, collapsed) {
     if (!wrapEl || !btnEl) return;
