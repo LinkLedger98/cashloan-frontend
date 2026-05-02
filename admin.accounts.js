@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   startNotifications();
 
-  bindToggle("toggleRequestsBtn", "requestsWrap", false);
-  bindToggle("toggleLendersBtn", "lendersWrap", false);
+  bindToggle("toggleRequestsBtn", "requestsWrap", true);
+  bindToggle("toggleLendersBtn", "lendersWrap", true);
 
   if ($("fillFormBtn")) $("fillFormBtn").addEventListener("click", fillFormDemo);
   if ($("clearFormBtn")) $("clearFormBtn").addEventListener("click", clearForm);

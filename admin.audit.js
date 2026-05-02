@@ -173,6 +173,24 @@
 
       const rows = Array.isArray(r.data) ? r.data : [];
 
+      const auditStatTotal = $("auditStatTotal");
+const auditStatSearches = $("auditStatSearches");
+const auditStatDisputes = $("auditStatDisputes");
+
+if (auditStatTotal) auditStatTotal.textContent = rows.length;
+
+if (auditStatSearches) {
+  auditStatSearches.textContent = rows.filter(a =>
+    String(a.action || a.event || "").toUpperCase().includes("SEARCH")
+  ).length;
+}
+
+if (auditStatDisputes) {
+  auditStatDisputes.textContent = rows.filter(a =>
+    String(a.action || a.event || "").toUpperCase().includes("DISPUTE")
+  ).length;
+}
+
       // 🚨 RUN RISK ENGINE
       runRiskEngine(rows);
 
@@ -201,41 +219,41 @@
           }).join("")
           : "";
 
-        html += `
-      <div class="result-item">
+       html += `
+  <div class="audit-premium-card">
 
-        <!-- 🔴 ACTION -->
-        <div style="font-weight:600;">
-          ${action.includes("DISPUTE") ? "🔴 " : ""}${escapeHtml(action)}
+    <div class="audit-topline">
+      <div>
+        <div class="audit-action">
+          ${action.includes("DISPUTE") ? "🔴 " : action.includes("SEARCH") ? "🔍 " : "🧾 "}
+          ${escapeHtml(action)}
         </div>
 
-        <!-- 👤 ACTOR + TIME -->
         <div class="small">
           By: <b>${escapeHtml(actor)}</b>${when ? ` • ${escapeHtml(when)}` : ""}
         </div>
-
-        <!-- 🪪 TARGET -->
-        ${target ? `<div class="small">Omang: <b>${escapeHtml(target)}</b></div>` : ""}
-
-        <!-- 🎯 ACTION BUTTONS -->
-        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','CALL')">📞 Called</button>
-          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','EMAIL')">📧 Email Sent</button>
-          <button class="btn-ghost btn-sm" onclick="logAuditAction('${actor}','WARNING')">⚠️ Warning Issued</button>
-        </div>
-
-        <!-- 📂 DETAILS -->
-        ${prettyMeta ? `
-          <details style="margin-top:8px;">
-            <summary class="small" style="cursor:pointer;">Details</summary>
-            <div style="margin-top:6px;">
-              ${prettyMeta}
-            </div>
-          </details>
-        ` : ""}
-
       </div>
-    `;
+
+      ${target ? `<span class="badge badge-pink">Omang: ${escapeHtml(target)}</span>` : `<span class="badge badge-gray">System</span>`}
+    </div>
+
+    ${prettyMeta ? `
+      <details class="audit-details">
+        <summary>View audit details</summary>
+        <div style="margin-top:8px;">
+          ${prettyMeta}
+        </div>
+      </details>
+    ` : ""}
+
+    <div class="audit-actions">
+      <button class="btn-ghost btn-sm" onclick="logAuditAction('${escapeHtml(actor)}','CALL')">📞 Called</button>
+      <button class="btn-ghost btn-sm" onclick="logAuditAction('${escapeHtml(actor)}','EMAIL')">📧 Email Sent</button>
+      <button class="btn-ghost btn-sm" onclick="logAuditAction('${escapeHtml(actor)}','WARNING')">⚠️ Warning Issued</button>
+    </div>
+
+  </div>
+`;
       });
 
       list.innerHTML = html;
