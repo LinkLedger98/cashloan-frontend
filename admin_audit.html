@@ -16,12 +16,12 @@
         <h1>LinkLedger • Super Admin</h1>
       </div>
 
-      <div class="legacy-badge" title="Legacy Mode">
-        <span class="legacy-dot legacy-dot-pink"></span>
-        <span class="legacy-lt">&lt;</span>
-        <span class="legacy-dot legacy-dot-pink"></span>
-        <span class="legacy-text">Legacy Mode</span>
-      </div>
+     <div class="legacy-badge" title="Legacy Mode">
+  <span class="legacy-dot legacy-dot-pink"></span>
+  <span class="legacy-lt">&lt;</span>
+  <span class="legacy-dot legacy-dot-blue"></span>
+  <span class="legacy-text">Legacy Mode</span>
+</div>
 
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
   <span class="pill" id="adminPill">Logged in</span>
@@ -38,6 +38,24 @@
 </div>
 
 <div class="card" style="margin-top:16px;">
+
+  <!-- Premium Audit Stats -->
+<div class="admin-stats-grid" style="margin-bottom:16px;">
+  <div class="admin-stat-card">
+    <div class="stat-label">Total Logs</div>
+    <div class="stat-value" id="auditStatTotal">—</div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-label">Searches</div>
+    <div class="stat-value" id="auditStatSearches">—</div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-label">Disputes</div>
+    <div class="stat-value" id="auditStatDisputes">—</div>
+  </div>
+</div>
 
   <!-- ✅ HEADER (FIXED STRUCTURE) -->
   <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
