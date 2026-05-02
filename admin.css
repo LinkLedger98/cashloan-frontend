@@ -405,3 +405,80 @@ input::placeholder{ color: rgba(185,188,198,.65); }
   from{ transform: translateY(0); opacity: 1; }
   to{ transform: translateY(-6px); opacity: 0; }
 }
+
+/* ================================
+   Premium Dispute Cards
+================================ */
+
+.dispute-premium-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.075);
+  margin-bottom: 12px;
+}
+
+.dispute-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dispute-title {
+  font-size: 15px;
+  font-weight: 750;
+  margin-bottom: 4px;
+}
+
+.dispute-mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dispute-block {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.mini-label {
+  font-size: 11px;
+  opacity: 0.55;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mini-value {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.timeline-clean {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  opacity: 0.85;
+  display: grid;
+  gap: 5px;
+}
+
+.dispute-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+@media (max-width: 680px) {
+  .dispute-mini-grid {
+    grid-template-columns: 1fr;
+  }
+}

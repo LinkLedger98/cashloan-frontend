@@ -597,14 +597,14 @@ async function fetchJson(url, options = {}) {
 
       };
 
-      /* ================================
-   DISPUTES (SUPER ADMIN)
+    /* ================================
+   DISPUTES (SUPER ADMIN) — PREMIUM CLEAN
 ================================ */
-async function loadDisputes() {
+async function loadDisputes(mode = "") {
   const list = $("disputesList");
   if (!list) return;
 
-  list.innerHTML = `<div class="small">Loading...</div>`;
+  list.innerHTML = `<div class="small">Loading disputes...</div>`;
 
   const r = await fetchJson("/api/admin/disputes", { method: "GET" });
 
@@ -614,167 +614,144 @@ async function loadDisputes() {
     return;
   }
 
-  const rows = Array.isArray(r.data) ? r.data : [];
+  let rows = Array.isArray(r.data) ? r.data : [];
+
+  if (mode === "overdue") {
+    const now = Date.now();
+    rows = rows.filter((d) => {
+      const due = d.slaDueAt ? new Date(d.slaDueAt).getTime() : NaN;
+      const st = String(d.adminStatus || d.status || "").toLowerCase();
+      return isFinite(due) && due < now && st !== "resolved" && st !== "rejected";
+    });
+  }
 
   if (rows.length === 0) {
-    list.innerHTML = `<div class="result-item"><div class="small">No disputes.</div></div>`;
+    list.innerHTML = `<div class="result-item"><div class="small">No disputes found.</div></div>`;
     return;
   }
 
   let html = "";
 
   rows.forEach((d) => {
-    const id = d._id;
-    const nationalId = escapeHtml(d.nationalId || "");
-    const clientName = escapeHtml(
-  d.raisedByCashloanName ||
-  d.cashloanName ||
-  d.name ||
-  "Unknown"
-);
+    const id = escapeHtml(d._id || "");
+    const nationalId = escapeHtml(d.nationalId || "—");
 
-const clientEmail = escapeHtml(
-  d.raisedByCashloanEmail ||
-  d.cashloanEmail ||
-  d.email ||
-  "-"
-);
-
-const clientPhone = escapeHtml(
-  d.raisedByCashloanPhone ||
-  d.cashloanPhone ||
-  d.phone ||
-  "-"
-);
-
-const clientBranch = escapeHtml(
-  d.raisedByCashloanBranch ||
-  d.cashloanBranch ||
-  d.branch ||
-  "-"
-);
-
-const againstName = escapeHtml(
-  d.againstCashloanName ||
-  d.againstCashloan ||
-  d.againstName ||
-  d.cashloanName ||
-  "Unknown"
-);
-
-const againstEmail = escapeHtml(
-  d.againstCashloanEmail ||
-  d.againstEmail ||
-  d.cashloanEmail ||
-  "-"
-);
-
-const againstPhone = escapeHtml(
-  d.againstCashloanPhone ||
-  d.againstPhone ||
-  d.cashloanPhone ||
-  "-"
-);
-
-const againstBranch = escapeHtml(
-  d.againstCashloanBranch ||
-  d.againstBranch ||
-  d.cashloanBranch ||
-  d.branch ||
-  "-"
-);
-
-    const status = escapeHtml(d.adminStatus || d.status || "pending");
-    const rawStatus = (d.adminStatus || d.status || "pending").toLowerCase();
+    const rawStatus = String(d.adminStatus || d.status || "pending").toLowerCase();
+    const statusLabel =
+      rawStatus === "resolved" ? "Resolved" :
+      rawStatus === "investigating" ? "Investigating" :
+      rawStatus === "rejected" ? "Rejected" :
+      "Pending";
 
     const statusClass =
-      rawStatus === "resolved" ? "resolved" :
-      rawStatus === "investigating" ? "investigating" :
-      "pending";
+      rawStatus === "resolved" ? "paid" :
+      rawStatus === "investigating" ? "owing" :
+      rawStatus === "rejected" ? "overdue" :
+      "owing";
 
-    const statusIcon =
-      rawStatus === "resolved" ? "✔" :
-      rawStatus === "investigating" ? "⏳" :
-      "⚠";
+   const raisedByName =
+  d.raisedByName ||
+  d.raisedByCashloanName ||
+  d.cashloanName ||
+  d.businessName ||
+  d.raisedByEmail ||
+  "Unknown lender";
 
-  html += `
-  <div class="result-item">
+const raisedByBranch =
+  d.raisedByBranch ||
+  d.raisedByCashloanBranch ||
+  d.cashloanBranch ||
+  d.branchName ||
+  d.branch ||
+  "";
 
-    <div style="font-weight:700;">
-      Client ID: ${escapeHtml(d.nationalId)}
-    </div>
+const raisedBy = escapeHtml(
+  raisedByBranch
+    ? `${raisedByName} • ${raisedByBranch}`
+    : raisedByName
+);
 
-    <div class="small">
-      <b>Client:</b> ${clientName}
-    </div>
-    <div class="small">
-      <b>Email:</b> ${clientEmail}
-    </div>
-    <div class="small">
-      <b>Phone:</b> ${clientPhone}
-    </div>
-    <div class="small">
-      <b>Branch:</b> ${clientBranch}
-    </div>
+    const againstName =
+  d.againstCashloanName ||
+  d.againstName ||
+  d.againstBusinessName ||
+  "Unknown";
 
-    <hr style="margin:10px 0; opacity:.2;" />
+const againstBranch =
+  d.againstCashloanBranch ||
+  d.againstBranch ||
+  "";
 
-    <div class="small">
-      <b>Against:</b> ${againstName}
-    </div>
-    <div class="small">
-      <b>Branch:</b> ${againstBranch}
-    </div>
-    <div class="small">
-      <b>Email:</b> ${againstEmail}
-    </div>
-    <div class="small">
-      <b>Phone:</b> ${againstPhone}
-    </div>
+const against = escapeHtml(
+  againstBranch
+    ? `${againstName} • ${againstBranch}`
+    : againstName
+);
 
-    <div class="status ${statusClass}" style="margin-top:10px;">
-      <span>${statusIcon}</span> ${status}
-    </div>
+    const opened = d.createdAt ? new Date(d.createdAt).toLocaleString() : "—";
+    const updated = d.adminUpdatedAt || d.updatedAt
+      ? new Date(d.adminUpdatedAt || d.updatedAt).toLocaleString()
+      : "";
 
-    ${d.notes ? `
-      <div class="small" style="margin-top:8px;">
-        <b>Reason:</b> ${escapeHtml(d.notes)}
+    const sla = d.slaDueAt ? new Date(d.slaDueAt).toLocaleString() : "";
+    const reason = escapeHtml(d.notes || "No reason captured.");
+    const action = escapeHtml(d.adminNote || "No action recorded yet.");
+
+    html += `
+      <div class="dispute-premium-card">
+
+        <div class="dispute-topline">
+          <div>
+            <div class="dispute-title">Omang: ${nationalId}</div>
+            <div class="small">Opened: ${escapeHtml(opened)}${sla ? ` • SLA: ${escapeHtml(sla)}` : ""}</div>
+          </div>
+
+          <span class="badge ${statusClass}">${statusLabel}</span>
+        </div>
+
+        <div class="dispute-mini-grid">
+          <div>
+            <div class="mini-label">Raised by</div>
+            <div class="mini-value">${raisedBy}</div>
+          </div>
+
+          <div>
+            <div class="mini-label">Against</div>
+            <div class="mini-value">${against}</div>
+          </div>
+        </div>
+
+        <div class="dispute-block">
+          <div class="mini-label">Reason</div>
+          <div class="mini-value">${reason}</div>
+        </div>
+
+        <div class="dispute-block">
+          <div class="mini-label">Action Taken</div>
+          <div class="mini-value">${action}</div>
+        </div>
+
+        <div class="timeline-clean">
+          <div>🟣 Opened: ${escapeHtml(opened)}</div>
+          ${updated ? `<div>🟡 Last update: ${escapeHtml(updated)}</div>` : ""}
+          <div>📌 Current status: ${statusLabel}</div>
+        </div>
+
+        <div class="dispute-actions">
+          ${
+            rawStatus !== "resolved"
+              ? `
+                <button class="btn-ghost btn-sm" onclick="investigateDispute('${id}')">Investigate</button>
+                <button class="btn-primary btn-sm" onclick="resolveDispute('${id}')">Resolve</button>
+              `
+              : ""
+          }
+
+          <button class="btn-ghost btn-sm" onclick="openInbox('${nationalId}')">Open Inbox</button>
+        </div>
+
       </div>
-    ` : ""}
-
-    ${d.adminNote ? `
-      <div class="small" style="margin-top:10px; border-top:1px solid rgba(255,255,255,.1); padding-top:8px;">
-        <b>Action Taken:</b><br/>
-        ${escapeHtml(d.adminNote)}
-      </div>
-    ` : `
-      <div class="small" style="margin-top:10px; opacity:.6;">
-        No action recorded yet.
-      </div>
-    `}
-
-    <div style="margin-top:12px; display:flex; gap:8px;">
-     ${
-  rawStatus !== "resolved"
-    ? `
-      <button class="btn-ghost btn-sm" onclick="investigateDispute('${d._id}')">
-        Investigate
-      </button>
-
-      <button class="btn-primary btn-sm" onclick="resolveDispute('${d._id}')">
-        Resolve
-      </button>
-    `
-    : ""
-}
-
-      <button class="btn-ghost btn-sm" onclick="openInbox('${d.nationalId}')">
-        Open Inbox
-      </button>
-    </div>
-
-  </div>
-`;
+    `;
   });
 
   list.innerHTML = html;
@@ -782,13 +759,69 @@ const againstBranch = escapeHtml(
 
 document.addEventListener("DOMContentLoaded", function () {
   if ($("loadDisputesBtn")) {
-    $("loadDisputesBtn").addEventListener("click", loadDisputes);
+    $("loadDisputesBtn").addEventListener("click", () => loadDisputes(""));
+  }
+
+  if ($("loadDisputesOverdueBtn")) {
+    $("loadDisputesOverdueBtn").addEventListener("click", () => loadDisputes("overdue"));
   }
 
   try {
-    if ($("disputesList")) loadDisputes();
+    if ($("disputesList")) loadDisputes("");
   } catch (e) {}
 });
+
+window.loadDisputes = loadDisputes;
+
+window.resolveDispute = async function (id) {
+  const note = prompt("Enter action taken:", "Resolved after review.");
+
+  if (note === null) return;
+
+  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      adminStatus: "resolved",
+      status: "resolved",
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    alert("Failed to resolve dispute");
+    return;
+  }
+
+  alert("Resolved ✅");
+  loadDisputes("");
+};
+
+window.investigateDispute = async function (id) {
+  const note = prompt("Enter investigation note:", "We have received your dispute and are investigating.");
+
+  if (note === null) return;
+
+  const r = await fetchJson(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      adminStatus: "investigating",
+      status: "investigating",
+      adminNote: note
+    })
+  });
+
+  if (!r.ok) {
+    alert("Failed to update dispute");
+    return;
+  }
+
+  alert("Marked as investigating ✅");
+  loadDisputes("");
+};
+
+function openInbox(nationalId) {
+  window.location.href = `admin_consents.html?search=${encodeURIComponent(nationalId)}`;
+} 
 
 function logout() {
   localStorage.removeItem("authToken");
@@ -796,54 +829,4 @@ function logout() {
   localStorage.removeItem("role");
 
   window.location.href = "login.html";
-}
-
-window.loadDisputes = loadDisputes;
-
-window.resolveDispute = async function (id) {
-  const note = prompt("Enter action taken:", "");
-
-  if (note === null) return;
-
-  const r = await fetchJson(`/api/admin/disputes/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      adminStatus: "resolved", // 🔥 THIS WAS MISSING
-      adminNote: note
-    })
-  });
-
-  if (!r.ok) {
-    alert("Failed");
-    return;
-  }
-
-  alert("Resolved ✅");
-  loadDisputes();
-};
-
-window.investigateDispute = async function (id) {
-  const note = prompt("Enter investigation note:", "");
-
-  if (note === null) return;
-
-  const r = await fetchJson(`/api/admin/disputes/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      adminStatus: "investigating",
-      adminNote: note
-    })
-  });
-
-  if (!r.ok) {
-    alert("Failed");
-    return;
-  }
-
-  alert("Marked as Investigating 🟠");
-  loadDisputes();
-};
-
-function openInbox(nationalId) {
-  window.location.href = `admin_consents.html?search=${encodeURIComponent(nationalId)}`;
 }
