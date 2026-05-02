@@ -772,6 +772,11 @@ const against = escapeHtml(
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+
+  // ✅ ACCOUNTS PAGE TOGGLES (ADD THIS)
+bindToggle("toggleRequestsBtn", "requestsWrap", true);
+bindToggle("toggleLendersBtn", "lendersWrap", true);
+
   if ($("loadDisputesBtn")) {
     $("loadDisputesBtn").addEventListener("click", () => loadDisputes(""));
   }
