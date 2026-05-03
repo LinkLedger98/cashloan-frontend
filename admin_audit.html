@@ -4,111 +4,121 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Super Admin • Audit | LinkLedger</title>
+
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin_messages.css" />
 </head>
 
 <body>
   <div class="container">
+
     <div class="topbar">
       <div class="brand">
         <div class="brand-badge"></div>
         <h1>LinkLedger • Super Admin</h1>
       </div>
 
-     <div class="legacy-badge" title="Legacy Mode">
-  <span class="legacy-dot legacy-dot-pink"></span>
-  <span class="legacy-lt">&lt;</span>
-  <span class="legacy-dot legacy-dot-blue"></span>
-  <span class="legacy-text">Legacy Mode</span>
-</div>
+      <div class="legacy-badge" title="Legacy Mode">
+        <span class="legacy-dot legacy-dot-pink"></span>
+        <span class="legacy-lt">&lt;</span>
+        <span class="legacy-dot legacy-dot-blue"></span>
+        <span class="legacy-text">Legacy Mode</span>
+      </div>
 
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-  <span class="pill" id="adminPill">Logged in</span>
-  <a class="btn-ghost" href="welcome.html">Home</a>
-  <button class="btn-ghost" onclick="logout()">Logout</button>
-</div>
-</div>
-
-<div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-  <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
-  <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
-  <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
-  <a class="btn-primary btn-sm" href="admin_audit.html">Audit</a>
-</div>
-
-<div class="card" style="margin-top:16px;">
-
-  <!-- Premium Audit Stats -->
-<div class="admin-stats-grid" style="margin-bottom:16px;">
-  <div class="admin-stat-card">
-    <div class="stat-label">Total Logs</div>
-    <div class="stat-value" id="auditStatTotal">—</div>
-  </div>
-
-  <div class="admin-stat-card">
-    <div class="stat-label">Searches</div>
-    <div class="stat-value" id="auditStatSearches">—</div>
-  </div>
-
-  <div class="admin-stat-card">
-    <div class="stat-label">Disputes</div>
-    <div class="stat-value" id="auditStatDisputes">—</div>
-  </div>
-</div>
-
-  <!-- ✅ HEADER (FIXED STRUCTURE) -->
-  <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-    <div>
-      <h2 style="margin:0;">Audit Logs</h2>
-      <p class="small" style="margin:6px 0 0 0;">
-        Hidden trail of logins, searches, edits (for inspections).
-      </p>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span class="pill" id="adminPill">Logged in</span>
+        <a class="btn-ghost" href="welcome.html">Home</a>
+        <button class="btn-ghost" onclick="logout()">Logout</button>
+      </div>
     </div>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
-      <button class="btn-ghost btn-sm" onclick="exportAuditCSV()">Export CSV</button>
+    <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
+      <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
+      <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+      <a class="btn-primary btn-sm" href="admin_audit.html">Audit</a>
     </div>
-  </div>
 
-  <!-- ✅ FILTERS (NOW OUTSIDE HEADER — THIS WAS THE BUG) -->
-  <div class="row" style="margin-top:12px;">
-    <div>
-      <label>Omang (optional filter)</label>
-      <input id="auditNationalId" placeholder="e.g. 123456789" />
-    </div>
-    <div>
-      <label>Limit (max 200)</label>
-      <input id="auditLimit" type="number" min="1" max="200" value="100" />
-    </div>
-  </div>
+    <div class="card" style="margin-top:16px;">
 
-      <!-- 🚨 RISK ALERTS -->
-<div id="riskBox" style="display:none; margin-top:12px; padding:12px; border-radius:12px; border:1px solid #ff4d4f; background:rgba(255,77,79,0.08);">
-  <div style="font-weight:600; margin-bottom:6px;">⚠️ Risk Alerts</div>
-  <div id="riskList" class="small"></div>
-</div>
+      <!-- Stats -->
+      <div class="admin-stats-grid" style="margin-bottom:16px;">
+        <div class="admin-stat-card">
+          <div class="stat-label">Total Logs</div>
+          <div class="stat-value" id="auditStatTotal">—</div>
+        </div>
 
-<!-- 🔥 RISK DASHBOARD -->
-<div class="card" style="margin-top:16px;">
-  <h3 style="margin-bottom:10px;">🏢 Risk Dashboard</h3>
-  <div id="riskDashboardList" style="margin-top:8px;"></div>
-</div>
+        <div class="admin-stat-card">
+          <div class="stat-label">Searches</div>
+          <div class="stat-value" id="auditStatSearches">—</div>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-label">Disputes</div>
+          <div class="stat-value" id="auditStatDisputes">—</div>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Audit Logs</h2>
+          <p class="small" style="margin:6px 0 0 0;">
+            Hidden trail of logins, searches, edits (for inspections).
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" id="loadAuditBtn" type="button">Reload</button>
+          <button class="btn-ghost btn-sm" onclick="exportAuditCSV()">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Omang (optional filter)</label>
+          <input id="auditNationalId" placeholder="e.g. 123456789" />
+        </div>
+
+        <div>
+          <label>Limit (max 200)</label>
+          <input id="auditLimit" type="number" min="1" max="200" value="100" />
+        </div>
+      </div>
+
+      <!-- Risk alerts -->
+      <div id="riskBox" style="display:none; margin-top:12px; padding:12px; border-radius:12px; border:1px solid #ff4d4f; background:rgba(255,77,79,0.08);">
+        <div style="font-weight:600; margin-bottom:6px;">⚠️ Risk Alerts</div>
+        <div id="riskList" class="small"></div>
+      </div>
+
+      <!-- Risk dashboard -->
+      <div class="card" style="margin-top:16px;">
+        <h3 style="margin-bottom:10px;">🏢 Risk Dashboard</h3>
+        <div id="riskDashboardList" style="margin-top:8px;"></div>
+      </div>
 
       <div class="small" id="auditCountLine" style="margin-top:10px;"></div>
       <div id="auditList" style="margin-top:12px;"></div>
+
     </div>
 
     <div class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
     </div>
+
   </div>
+
+  <!-- FLOATING INBOX -->
+  <a id="adminFloatingInbox" href="admin_messages.html" title="Admin Inbox">
+    💬
+  </a>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
@@ -133,8 +143,8 @@
     })();
   </script>
 
-<script src="config.js"></script>
-<script src="admin.js"></script>
-<script src="admin.audit.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+  <script src="admin.audit.js"></script>
 </body>
 </html>

@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Super Admin • Accounts | LinkLedger</title>
+
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin_messages.css" />
 </head>
 
 <body>
@@ -38,6 +40,7 @@
       <a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
     </div>
 
+    <!-- Stats -->
     <div class="admin-stats-grid" style="margin-top:16px;">
       <div class="admin-stat-card">
         <div class="stat-label">Institutions</div>
@@ -56,6 +59,8 @@
     </div>
 
     <div class="card" style="margin-top:16px;">
+
+      <!-- Create Institution -->
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
         <div>
           <h2>Create Institution Account</h2>
@@ -71,8 +76,8 @@
       </div>
 
       <form id="adminForm" style="margin-top:12px;">
-        <label>ADMIN KEY (optional if logged in as admin)</label>
-        <input id="adminKey" placeholder="Paste ADMIN_KEY here (optional)" autocomplete="off" />
+        <label>ADMIN KEY (optional)</label>
+        <input id="adminKey" autocomplete="off" />
 
         <div class="row">
           <div>
@@ -111,66 +116,41 @@
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
 
+      <!-- Requests -->
       <div style="margin-top:18px;">
-        <div class="collapsible-head">
-          <div>
-            <h2 style="margin:0;">Signup Requests</h2>
-            <div class="small" style="opacity:.85; margin-top:4px;">
-              Autofill the form, then create the institution. Delete request when done.
-            </div>
-          </div>
-          <button class="btn-ghost btn-sm" id="toggleRequestsBtn" type="button" title="Collapse/Expand">▲</button>
-        </div>
-
-        <div class="collapsible" id="requestsWrap">
-          <div class="collapsible-inner">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-              <button class="btn-ghost btn-sm" id="reloadRequestsBtn" type="button">Reload Requests</button>
-            </div>
-            <div id="requestsList" style="margin-top:10px;"></div>
-          </div>
-        </div>
+        <h2>Signup Requests</h2>
+        <button class="btn-ghost btn-sm" id="reloadRequestsBtn">Reload</button>
+        <div id="requestsList" style="margin-top:10px;"></div>
       </div>
 
+      <!-- Institutions -->
       <div style="margin-top:18px;">
-        <div class="collapsible-head">
+        <h2>Institutions</h2>
+
+        <div class="row">
           <div>
-            <h2 style="margin:0;">Institutions</h2>
-            <div class="small" style="opacity:.85; margin-top:4px;">
-              Suspend, activate, secure, and update institution accounts.
-            </div>
+            <input id="lendersSearch" placeholder="Search..." />
           </div>
-          <button class="btn-ghost btn-sm" id="toggleLendersBtn" type="button" title="Collapse/Expand">▲</button>
-        </div>
-
-        <div class="collapsible" id="lendersWrap">
-          <div class="collapsible-inner">
-            <div class="row" style="margin-top:10px;">
-              <div>
-                <label class="small">Search</label>
-                <input id="lendersSearch" placeholder="Search institution / email / license / status..." />
-              </div>
-              <div style="display:flex; align-items:flex-end;">
-                <button class="btn-ghost btn-sm" id="reloadLendersBtn" type="button">Reload Institutions</button>
-              </div>
-            </div>
-
-            <div class="small" id="lendersCount" style="margin-top:10px; opacity:.85;"></div>
-            <div id="lendersList" style="margin-top:10px;"></div>
+          <div>
+            <button class="btn-ghost btn-sm" id="reloadLendersBtn">Reload</button>
           </div>
         </div>
+
+        <div id="lendersList" style="margin-top:10px;"></div>
       </div>
+
     </div>
 
     <div class="footer">
       <div>© <span id="year"></span> LinkLedger • Botswana</div>
-      <div>
-        <a href="welcome.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-      </div>
     </div>
 
   </div>
+
+  <!-- FLOATING INBOX -->
+  <a id="adminFloatingInbox" href="admin_messages.html" title="Admin Inbox">
+    💬
+  </a>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -188,13 +168,11 @@
         }
 
         if (role !== "superadmin") {
-          alert("Access Denied");
           window.location.href = "dashboard.html";
           return;
         }
       } catch (e) {
-        alert("Access Denied");
-        window.location.href = "dashboard.html";
+        window.location.href = "login.html";
       }
     })();
   </script>

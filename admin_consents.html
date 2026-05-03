@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Super Admin • Consents | LinkLedger</title>
+
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin_messages.css" />
 </head>
 
 <body>
@@ -27,11 +29,10 @@
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <span class="pill" id="adminPill">Logged in</span>
         <a class="btn-ghost" href="welcome.html">Home</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
+        <button class="btn-ghost" type="button" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <!-- Admin Nav -->
     <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
       <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
       <a class="btn-ghost btn-sm" href="admin_disputes.html">Disputes</a>
@@ -60,6 +61,7 @@
             <option value="rejected">Rejected</option>
           </select>
         </div>
+
         <div>
           <label>Omang (optional)</label>
           <input id="nationalIdFilter" placeholder="e.g. 123456789" />
@@ -76,10 +78,13 @@
 
   </div>
 
+  <a id="adminFloatingInbox" href="admin_messages.html" title="Admin Inbox">
+    💬
+  </a>
+
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
@@ -104,8 +109,8 @@
     })();
   </script>
 
-<script src="config.js"></script>
-<script src="admin.js"></script>
-<script src="admin_consents.js"></script>
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+  <script src="admin_consents.js"></script>
 </body>
 </html>

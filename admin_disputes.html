@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Super Admin • Disputes | LinkLedger</title>
+
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin_messages.css" />
 </head>
 
 <body>
@@ -26,15 +28,15 @@
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <span class="pill" id="adminPill">Logged in</span>
         <a class="btn-ghost" href="welcome.html">Home</a>
-        <button class="btn-ghost" onclick="logout()">Logout</button>
+        <button class="btn-ghost" type="button" onclick="logout()">Logout</button>
       </div>
     </div>
 
     <div id="adminNav" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-    <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
-<a class="btn-primary btn-sm" href="admin_disputes.html">Disputes</a>
-<a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
-<a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
+      <a class="btn-ghost btn-sm" href="admin_accounts.html">Accounts</a>
+      <a class="btn-primary btn-sm" href="admin_disputes.html">Disputes</a>
+      <a class="btn-ghost btn-sm" href="admin_consents.html">Consents</a>
+      <a class="btn-ghost btn-sm" href="admin_audit.html">Audit</a>
     </div>
 
     <div class="card" style="margin-top:16px;">
@@ -43,6 +45,7 @@
           <h2 style="margin:0;">Disputes</h2>
           <p class="small" style="margin:6px 0 0 0;">Shows who opened it (lender), and lets you respond.</p>
         </div>
+
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn-ghost btn-sm" id="loadDisputesBtn" type="button">Reload Disputes</button>
           <button class="btn-ghost btn-sm" id="loadDisputesOverdueBtn" type="button">Overdue (SLA)</button>
@@ -57,10 +60,13 @@
     </div>
   </div>
 
+  <a id="adminFloatingInbox" href="admin_messages.html" title="Admin Inbox">
+    💬
+  </a>
+
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ SUPERADMIN FRONTEND GUARD (supports userRole OR role)
     (function () {
       try {
         const token = localStorage.getItem("authToken");
