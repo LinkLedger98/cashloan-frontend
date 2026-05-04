@@ -115,7 +115,9 @@
 
 #ll-chat-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
@@ -146,16 +148,31 @@
 
 .ll-msg {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
   opacity: 0;
   animation: llBubbleEnter .38s cubic-bezier(.22,1,.36,1) forwards;
 }
 
 .ll-msg.me {
   justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 
 .ll-msg.admin {
   justify-content: flex-start;
+  flex-direction: row;
+}
+
+.ll-msg-avatar {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid rgba(255, 47, 146, 0.25);
+  box-shadow: 0 6px 14px rgba(0,0,0,.12);
 }
 
 .ll-bubble {
@@ -276,6 +293,55 @@
   font-size: 12px;
   text-decoration: underline;
   font-weight: 800;
+}
+
+.ll-image-link {
+  display: block;
+  margin-top: 9px;
+  text-decoration: none;
+}
+
+.ll-chat-image-preview {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow: 0 10px 22px rgba(0,0,0,.13);
+}
+
+.ll-selected-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ll-selected-file span:last-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ll-selected-file-img {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 47, 146, 0.22);
+}
+
+.ll-selected-file-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 47, 146, 0.10);
 }
 
 @keyframes llBubbleEnter {
@@ -407,6 +473,13 @@
   box-shadow: 0 0 18px rgba(255, 47, 146, 0.25);
 }
 
+#ll-chat-send:disabled,
+#ll-chat-attach:disabled,
+#ll-chat-input:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
 #ll-chat-box.expanded {
   width: 520px;
   height: 650px;
@@ -425,5 +498,9 @@
   #ll-chat-button {
     right: 16px;
     bottom: 16px;
+  }
+
+  .ll-chat-image-preview {
+    max-width: 190px;
   }
 }

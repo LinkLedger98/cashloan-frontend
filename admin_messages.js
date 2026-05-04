@@ -4,6 +4,8 @@
   let activeConversation = null;
   let selectedAdminFile = null;
   let activeFilter = "all";
+  let isSendingAdmin = false;
+  let adminRefreshTimer = null;
 
   function getApiBaseUrl() {
     return (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || window.API_BASE || "";
@@ -34,8 +36,13 @@
     const list = document.getElementById("conversationsList");
     const count = document.getElementById("conversationCount");
 
-    if (list) list.innerHTML = `<div class="inbox-loading">Loading conversations...</div>`;
-    if (count) count.textContent = "Loading...";
+    if (list && !conversations.length) {
+      list.innerHTML = `<div class="inbox-loading">Loading conversations...</div>`;
+    }
+
+    if (count && !conversations.length) {
+      count.textContent = "Loading...";
+    }
 
     const r = await apiFetch("/api/admin/messages/conversations");
 
@@ -88,16 +95,16 @@
     }
 
     list.innerHTML = rows.map((c) => {
-  const emailRaw = String(c.lenderEmail || "").toLowerCase().trim();
+      const emailRaw = String(c.lenderEmail || "").toLowerCase().trim();
 
-  const email = escapeHtml(emailRaw);
-  const name = escapeHtml(c.lenderName || emailRaw || "Unknown Institution");
-  const branch = escapeHtml(c.lenderBranch || "");
-  const preview = escapeHtml(c.lastMessage || "No message preview");
-  const unread = Number(c.unreadAdmin || 0);
-  const category = escapeHtml(c.lastCategory || "general");
-  const time = formatShortTime(c.lastAt);
-  const active = activeEmail === emailRaw ? "active" : "";
+      const email = escapeHtml(emailRaw);
+      const name = escapeHtml(c.lenderName || emailRaw || "Unknown Institution");
+      const branch = escapeHtml(c.lenderBranch || "");
+      const preview = escapeHtml(c.lastMessage || "No message preview");
+      const unread = Number(c.unreadAdmin || 0);
+      const category = escapeHtml(c.lastCategory || "general");
+      const time = formatShortTime(c.lastAt);
+      const active = activeEmail === emailRaw ? "active" : "";
 
       return `
         <button class="conversation-card ${active}" type="button" data-email="${email}">
@@ -151,16 +158,20 @@
       activeConversation?.lastCategory || "general";
 
     renderConversations();
-    await loadThread();
+    await loadThread(true);
   }
 
-  async function loadThread() {
+  async function loadThread(forceScroll = true) {
     if (!activeEmail) return;
 
     const box = document.getElementById("adminChatMessages");
     if (!box) return;
 
-    box.innerHTML = `<div class="thread-loading">Loading thread...</div>`;
+    const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+
+    if (!box.dataset.loaded) {
+      box.innerHTML = `<div class="thread-loading">Loading thread...</div>`;
+    }
 
     const r = await apiFetch(`/api/admin/messages/${encodeURIComponent(activeEmail)}`);
 
@@ -173,18 +184,21 @@
 
     if (!messages.length) {
       box.innerHTML = `<div class="thread-empty">No messages yet.</div>`;
+      box.dataset.loaded = "1";
       return;
     }
 
     box.innerHTML = messages.map((m, index) => {
       const isAdmin = m.senderRole === "superadmin";
-      const fileUrl = m.attachment && m.attachment.fileUrl ? m.attachment.fileUrl : "";
-      const fileName = m.attachment && m.attachment.fileName ? m.attachment.fileName : "";
       const timeText = formatFullTime(m.sentAt || m.createdAt);
+      const attachmentHtml = renderAdminAttachmentHtml(m.attachment);
+      const avatarHtml = renderThreadAvatar(isAdmin, m);
 
       return `
         <div class="admin-thread-msg ${isAdmin ? "admin-side" : "lender-side"}"
              style="animation-delay:${Math.min(index * 25, 300)}ms;">
+          ${avatarHtml}
+
           <div class="admin-thread-bubble">
             <div class="admin-glass-shine"></div>
 
@@ -193,15 +207,13 @@
               <span>${escapeHtml(timeText)}</span>
             </div>
 
-            <div class="admin-msg-text">${escapeHtml(m.message || "")}</div>
-
             ${
-              fileUrl
-                ? `<a class="admin-attachment" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">
-                    📎 ${escapeHtml(fileName || "Open attachment")}
-                   </a>`
+              m.message
+                ? `<div class="admin-msg-text">${escapeHtml(m.message || "")}</div>`
                 : ""
             }
+
+            ${attachmentHtml}
 
             <div class="admin-lock">🔒</div>
           </div>
@@ -209,12 +221,89 @@
       `;
     }).join("");
 
-    box.scrollTop = box.scrollHeight;
+    box.dataset.loaded = "1";
+
+    if (forceScroll || wasNearBottom) {
+      box.scrollTop = box.scrollHeight;
+    }
 
     await loadConversations();
   }
 
+  function renderThreadAvatar(isAdmin, message) {
+    const label = isAdmin ? "Admin" : (message.lenderName || "Institution");
+    const text = isAdmin ? "LL" : getInitials(label);
+
+    return `
+      <div class="admin-msg-avatar ${isAdmin ? "admin-avatar" : "lender-avatar"}">
+        ${escapeHtml(text)}
+      </div>
+    `;
+  }
+
+  function getInitials(value) {
+    const parts = String(value || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!parts.length) return "IN";
+
+    return parts
+      .slice(0, 2)
+      .map((p) => p.charAt(0).toUpperCase())
+      .join("");
+  }
+
+  function isPreviewableImage(urlOrName) {
+    return /\.(jpg|jpeg|png|webp|gif)$/i.test(String(urlOrName || "").split("?")[0]);
+  }
+
+  function isHeicFile(urlOrName) {
+    return /\.(heic|heif)$/i.test(String(urlOrName || "").split("?")[0]);
+  }
+
+  function getAttachmentIcon(fileName) {
+    const name = String(fileName || "").toLowerCase();
+
+    if (name.endsWith(".pdf")) return "📄";
+    if (name.endsWith(".doc") || name.endsWith(".docx")) return "📝";
+    if (name.endsWith(".xlsx") || name.endsWith(".csv")) return "📊";
+    if (name.endsWith(".txt")) return "📃";
+    if (isHeicFile(name)) return "🖼️";
+
+    return "📎";
+  }
+
+  function renderAdminAttachmentHtml(attachment) {
+    if (!attachment || !attachment.fileUrl) return "";
+
+    const fileUrl = attachment.fileUrl;
+    const fileName = attachment.fileName || "Open attachment";
+
+    if (isPreviewableImage(fileUrl) || isPreviewableImage(fileName)) {
+      return `
+        <a class="admin-image-link" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
+          <img
+            class="admin-chat-image-preview"
+            src="${escapeAttr(fileUrl)}"
+            alt="${escapeAttr(fileName)}"
+            loading="lazy"
+          />
+        </a>
+      `;
+    }
+
+    return `
+      <a class="admin-attachment" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
+        ${getAttachmentIcon(fileName)} ${escapeHtml(fileName)}
+      </a>
+    `;
+  }
+
   async function sendAdminReply() {
+    if (isSendingAdmin) return;
+
     if (!activeEmail) {
       alert("Select a conversation first.");
       return;
@@ -226,49 +315,76 @@
     const message = String(input?.value || "").trim();
     const category = String(categoryEl?.value || "general").trim();
 
-    if (!message) {
-      alert("Type a reply first.");
+    if (!message && !selectedAdminFile) {
+      alert("Type a reply or attach a file first.");
       return;
     }
 
-    const fd = new FormData();
-    fd.append("message", message);
-    fd.append("category", category);
+    try {
+      setAdminSendingState(true);
 
-    if (selectedAdminFile) {
-      fd.append("attachment", selectedAdminFile);
+      const fd = new FormData();
+      fd.append("message", message);
+      fd.append("category", category);
+
+      if (selectedAdminFile) {
+        fd.append("attachment", selectedAdminFile);
+      }
+
+      showAdminTyping();
+
+      const API_BASE_URL = getApiBaseUrl();
+      const token = getToken();
+
+      const res = await fetch(`${API_BASE_URL}/api/admin/messages/${encodeURIComponent(activeEmail)}`, {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: fd
+      });
+
+      const data = await res.json().catch(() => null);
+
+      hideAdminTyping();
+
+      if (!res.ok) {
+        alert((data && data.message) || "Failed to send reply");
+        return;
+      }
+
+      if (input) input.value = "";
+      selectedAdminFile = null;
+
+      const fileInput = document.getElementById("adminAttachment");
+      if (fileInput) fileInput.value = "";
+
+      renderAdminFilePreview();
+      await loadThread(true);
+
+    } catch (err) {
+      console.error("ADMIN SEND REPLY ERROR:", err);
+      hideAdminTyping();
+      alert("Failed to send reply.");
+    } finally {
+      setAdminSendingState(false);
+    }
+  }
+
+  function setAdminSendingState(state) {
+    isSendingAdmin = state;
+
+    const btn = document.getElementById("sendAdminReplyBtn");
+    const input = document.getElementById("adminReplyInput");
+    const attach = document.getElementById("adminAttachBtn");
+
+    if (btn) {
+      btn.disabled = state;
+      btn.textContent = state ? "Sending..." : "Send Reply";
     }
 
-    showAdminTyping();
-
-    const API_BASE_URL = getApiBaseUrl();
-    const token = getToken();
-
-    const res = await fetch(`${API_BASE_URL}/api/admin/messages/${encodeURIComponent(activeEmail)}`, {
-      method: "POST",
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: fd
-    });
-
-    const data = await res.json().catch(() => null);
-
-    hideAdminTyping();
-
-    if (!res.ok) {
-      alert((data && data.message) || "Failed to send reply");
-      return;
-    }
-
-    input.value = "";
-    selectedAdminFile = null;
-
-    const fileInput = document.getElementById("adminAttachment");
-    if (fileInput) fileInput.value = "";
-
-    renderAdminFilePreview();
-    await loadThread();
+    if (input) input.disabled = state;
+    if (attach) attach.disabled = state;
   }
 
   function renderAdminFilePreview() {
@@ -281,9 +397,30 @@
       return;
     }
 
+    const fileName = selectedAdminFile.name || "Selected file";
+    const canPreview = isPreviewableImage(fileName);
+    const tempUrl = canPreview ? URL.createObjectURL(selectedAdminFile) : "";
+
     box.style.display = "flex";
     box.innerHTML = `
-      <span>📎 ${escapeHtml(selectedAdminFile.name)}</span>
+      <div class="admin-selected-file">
+        ${
+          canPreview
+            ? `
+              <img
+                class="admin-selected-file-img"
+                src="${escapeAttr(tempUrl)}"
+                alt="${escapeAttr(fileName)}"
+              />
+            `
+            : `
+              <span class="admin-selected-file-icon">${getAttachmentIcon(fileName)}</span>
+            `
+        }
+
+        <span>${escapeHtml(fileName)}</span>
+      </div>
+
       <button id="removeAdminFile" type="button">Remove</button>
     `;
 
@@ -305,9 +442,23 @@
     if (el) el.style.display = "none";
   }
 
+  function startAdminAutoRefresh() {
+    if (adminRefreshTimer) clearInterval(adminRefreshTimer);
+
+    adminRefreshTimer = setInterval(function () {
+      if (activeEmail && !isSendingAdmin) {
+        loadThread(false);
+      } else {
+        loadConversations();
+      }
+    }, 5000);
+  }
+
   function bindEvents() {
     document.getElementById("refreshInboxBtn")?.addEventListener("click", loadConversations);
-    document.getElementById("reloadThreadBtn")?.addEventListener("click", loadThread);
+    document.getElementById("reloadThreadBtn")?.addEventListener("click", function () {
+      loadThread(true);
+    });
     document.getElementById("sendAdminReplyBtn")?.addEventListener("click", sendAdminReply);
 
     document.getElementById("conversationSearch")?.addEventListener("input", renderConversations);
@@ -365,8 +516,13 @@
       .replaceAll("'", "&#039;");
   }
 
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     bindEvents();
     loadConversations();
+    startAdminAutoRefresh();
   });
 })();

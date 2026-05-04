@@ -2,6 +2,9 @@
   let isOpen = false;
   let selectedFile = null;
   let typingTimer = null;
+  let refreshTimer = null;
+  let isSending = false;
+  let profileLogoUrl = "./assets/logo.png";
 
   function getApiBaseUrl() {
     return (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || window.API_BASE || "";
@@ -119,6 +122,7 @@
 
     loadMessages();
     loadProfileLogo();
+    startAutoRefresh();
   }
 
   function createFloatingButton() {
@@ -147,6 +151,16 @@
     if (box) box.classList.toggle("expanded");
   }
 
+  function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+
+    refreshTimer = setInterval(function () {
+      if (isOpen && !isSending) {
+        loadMessages(false);
+      }
+    }, 5000);
+  }
+
   function isPreviewableImage(urlOrName) {
     return /\.(jpg|jpeg|png|webp|gif)$/i.test(String(urlOrName || "").split("?")[0]);
   }
@@ -165,6 +179,20 @@
     if (isHeicFile(name)) return "🖼️";
 
     return "📎";
+  }
+
+  function getAvatarHtml(isMine) {
+    const src = isMine ? profileLogoUrl : "./assets/logo.png";
+    const label = isMine ? "You" : "LinkLedger Support";
+
+    return `
+      <img
+        class="ll-msg-avatar"
+        src="${escapeAttr(src)}"
+        alt="${escapeAttr(label)}"
+        onerror="this.src='./assets/logo.png'"
+      />
+    `;
   }
 
   function renderAttachmentHtml(attachment) {
@@ -241,12 +269,14 @@
     };
   }
 
-  async function loadMessages() {
+  async function loadMessages(forceScroll = true) {
     try {
       const r = await fetchJson("/api/messages/mine");
       const messages = Array.isArray(r.data) ? r.data : [];
       const box = document.getElementById("ll-chat-messages");
       if (!box) return;
+
+      const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
 
       box.innerHTML = "";
 
@@ -271,6 +301,8 @@
         const attachmentHtml = renderAttachmentHtml(m.attachment);
 
         div.innerHTML = `
+          ${getAvatarHtml(isMine)}
+
           <div class="ll-bubble">
             <div class="ll-glass-shine"></div>
 
@@ -294,7 +326,10 @@
         box.appendChild(div);
       });
 
-      box.scrollTop = box.scrollHeight;
+      if (forceScroll || wasNearBottom) {
+        box.scrollTop = box.scrollHeight;
+      }
+
       updateRedDot(messages);
 
     } catch (err) {
@@ -302,7 +337,25 @@
     }
   }
 
+  function setSendingState(state) {
+    isSending = state;
+
+    const btn = document.getElementById("ll-chat-send");
+    const input = document.getElementById("ll-chat-input");
+    const attach = document.getElementById("ll-chat-attach");
+
+    if (btn) {
+      btn.disabled = state;
+      btn.textContent = state ? "Sending..." : "Send";
+    }
+
+    if (input) input.disabled = state;
+    if (attach) attach.disabled = state;
+  }
+
   async function sendMessage() {
+    if (isSending) return;
+
     const input = document.getElementById("ll-chat-input");
     if (!input) return;
 
@@ -314,6 +367,8 @@
     }
 
     try {
+      setSendingState(true);
+
       const fd = new FormData();
       fd.append("message", text);
       fd.append("category", "general");
@@ -345,17 +400,14 @@
       if (fileInput) fileInput.value = "";
 
       renderFilePreview();
-
-      showTyping();
-
-      setTimeout(function () {
-        hideTyping();
-        loadMessages();
-      }, 650);
+      hideTyping();
+      await loadMessages(true);
 
     } catch (err) {
       console.error("SEND MESSAGE ERROR:", err);
       alert("Message failed to send.");
+    } finally {
+      setSendingState(false);
     }
   }
 
@@ -402,6 +454,8 @@
         r.data.data.logo.url
           ? r.data.data.logo.url
           : "./assets/logo.png";
+
+      profileLogoUrl = logo;
 
       const img = document.getElementById("ll-dynamic-logo");
       if (img) img.src = logo;

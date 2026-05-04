@@ -649,3 +649,311 @@ input::placeholder{ color: rgba(185,188,198,.65); }
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================
+   Premium Admin Messenger
+================================ */
+
+#activeConversation {
+  min-height: 620px;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#adminChatMessages {
+  flex: 1;
+  min-height: 0;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at 85% 10%, rgba(255,58,167,.10), transparent 35%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(0,0,0,.16));
+}
+
+#adminChatMessages::-webkit-scrollbar {
+  width: 8px;
+}
+
+#adminChatMessages::-webkit-scrollbar-thumb {
+  background: rgba(255,58,167,.35);
+  border-radius: 999px;
+}
+
+.admin-thread-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  opacity: 0;
+  animation: adminBubbleIn .32s ease forwards;
+}
+
+.admin-thread-msg.admin-side {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.admin-thread-msg.lender-side {
+  justify-content: flex-start;
+  flex-direction: row;
+}
+
+.admin-msg-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 10px 22px rgba(0,0,0,.25);
+}
+
+.admin-avatar {
+  color: #0b0c10;
+  background: linear-gradient(135deg, var(--pink), var(--pink2));
+}
+
+.lender-avatar {
+  color: var(--text);
+  background: rgba(255,255,255,.08);
+}
+
+.admin-thread-bubble {
+  position: relative;
+  isolation: isolate;
+  max-width: min(620px, 78%);
+  padding: 12px 14px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 14px 36px rgba(0,0,0,.22);
+}
+
+.admin-side .admin-thread-bubble {
+  border-bottom-right-radius: 7px;
+  background:
+    radial-gradient(circle at 25% 10%, rgba(255,255,255,.18), transparent 35%),
+    linear-gradient(135deg, rgba(255,58,167,.22), rgba(255,255,255,.055));
+  border-color: rgba(255,58,167,.22);
+}
+
+.lender-side .admin-thread-bubble {
+  border-bottom-left-radius: 7px;
+  background:
+    radial-gradient(circle at 25% 10%, rgba(255,255,255,.14), transparent 35%),
+    rgba(255,255,255,.055);
+}
+
+.admin-glass-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.admin-glass-shine::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  width: 54%;
+  height: 35%;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(255,255,255,.35), rgba(255,255,255,.04));
+  filter: blur(8px);
+}
+
+.admin-msg-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 7px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.admin-msg-text {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.admin-lock {
+  margin-top: 7px;
+  font-size: 10px;
+  opacity: .45;
+}
+
+.admin-attachment {
+  display: inline-block;
+  margin-top: 9px;
+  color: var(--pink2);
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+.admin-image-link {
+  display: block;
+  margin-top: 10px;
+  text-decoration: none;
+}
+
+.admin-chat-image-preview {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 14px 30px rgba(0,0,0,.28);
+}
+
+#adminFilePreview {
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-left: 3px solid var(--pink);
+  background: rgba(255,255,255,.055);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.admin-selected-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.admin-selected-file span:last-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.admin-selected-file-img {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  object-fit: cover;
+  border-radius: 13px;
+  border: 1px solid rgba(255,58,167,.22);
+}
+
+.admin-selected-file-icon {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,58,167,.12);
+}
+
+#removeAdminFile {
+  border: none;
+  background: transparent;
+  color: var(--pink2);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+#adminTyping {
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+}
+
+#adminTyping span {
+  width: 6px;
+  height: 6px;
+  background: var(--pink);
+  border-radius: 50%;
+  animation: adminTypingBounce 1s infinite ease-in-out;
+}
+
+#adminTyping span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+#adminTyping span:nth-child(3) {
+  animation-delay: .3s;
+}
+
+#sendAdminReplyBtn:disabled,
+#adminAttachBtn:disabled,
+#adminReplyInput:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.thread-loading,
+.thread-error,
+.thread-empty {
+  margin: auto;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@keyframes adminBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes adminTypingBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: .35;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  #activeConversation {
+    max-height: none;
+    min-height: 70vh;
+  }
+
+  #adminChatMessages {
+    max-height: 55vh;
+  }
+
+  .admin-thread-bubble {
+    max-width: 82%;
+  }
+
+  .admin-chat-image-preview {
+    max-width: 220px;
+  }
+}
