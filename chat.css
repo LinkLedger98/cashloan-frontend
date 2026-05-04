@@ -504,3 +504,35 @@
     max-width: 190px;
   }
 }
+
+/* ✅ Final avatar placement fix */
+.ll-msg {
+  align-items: flex-start !important;
+}
+
+.ll-msg.me {
+  justify-content: flex-start !important;
+  flex-direction: row !important;
+}
+
+.ll-msg.admin {
+  justify-content: flex-start !important;
+  flex-direction: row !important;
+}
+
+.ll-msg-avatar {
+  margin-top: 4px;
+}
+
+.ll-msg-avatar-img {
+  object-fit: cover;
+  background: #fff;
+}
+
+.ll-user-avatar {
+  display: grid;
+  place-items: center;
+  background: rgba(255,47,146,.10);
+  color: #ff2f92;
+  font-size: 15px;
+}

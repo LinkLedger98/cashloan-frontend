@@ -957,3 +957,25 @@ input::placeholder{ color: rgba(185,188,198,.65); }
     max-width: 220px;
   }
 }
+
+/* ✅ Bigger admin messenger window */
+#activeConversation {
+  min-height: 720px;
+  max-height: 86vh;
+}
+
+#adminChatMessages {
+  max-height: 640px;
+  min-height: 500px;
+}
+
+.admin-inbox-layout,
+.inbox-layout,
+.messenger-layout {
+  min-height: 760px;
+}
+
+.admin-chat-image-preview {
+  max-width: 360px;
+  max-height: 380px;
+}

@@ -4,7 +4,8 @@
   let typingTimer = null;
   let refreshTimer = null;
   let isSending = false;
-  let profileLogoUrl = "./assets/logo.png";
+  let profileLogoUrl = "";
+  let lastMessagesSignature = "";
 
   function getApiBaseUrl() {
     return (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || window.API_BASE || "";
@@ -53,7 +54,7 @@
         <input id="ll-logo-input" type="file" accept="image/*" style="display:none;" />
 
         <div class="ll-chat-header-actions">
-          <button id="ll-logo-upload" type="button" title="Upload Logo">🖼️</button>
+          <button id="ll-logo-upload" type="button" title="Upload display picture">🖼️</button>
           <button id="ll-chat-expand" type="button" title="Expand">⛶</button>
           <button id="ll-chat-toggle" type="button" title="Minimize">—</button>
         </div>
@@ -181,16 +182,58 @@
     return "📎";
   }
 
+  function getMessagesSignature(messages) {
+    return messages.map((m) => {
+      return [
+        m._id || m.id || "",
+        m.createdAt || "",
+        m.updatedAt || "",
+        m.message || "",
+        m.senderRole || "",
+        m.attachment && m.attachment.fileUrl ? m.attachment.fileUrl : ""
+      ].join("|");
+    }).join("~");
+  }
+
+  function getLogoFromPayload(payload) {
+    return (
+      payload?.logo?.url ||
+      payload?.data?.logo?.url ||
+      payload?.user?.logo?.url ||
+      payload?.item?.logo?.url ||
+      payload?.profile?.logo?.url ||
+      payload?.data?.data?.logo?.url ||
+      ""
+    );
+  }
+
+  function hasRealProfileLogo() {
+    const logo = String(profileLogoUrl || "").trim();
+    return logo && logo !== "./assets/logo.png" && logo !== "assets/logo.png";
+  }
+
   function getAvatarHtml(isMine) {
-    const src = isMine ? profileLogoUrl : "./assets/logo.png";
-    const label = isMine ? "You" : "LinkLedger Support";
+    if (isMine && hasRealProfileLogo()) {
+      return `
+        <img
+          class="ll-msg-avatar ll-msg-avatar-img"
+          src="${escapeAttr(profileLogoUrl)}"
+          alt="Display picture"
+          onerror="this.outerHTML='<div class=&quot;ll-msg-avatar ll-user-avatar&quot;>👤</div>'"
+        />
+      `;
+    }
+
+    if (isMine) {
+      return `<div class="ll-msg-avatar ll-user-avatar">👤</div>`;
+    }
 
     return `
       <img
-        class="ll-msg-avatar"
-        src="${escapeAttr(src)}"
-        alt="${escapeAttr(label)}"
-        onerror="this.src='./assets/logo.png'"
+        class="ll-msg-avatar ll-msg-avatar-img"
+        src="./assets/logo.png"
+        alt="LinkLedger Support"
+        onerror="this.style.display='none'"
       />
     `;
   }
@@ -276,6 +319,15 @@
       const box = document.getElementById("ll-chat-messages");
       if (!box) return;
 
+      const signature = getMessagesSignature(messages);
+
+      if (signature === lastMessagesSignature && box.dataset.loaded === "1") {
+        updateRedDot(messages);
+        return;
+      }
+
+      lastMessagesSignature = signature;
+
       const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
 
       box.innerHTML = "";
@@ -286,6 +338,7 @@
             No messages yet. Send LinkLedger Support a message.
           </div>
         `;
+        box.dataset.loaded = "1";
         updateRedDot(messages);
         return;
       }
@@ -295,7 +348,7 @@
         const div = document.createElement("div");
 
         div.className = isMine ? "ll-msg me" : "ll-msg admin";
-        div.style.animationDelay = `${Math.min(index * 35, 350)}ms`;
+        div.style.animationDelay = box.dataset.loaded === "1" ? "0ms" : `${Math.min(index * 35, 350)}ms`;
 
         const timeText = formatTime(m.sentAt || m.createdAt);
         const attachmentHtml = renderAttachmentHtml(m.attachment);
@@ -325,6 +378,8 @@
 
         box.appendChild(div);
       });
+
+      box.dataset.loaded = "1";
 
       if (forceScroll || wasNearBottom) {
         box.scrollTop = box.scrollHeight;
@@ -430,12 +485,20 @@
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        alert((data && data.message) || "Logo upload failed");
+        alert((data && data.message) || "Display picture upload failed");
         return;
       }
 
-      alert("Logo updated ✅");
-      loadProfileLogo();
+      const uploadedLogo = getLogoFromPayload(data);
+      if (uploadedLogo) {
+        profileLogoUrl = uploadedLogo;
+      }
+
+      lastMessagesSignature = "";
+      await loadProfileLogo();
+      await loadMessages(true);
+
+      alert("Display picture updated ✅");
 
     } catch (err) {
       console.error("UPLOAD LOGO ERROR:", err);
@@ -446,22 +509,21 @@
   async function loadProfileLogo() {
     try {
       const r = await fetchJson("/api/profile/me");
+      const logo = getLogoFromPayload(r.data);
 
-      const logo =
-        r.data &&
-        r.data.data &&
-        r.data.data.logo &&
-        r.data.data.logo.url
-          ? r.data.data.logo.url
-          : "./assets/logo.png";
-
-      profileLogoUrl = logo;
+      profileLogoUrl = logo || "";
 
       const img = document.getElementById("ll-dynamic-logo");
-      if (img) img.src = logo;
+      if (img) img.src = "./assets/logo.png";
+
+      lastMessagesSignature = "";
 
     } catch (err) {
+      profileLogoUrl = "";
       console.error("LOGO LOAD FAILED:", err);
+
+      const img = document.getElementById("ll-dynamic-logo");
+      if (img) img.src = "./assets/logo.png";
     }
   }
 
