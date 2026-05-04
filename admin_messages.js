@@ -88,14 +88,16 @@
     }
 
     list.innerHTML = rows.map((c) => {
-      const email = escapeHtml(c.lenderEmail || "");
-      const name = escapeHtml(c.lenderName || "Unknown Institution");
-      const branch = escapeHtml(c.lenderBranch || "");
-      const preview = escapeHtml(c.lastMessage || "No message preview");
-      const unread = Number(c.unreadAdmin || 0);
-      const category = escapeHtml(c.lastCategory || "general");
-      const time = formatShortTime(c.lastAt);
-      const active = activeEmail === c.lenderEmail ? "active" : "";
+  const emailRaw = String(c.lenderEmail || "").toLowerCase().trim();
+
+  const email = escapeHtml(emailRaw);
+  const name = escapeHtml(c.lenderName || emailRaw || "Unknown Institution");
+  const branch = escapeHtml(c.lenderBranch || "");
+  const preview = escapeHtml(c.lastMessage || "No message preview");
+  const unread = Number(c.unreadAdmin || 0);
+  const category = escapeHtml(c.lastCategory || "general");
+  const time = formatShortTime(c.lastAt);
+  const active = activeEmail === emailRaw ? "active" : "";
 
       return `
         <button class="conversation-card ${active}" type="button" data-email="${email}">
