@@ -72,7 +72,7 @@
           id="ll-chat-file"
           type="file"
           style="display:none;"
-          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.xlsx"
+          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.txt,.csv,.xlsx"
         />
 
         <input id="ll-chat-input" placeholder="Type message..." />
@@ -147,6 +147,52 @@
     if (box) box.classList.toggle("expanded");
   }
 
+  function isPreviewableImage(urlOrName) {
+    return /\.(jpg|jpeg|png|webp|gif)$/i.test(String(urlOrName || "").split("?")[0]);
+  }
+
+  function isHeicFile(urlOrName) {
+    return /\.(heic|heif)$/i.test(String(urlOrName || "").split("?")[0]);
+  }
+
+  function getAttachmentIcon(fileName) {
+    const name = String(fileName || "").toLowerCase();
+
+    if (name.endsWith(".pdf")) return "📄";
+    if (name.endsWith(".doc") || name.endsWith(".docx")) return "📝";
+    if (name.endsWith(".xlsx") || name.endsWith(".csv")) return "📊";
+    if (name.endsWith(".txt")) return "📃";
+    if (isHeicFile(name)) return "🖼️";
+
+    return "📎";
+  }
+
+  function renderAttachmentHtml(attachment) {
+    if (!attachment || !attachment.fileUrl) return "";
+
+    const fileUrl = attachment.fileUrl;
+    const fileName = attachment.fileName || "Open attachment";
+
+    if (isPreviewableImage(fileUrl) || isPreviewableImage(fileName)) {
+      return `
+        <a class="ll-image-link" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
+          <img
+            class="ll-chat-image-preview"
+            src="${escapeAttr(fileUrl)}"
+            alt="${escapeAttr(fileName)}"
+            loading="lazy"
+          />
+        </a>
+      `;
+    }
+
+    return `
+      <a class="ll-attachment" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
+        ${getAttachmentIcon(fileName)} ${escapeHtml(fileName)}
+      </a>
+    `;
+  }
+
   function renderFilePreview() {
     const preview = document.getElementById("ll-file-preview");
     if (!preview) return;
@@ -157,16 +203,40 @@
       return;
     }
 
+    const fileName = selectedFile.name || "Selected file";
+    const canPreview = isPreviewableImage(fileName);
+    const tempUrl = canPreview ? URL.createObjectURL(selectedFile) : "";
+
     preview.style.display = "flex";
+
     preview.innerHTML = `
-      <span>📎 ${escapeHtml(selectedFile.name)}</span>
+      <div class="ll-selected-file">
+        ${
+          canPreview
+            ? `
+              <img
+                class="ll-selected-file-img"
+                src="${escapeAttr(tempUrl)}"
+                alt="${escapeAttr(fileName)}"
+              />
+            `
+            : `
+              <span class="ll-selected-file-icon">${getAttachmentIcon(fileName)}</span>
+            `
+        }
+
+        <span>${escapeHtml(fileName)}</span>
+      </div>
+
       <button id="ll-remove-file" type="button">Remove</button>
     `;
 
     document.getElementById("ll-remove-file").onclick = function () {
       selectedFile = null;
+
       const fileInput = document.getElementById("ll-chat-file");
       if (fileInput) fileInput.value = "";
+
       renderFilePreview();
     };
   }
@@ -197,9 +267,8 @@
         div.className = isMine ? "ll-msg me" : "ll-msg admin";
         div.style.animationDelay = `${Math.min(index * 35, 350)}ms`;
 
-        const fileUrl = m.attachment && m.attachment.fileUrl ? m.attachment.fileUrl : "";
-        const fileName = m.attachment && m.attachment.fileName ? m.attachment.fileName : "";
         const timeText = formatTime(m.sentAt || m.createdAt);
+        const attachmentHtml = renderAttachmentHtml(m.attachment);
 
         div.innerHTML = `
           <div class="ll-bubble">
@@ -210,17 +279,13 @@
               <span>${escapeHtml(timeText)}</span>
             </div>
 
-            <div class="ll-msg-text">${escapeHtml(m.message || "")}</div>
-
             ${
-              fileUrl
-                ? `
-                  <a class="ll-attachment" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">
-                    📎 ${escapeHtml(fileName || "Open attachment")}
-                  </a>
-                `
+              m.message
+                ? `<div class="ll-msg-text">${escapeHtml(m.message)}</div>`
                 : ""
             }
+
+            ${attachmentHtml}
 
             <div class="ll-locked">🔒</div>
           </div>
@@ -243,8 +308,8 @@
 
     const text = String(input.value || "").trim();
 
-    if (!text) {
-      alert("Please type a message before sending.");
+    if (!text && !selectedFile) {
+      alert("Please type a message or attach a file before sending.");
       return;
     }
 
@@ -385,6 +450,10 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
