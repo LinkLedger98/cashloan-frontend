@@ -403,3 +403,57 @@ hr {
   background: rgba(255,255,255,0.035);
   border: 1px solid rgba(255,255,255,0.075);
 }
+
+.ll-send-icon {
+  width: 20px;
+  height: 20px;
+  fill: #ff2f92; /* hot pink */
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#ll-chat-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#ll-chat-send:hover .ll-send-icon {
+  transform: translateX(2px) scale(1.05);
+  filter: drop-shadow(0 0 6px rgba(255,47,146,0.6));
+}
+
+#ll-chat-send:active .ll-send-icon {
+  transform: scale(0.92);
+}
+
+#ll-chat-send:disabled .ll-send-icon {
+  opacity: 0.5;
+  filter: none;
+}
+
+.ll-send-icon {
+  width: 20px;
+  height: 20px;
+  fill: #ff2f92; /* hot pink */
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#ll-chat-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#ll-chat-send:hover .ll-send-icon {
+  transform: translateX(2px) scale(1.05);
+  filter: drop-shadow(0 0 6px rgba(255,47,146,0.6));
+}
+
+#ll-chat-send:active .ll-send-icon {
+  transform: scale(0.92);
+}
+
+#ll-chat-send:disabled .ll-send-icon {
+  opacity: 0.5;
+  filter: none;
+}

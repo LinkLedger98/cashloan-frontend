@@ -462,15 +462,57 @@
 }
 
 #ll-chat-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
   background:
-    radial-gradient(circle at top left, rgba(255,255,255,.35), transparent 40%),
-    linear-gradient(135deg, #ff2f92, #c91f72);
+    radial-gradient(circle at top left, rgba(255,255,255,.18), transparent 40%),
+    linear-gradient(135deg, #07080b, #171821);
   color: #fff;
   padding: 0 18px;
-  border: none;
+  border: 1px solid rgba(255, 47, 146, 0.38);
   cursor: pointer;
   font-weight: 900;
-  box-shadow: 0 0 18px rgba(255, 47, 146, 0.25);
+  box-shadow:
+    0 0 16px rgba(255, 47, 146, 0.28),
+    0 10px 22px rgba(0,0,0,0.4);
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+
+.ll-send-icon {
+  width: 20px;
+  height: 20px;
+  fill: #ff2f92;
+  display: block;
+  pointer-events: none;
+  transition: transform .2s ease, filter .2s ease;
+}
+
+#ll-chat-send:hover {
+  box-shadow:
+    0 0 24px rgba(255, 47, 146, 0.5),
+    0 12px 26px rgba(0,0,0,0.5);
+}
+
+#ll-chat-send:hover .ll-send-icon {
+  transform: translateX(2px);
+  filter: drop-shadow(0 0 6px rgba(255,47,146,0.7));
+}
+
+#ll-chat-send:active {
+  transform: scale(.96);
+}
+
+#ll-chat-send:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#ll-chat-send:disabled .ll-send-icon {
+  opacity: .5;
+  filter: none;
 }
 
 #ll-chat-send:disabled,

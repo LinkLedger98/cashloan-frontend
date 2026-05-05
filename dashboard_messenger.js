@@ -80,7 +80,11 @@
         />
 
         <input id="ll-chat-input" placeholder="Type message..." />
-        <button id="ll-chat-send" type="button">Send</button>
+        <button id="ll-chat-send" type="button">
+          <svg viewBox="0 0 24 24" class="ll-send-icon">
+            <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" />
+          </svg>
+        </button>
       </div>
     `;
 
@@ -399,10 +403,9 @@
     const input = document.getElementById("ll-chat-input");
     const attach = document.getElementById("ll-chat-attach");
 
-    if (btn) {
-      btn.disabled = state;
-      btn.textContent = state ? "Sending..." : "Send";
-    }
+   if (btn) {
+  btn.disabled = state;
+}
 
     if (input) input.disabled = state;
     if (attach) attach.disabled = state;
@@ -412,6 +415,7 @@
     if (isSending) return;
 
     const input = document.getElementById("ll-chat-input");
+
     if (!input) return;
 
     const text = String(input.value || "").trim();
