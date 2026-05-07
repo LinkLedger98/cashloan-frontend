@@ -646,10 +646,92 @@
     transform .18s ease;
 }
 
-.admin-inbox-shell.is-hidden {
+/* =========================================
+   SHARED OVERLAY MODE
+========================================= */
+
+.admin-inbox-overlay {
+  position: fixed !important;
+
+  top: 16px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  width: calc(100vw - 32px);
+  max-width: 1750px;
+
+  height: calc(100vh - 32px);
+
+  z-index: 9998;
+}
+
+.admin-inbox-overlay.is-hidden {
   opacity: 0;
   pointer-events: none;
+
   transform:
     translateX(-50%)
     scale(.985);
+}
+
+/* =========================================
+   DEDICATED INBOX PAGE
+========================================= */
+
+.admin-messages-page .admin-inbox-shell {
+  position: relative !important;
+
+  top: unset !important;
+  left: unset !important;
+
+  transform: none !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  height: calc(100vh - 155px);
+}
+
+.admin-messages-page .admin-inbox-shell {
+  position: relative !important;
+
+  top: unset !important;
+  left: unset !important;
+
+  margin-left: 0 !important;
+  transform: none !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  height: calc(100vh - 155px);
+}
+
+/* =========================================
+   SHARED OVERLAY MODE — FULL SCREEN
+========================================= */
+
+.admin-inbox-overlay {
+  position: fixed !important;
+  top: 90px !important;
+  left: 16px !important;
+  right: 16px !important;
+  bottom: 16px !important;
+
+  margin: 0 !important;
+  transform: none !important;
+
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+
+  z-index: 9998;
+}
+
+.admin-inbox-overlay.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.985) !important;
 }

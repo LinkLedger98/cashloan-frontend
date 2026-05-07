@@ -60,9 +60,139 @@
     </div>
   </div>
 
-  <a id="adminFloatingInbox" href="admin_messages.html" title="Admin Inbox">
+  <!-- ADMIN MESSENGER OVERLAY -->
+  <section class="admin-inbox-shell admin-inbox-overlay is-hidden" id="adminInboxShell">
+
+    <aside class="inbox-sidebar">
+
+      <div class="inbox-side-head">
+        <h2>Inbox</h2>
+
+        <button
+          class="btn-primary btn-sm reload-btn"
+          id="refreshInboxBtn"
+          type="button"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div class="inbox-search-wrap">
+        <input
+          id="conversationSearch"
+          placeholder="Search institution, branch, email..."
+        />
+      </div>
+
+      <div class="inbox-filter-row">
+        <button class="inbox-filter active" type="button" data-filter="all">All</button>
+        <button class="inbox-filter" type="button" data-filter="unread">Unread</button>
+        <button class="inbox-filter" type="button" data-filter="payment">Payment</button>
+        <button class="inbox-filter" type="button" data-filter="support">Support</button>
+      </div>
+
+      <div class="inbox-count-line" id="conversationCount">Loading...</div>
+
+      <div id="conversationsList" class="conversations-list"></div>
+    </aside>
+
+    <main class="inbox-main">
+
+      <div id="emptyConversation" class="empty-conversation">
+        <div class="empty-orb">💬</div>
+        <h2>Select a conversation</h2>
+        <p>Choose a lender to start chatting.</p>
+      </div>
+
+      <div id="activeConversation" class="active-conversation" style="display:none;">
+
+        <div class="chat-panel-head">
+
+          <div class="chat-panel-user-wrap">
+            <div id="activeLenderAvatar" class="active-lender-avatar">IN</div>
+
+            <div class="chat-panel-user-info">
+              <h2 id="activeLenderName">Institution</h2>
+              <p id="activeLenderMeta">Email • Branch</p>
+            </div>
+          </div>
+
+          <div class="chat-head-actions">
+            <span id="activeCategoryBadge" class="category-pill">general</span>
+
+            <button
+              class="btn-primary btn-sm reload-btn"
+              type="button"
+              id="reloadThreadBtn"
+            >
+              Reload
+            </button>
+
+            <button
+              class="btn-ghost btn-sm"
+              type="button"
+              id="closeAdminInboxBtn"
+              title="Minimize Inbox"
+            >
+              Minimize
+            </button>
+          </div>
+
+        </div>
+
+        <div id="adminChatMessages" class="admin-chat-messages"></div>
+
+        <div id="adminTyping" class="admin-typing" style="display:none;">
+          <span></span>
+          <span></span>
+          <span></span>
+          <em>Preparing reply...</em>
+        </div>
+
+        <div id="adminFilePreview" class="admin-file-preview" style="display:none;"></div>
+
+        <div class="admin-reply-box">
+
+          <div class="reply-tools">
+            <select id="replyCategory">
+              <option value="general">General</option>
+              <option value="support">Support</option>
+              <option value="payment">Payment</option>
+              <option value="password">Password</option>
+              <option value="meeting">Meeting</option>
+              <option value="workshop">Workshop</option>
+            </select>
+
+            <button id="adminAttachBtn" type="button">📎 Attach</button>
+            <input id="adminAttachment" type="file" style="display:none;" />
+          </div>
+
+          <textarea id="adminReplyInput" placeholder="Type your reply..."></textarea>
+
+          <div class="reply-bottom">
+            <div class="reply-note">🔒 Messages are locked & audited • Press Enter to send</div>
+
+            <button
+              class="btn-primary"
+              id="sendAdminReplyBtn"
+              type="button"
+              style="display:none;"
+            >
+              Send
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+  </section>
+
+  <!-- FLOATING INBOX -->
+  <button id="adminFloatingInbox" type="button" title="Admin Inbox">
     💬
-  </a>
+  </button>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -93,5 +223,6 @@
 
   <script src="config.js"></script>
   <script src="admin.js"></script>
+  <script src="admin_messages.js"></script>
 </body>
 </html>

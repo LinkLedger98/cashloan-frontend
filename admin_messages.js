@@ -478,17 +478,6 @@
   }
 
   /* ✅ SIMPLE MINIMIZE ONLY */
-  function toggleInboxPanel() {
-    const shell = document.querySelector(".admin-inbox-shell");
-
-    if (!shell) return;
-
-    inboxCollapsed = !inboxCollapsed;
-
-    shell.style.display = inboxCollapsed
-      ? "none"
-      : "grid";
-  }
 
   function startAdminAutoRefresh() {
     if (adminRefreshTimer) clearInterval(adminRefreshTimer);
@@ -563,13 +552,39 @@
 
       });
 
-    document.getElementById("adminFloatingInbox")
-      ?.addEventListener("click", function (e) {
+ /* OPEN OVERLAY */
+document.getElementById("adminFloatingInbox")
+  ?.addEventListener("click", function (e) {
+    e.preventDefault();
 
-        e.preventDefault();
-        toggleInboxPanel();
+    const shell = document.getElementById("adminInboxShell");
 
-      });
+    if (!shell) return;
+
+    const isClosed = shell.classList.contains("is-hidden");
+
+    if (isClosed) {
+      shell.classList.remove("is-hidden");
+      inboxCollapsed = false;
+    } else {
+      shell.classList.add("is-hidden");
+      inboxCollapsed = true;
+    }
+  });
+
+/* MINIMIZE OVERLAY */
+document.getElementById("closeAdminInboxBtn")
+  ?.addEventListener("click", function () {
+
+    const shell = document.getElementById("adminInboxShell");
+
+    if (!shell) return;
+
+    shell.classList.add("is-hidden");
+
+    inboxCollapsed = true;
+
+  });
   }
 
   function formatShortTime(value) {
