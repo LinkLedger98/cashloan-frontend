@@ -1,8 +1,18 @@
+.admin-messages-page {
+  width: 100%;
+  max-width: 100%;
+}
+
 .admin-inbox-shell {
   margin-top: 16px;
   display: grid;
-  grid-template-columns: 370px 1fr;
-  min-height: 680px;
+  grid-template-columns: 390px 1fr;
+  width: calc(100vw - 32px);
+  max-width: 1750px;
+  height: calc(100vh - 155px);
+  min-height: 760px;
+  margin-left: 50%;
+  transform: translateX(-50%);
   border-radius: 26px;
   overflow: hidden;
   background: rgba(255,255,255,0.96);
@@ -17,7 +27,7 @@
   background:
     radial-gradient(circle at top left, rgba(255,47,146,.10), transparent 35%),
     linear-gradient(180deg, #ffffff, #f7f7fb);
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -27,30 +37,37 @@
 .inbox-side-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
 .inbox-side-head h2 {
   margin: 0;
   color: #111;
+  font-size: 22px;
 }
 
-.inbox-side-head p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: rgba(0,0,0,.62);
+.reload-btn {
+  background: linear-gradient(135deg, #ff2f92, #d91b76) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 18px rgba(255,47,146,.22);
+}
+
+.reload-btn:hover {
+  opacity: .92;
 }
 
 .inbox-search-wrap {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .inbox-search-wrap input {
   width: 100%;
   border-radius: 16px;
   border: 1px solid rgba(0,0,0,.08);
-  padding: 12px 13px;
+  padding: 13px 14px;
   outline: none;
   background: rgba(255,255,255,.9);
   color: #111;
@@ -58,7 +75,7 @@
 }
 
 .inbox-filter-row {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -69,7 +86,7 @@
   background: rgba(255,255,255,.86);
   color: #111;
   border-radius: 999px;
-  padding: 7px 10px;
+  padding: 8px 11px;
   font-size: 12px;
   cursor: pointer;
   font-weight: 700;
@@ -89,12 +106,12 @@
 }
 
 .conversations-list {
-  margin-top: 12px;
+  margin-top: 14px;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .conversations-list::-webkit-scrollbar,
@@ -114,8 +131,8 @@
   background:
     radial-gradient(circle at 20% 5%, rgba(255,255,255,.95), transparent 35%),
     linear-gradient(135deg, rgba(255,255,255,.88), rgba(255,255,255,.62));
-  border-radius: 20px;
-  padding: 12px;
+  border-radius: 22px;
+  padding: 14px;
   cursor: pointer;
   color: #111;
   box-shadow:
@@ -204,6 +221,7 @@
 
 .inbox-main {
   min-width: 0;
+  min-height: 0;
   background:
     radial-gradient(circle at 85% 8%, rgba(255,47,146,.12), transparent 35%),
     linear-gradient(180deg, #ffffff, #f5f5fa);
@@ -236,40 +254,61 @@
   font-size: 30px;
 }
 
-.empty-conversation h2 {
-  margin: 0;
-  color: #111;
-}
-
-.empty-conversation p {
-  color: rgba(0,0,0,.62);
-}
-
 .active-conversation {
   height: 100%;
-  min-height: 680px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .chat-panel-head {
-  padding: 16px 18px;
+  padding: 16px 20px;
   border-bottom: 1px solid rgba(0,0,0,.07);
-  background: rgba(255,255,255,.82);
+  background: rgba(255,255,255,.92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  flex-shrink: 0;
 }
 
-.chat-panel-head h2 {
+.chat-panel-user-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.active-lender-avatar {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ff2f92, #d91b76);
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: 900;
+  font-size: 18px;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: 0 8px 18px rgba(255,47,146,.25);
+}
+
+.active-lender-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-panel-user-info h2 {
   margin: 0;
   color: #111;
+  font-size: 19px;
 }
 
-.chat-panel-head p {
+.chat-panel-user-info p {
   margin: 4px 0 0;
   color: rgba(0,0,0,.62);
   font-size: 12px;
@@ -293,108 +332,91 @@
 
 .admin-chat-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 18px;
+  padding: 28px 34px;
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 16px;
 }
 
 .admin-thread-msg {
   display: flex;
-  opacity: 0;
-  animation: adminBubbleEnter .38s cubic-bezier(.22,1,.36,1) forwards;
+  width: 100%;
+  opacity: 1;
+  animation: none;
 }
 
+/* SENT = LEFT */
 .admin-thread-msg.admin-side {
+  justify-content: flex-start;
+}
+
+/* RECEIVED = RIGHT */
+.admin-thread-msg.lender-side {
   justify-content: flex-end;
 }
 
-.admin-thread-msg.lender-side {
-  justify-content: flex-start;
+.admin-thread-msg.admin-side .admin-thread-bubble {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.admin-thread-msg.lender-side .admin-thread-bubble {
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .admin-thread-bubble {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  max-width: 72%;
-  border-radius: 24px;
-  padding: 12px 15px;
+  max-width: 76%;
+  min-width: 220px;
+  border-radius: 22px;
+  padding: 14px 17px;
   color: #111;
   font-size: 13px;
-  line-height: 1.45;
-  backdrop-filter: blur(22px) saturate(1.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  line-height: 1.6;
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
   background:
-    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.36));
+    linear-gradient(135deg, rgba(255,255,255,.78), rgba(255,255,255,.42));
   border: 1px solid rgba(255,255,255,.78);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.9),
-    0 14px 28px rgba(0,0,0,.08),
-    0 6px 12px rgba(255,47,146,.07);
-  transition: transform .2s ease, box-shadow .2s ease;
+    0 10px 22px rgba(0,0,0,.07),
+    0 4px 10px rgba(255,47,146,.05);
 }
 
 .admin-side .admin-thread-bubble {
   background:
-    radial-gradient(circle at 25% 10%, rgba(255,255,255,.9), transparent 34%),
-    linear-gradient(135deg, rgba(255,47,146,.25), rgba(255,255,255,.45));
-  border: 1px solid rgba(255,47,146,.24);
-  border-bottom-right-radius: 8px;
+    radial-gradient(circle at 25% 10%, rgba(255,255,255,.88), transparent 34%),
+    linear-gradient(135deg, rgba(255,47,146,.22), rgba(255,255,255,.48));
+  border: 1px solid rgba(255,47,146,.22);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 22px;
 }
 
 .lender-side .admin-thread-bubble {
-  border-bottom-left-radius: 8px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 8px;
 }
 
-.admin-thread-bubble:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.95),
-    0 18px 34px rgba(0,0,0,.10),
-    0 8px 16px rgba(255,47,146,.10);
-}
-
+.admin-msg-avatar,
+.admin-avatar,
+.lender-avatar,
 .admin-glass-shine {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.admin-glass-shine::before {
-  content: "";
-  position: absolute;
-  top: 7px;
-  left: 12px;
-  width: 58%;
-  height: 38%;
-  border-radius: 999px;
-  background: linear-gradient(120deg, rgba(255,255,255,.95), rgba(255,255,255,.14));
-  filter: blur(8px);
-  opacity: .78;
-}
-
-.admin-glass-shine::after {
-  content: "";
-  position: absolute;
-  right: -24px;
-  bottom: -22px;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: rgba(255,47,146,.12);
-  filter: blur(14px);
+  display: none !important;
 }
 
 .admin-msg-meta {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   font-size: 10px;
   color: rgba(20,20,20,.62);
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .admin-msg-text {
@@ -418,22 +440,21 @@
   font-weight: 800;
 }
 
-@keyframes adminBubbleEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(.96);
-    filter: blur(2px);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-1px) scale(1.01);
-    filter: blur(0);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
+.admin-image-link {
+  display: block;
+  margin-top: 9px;
+  text-decoration: none;
+}
+
+.admin-chat-image-preview {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow: 0 10px 22px rgba(0,0,0,.13);
 }
 
 .admin-typing {
@@ -444,6 +465,7 @@
   border-top: 1px solid rgba(255,47,146,.12);
   font-size: 12px;
   color: #111;
+  flex-shrink: 0;
 }
 
 .admin-typing span {
@@ -451,32 +473,12 @@
   height: 6px;
   border-radius: 50%;
   background: #ff2f92;
-  animation: adminTypingBounce 1s infinite ease-in-out;
-}
-
-.admin-typing span:nth-child(2) {
-  animation-delay: .15s;
-}
-
-.admin-typing span:nth-child(3) {
-  animation-delay: .3s;
 }
 
 .admin-typing em {
   font-style: normal;
   margin-left: 4px;
   color: rgba(0,0,0,.62);
-}
-
-@keyframes adminTypingBounce {
-  0%, 80%, 100% {
-    transform: translateY(0);
-    opacity: .35;
-  }
-  40% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
 }
 
 .admin-file-preview {
@@ -490,6 +492,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #111;
+  flex-shrink: 0;
 }
 
 .admin-file-preview button {
@@ -501,17 +504,18 @@
 }
 
 .admin-reply-box {
-  padding: 14px 18px 16px;
-  background: rgba(255,255,255,.88);
+  padding: 10px 16px 12px;
+  background: rgba(255,255,255,.92);
   border-top: 1px solid rgba(0,0,0,.07);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  flex-shrink: 0;
 }
 
 .reply-tools {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
@@ -519,36 +523,41 @@
 .reply-tools button {
   border-radius: 999px;
   border: 1px solid rgba(0,0,0,.08);
-  background: rgba(255,255,255,.86);
-  padding: 8px 10px;
+  background: rgba(255,255,255,.92);
+  padding: 7px 10px;
   color: #111;
   cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 #adminReplyInput {
   width: 100%;
-  min-height: 88px;
-  resize: vertical;
+  min-height: 52px;
+  height: 52px;
+  max-height: 90px;
+  resize: none;
   border-radius: 18px;
   border: 1px solid rgba(0,0,0,.08);
-  padding: 12px;
+  padding: 12px 14px;
   outline: none;
-  background: rgba(255,255,255,.9);
+  background: rgba(255,255,255,.96);
   color: #111;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 .reply-bottom {
-  margin-top: 9px;
+  margin-top: 8px;
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  padding-right: 88px;
 }
 
 .reply-note {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(0,0,0,.62);
 }
 
@@ -563,153 +572,58 @@
   color: rgba(0,0,0,.68);
 }
 
-.admin-inbox-icon-btn {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  text-decoration: none;
-  font-size: 18px;
-
-  /* 🔥 calm default */
-  color: rgba(255,255,255,0.75);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-
-  box-shadow: none;
-
-  transition: all 0.25s ease;
-}
-
-/* ✨ hover = subtle glow */
-.admin-inbox-icon-btn:hover {
-  color: white;
-  background: rgba(255,255,255,0.12);
-  transform: translateY(-1px);
-}
-
-/* 💎 ACTIVE (when you're on inbox page) */
-.admin-inbox-icon-btn.active {
-  color: white;
-  background:
-    radial-gradient(circle at top left, rgba(255,255,255,.25), transparent 40%),
-    linear-gradient(135deg, #ff2f92, #c91f72);
-
-  box-shadow:
-    0 10px 22px rgba(255,47,146,.25);
-}
-
-#adminInboxDot {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: #ff2f3f;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 6px rgba(255,47,63,.14);
-}
-
-@media (max-width: 900px) {
-  .admin-inbox-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .inbox-sidebar {
-    max-height: 340px;
-    border-right: none;
-    border-bottom: 1px solid rgba(0,0,0,.08);
-  }
-
-  .active-conversation {
-    min-height: 620px;
-  }
-
-  .admin-thread-bubble {
-    max-width: 86%;
-  }
-}
-
 #adminFloatingInbox {
   position: fixed;
   right: 24px;
   bottom: 24px;
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 24px;
   color: white;
   text-decoration: none;
+  border: none;
+  cursor: pointer;
   z-index: 9999;
-
   background:
     radial-gradient(circle at top left, rgba(255,255,255,.45), transparent 35%),
     linear-gradient(135deg, #07080b, #15151d);
-
   box-shadow:
     0 18px 38px rgba(0,0,0,0.42),
     0 0 26px rgba(255,47,146,0.35);
-
   transition: transform .22s ease, box-shadow .22s ease;
 }
 
 #adminFloatingInbox:hover {
   transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 22px 44px rgba(0,0,0,0.5),
-    0 0 34px rgba(255,47,146,0.48);
 }
 
-#adminFloatingInbox.has-unread {
-  animation: adminInboxPulse 1.4s infinite;
+#adminFloatingInbox.is-closed {
+  opacity: .75;
 }
 
-#adminFloatingInboxCount {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #ff2f3f;
-  color: #fff;
-  border: 2px solid #fff;
-  font-size: 11px;
-  font-weight: 900;
-  display: grid;
-  place-items: center;
-  line-height: 1;
-  box-shadow:
-    0 0 0 6px rgba(255,47,63,.14),
-    0 6px 12px rgba(0,0,0,.25);
-}
+@media (max-width: 900px) {
 
-/* 🔥 Pulse animation */
-@keyframes adminInboxPulse {
-  0% {
-    transform: scale(1);
-    box-shadow:
-      0 18px 38px rgba(0,0,0,0.42),
-      0 0 26px rgba(255,47,146,0.35);
+  .admin-inbox-shell {
+    grid-template-columns: 1fr;
+    width: calc(100vw - 18px);
+    height: calc(100vh - 130px);
+    min-height: 620px;
   }
 
-  50% {
-    transform: scale(1.08);
-    box-shadow:
-      0 24px 46px rgba(0,0,0,0.5),
-      0 0 42px rgba(255,47,146,0.65);
+  .inbox-sidebar {
+    max-height: 320px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,.08);
   }
 
-  100% {
-    transform: scale(1);
-    box-shadow:
-      0 18px 38px rgba(0,0,0,0.42),
-      0 0 26px rgba(255,47,146,0.35);
+  .admin-thread-bubble {
+    max-width: 94%;
+  }
+
+  .reply-bottom {
+    padding-right: 76px;
   }
 }

@@ -6,6 +6,7 @@
   let activeFilter = "all";
   let isSendingAdmin = false;
   let adminRefreshTimer = null;
+  let inboxCollapsed = false;
 
   function getApiBaseUrl() {
     return (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || window.API_BASE || "";
@@ -32,6 +33,19 @@
     return { ok: res.ok, data, status: res.status };
   }
 
+  function getLogoFromConversation(c) {
+    return (
+      c?.logoUrl ||
+      c?.logo?.url ||
+      c?.lenderLogoUrl ||
+      c?.lenderLogo?.url ||
+      c?.profileLogoUrl ||
+      c?.profile?.logo?.url ||
+      c?.user?.logo?.url ||
+      ""
+    );
+  }
+
   async function loadConversations() {
     const list = document.getElementById("conversationsList");
     const count = document.getElementById("conversationCount");
@@ -47,7 +61,9 @@
     const r = await apiFetch("/api/admin/messages/conversations");
 
     if (!r.ok) {
-      if (list) list.innerHTML = `<div class="inbox-error">Failed to load conversations.</div>`;
+      if (list) {
+        list.innerHTML = `<div class="inbox-error">Failed to load conversations.</div>`;
+      }
       return;
     }
 
@@ -58,7 +74,10 @@
   function renderConversations() {
     const list = document.getElementById("conversationsList");
     const count = document.getElementById("conversationCount");
-    const search = String(document.getElementById("conversationSearch")?.value || "").toLowerCase().trim();
+
+    const search = String(document.getElementById("conversationSearch")?.value || "")
+      .toLowerCase()
+      .trim();
 
     if (!list) return;
 
@@ -72,7 +91,9 @@
           c.lenderBranch,
           c.lastMessage,
           c.lastCategory
-        ].join(" ").toLowerCase();
+        ]
+          .join(" ")
+          .toLowerCase();
 
         return text.includes(search);
       });
@@ -94,43 +115,44 @@
       return;
     }
 
-    list.innerHTML = rows.map((c) => {
-      const emailRaw = String(c.lenderEmail || "").toLowerCase().trim();
+    list.innerHTML = rows
+      .map((c) => {
+        const emailRaw = String(c.lenderEmail || "").toLowerCase().trim();
+        const email = escapeHtml(emailRaw);
+        const name = escapeHtml(c.lenderName || emailRaw || "Unknown Institution");
+        const branch = escapeHtml(c.lenderBranch || "");
+        const preview = escapeHtml(c.lastMessage || "No message preview");
+        const unread = Number(c.unreadAdmin || 0);
+        const category = escapeHtml(c.lastCategory || "general");
+        const time = formatShortTime(c.lastAt);
+        const active = activeEmail === emailRaw ? "active" : "";
 
-      const email = escapeHtml(emailRaw);
-      const name = escapeHtml(c.lenderName || emailRaw || "Unknown Institution");
-      const branch = escapeHtml(c.lenderBranch || "");
-      const preview = escapeHtml(c.lastMessage || "No message preview");
-      const unread = Number(c.unreadAdmin || 0);
-      const category = escapeHtml(c.lastCategory || "general");
-      const time = formatShortTime(c.lastAt);
-      const active = activeEmail === emailRaw ? "active" : "";
+        return `
+          <button class="conversation-card ${active}" type="button" data-email="${email}">
+            <div class="conversation-top">
+              <div>
+                <div class="conversation-name">${name}</div>
+                <div class="conversation-email">${email}</div>
+              </div>
 
-      return `
-        <button class="conversation-card ${active}" type="button" data-email="${email}">
-          <div class="conversation-top">
-            <div>
-              <div class="conversation-name">${name}</div>
-              <div class="conversation-email">${email}</div>
+              <div class="conversation-right">
+                ${unread > 0 ? `<span class="unread-dot">${unread}</span>` : ""}
+                <span class="conversation-time">${escapeHtml(time)}</span>
+              </div>
             </div>
 
-            <div class="conversation-right">
-              ${unread > 0 ? `<span class="unread-dot">${unread}</span>` : ""}
-              <span class="conversation-time">${escapeHtml(time)}</span>
+            <div class="conversation-branch">${branch || "No branch listed"}</div>
+
+            <div class="conversation-preview">${preview}</div>
+
+            <div class="conversation-tags">
+              <span>${category}</span>
+              ${c.lastHasAttachment ? `<span>📎 attachment</span>` : ""}
             </div>
-          </div>
-
-          <div class="conversation-branch">${branch || "No branch listed"}</div>
-
-          <div class="conversation-preview">${preview}</div>
-
-          <div class="conversation-tags">
-            <span>${category}</span>
-            ${c.lastHasAttachment ? `<span>📎 attachment</span>` : ""}
-          </div>
-        </button>
-      `;
-    }).join("");
+          </button>
+        `;
+      })
+      .join("");
 
     list.querySelectorAll(".conversation-card").forEach((btn) => {
       btn.addEventListener("click", function () {
@@ -141,30 +163,67 @@
 
   async function openConversation(email) {
     activeEmail = String(email || "").toLowerCase().trim();
+
     if (!activeEmail) return;
 
-    activeConversation = conversations.find((c) => c.lenderEmail === activeEmail) || null;
+    activeConversation =
+      conversations.find((c) => String(c.lenderEmail || "").toLowerCase().trim() === activeEmail) || null;
 
-    document.getElementById("emptyConversation").style.display = "none";
-    document.getElementById("activeConversation").style.display = "flex";
+    const emptyConversation = document.getElementById("emptyConversation");
+    const activeConversationEl = document.getElementById("activeConversation");
 
-    document.getElementById("activeLenderName").textContent =
-      activeConversation?.lenderName || "Unknown Institution";
+    if (emptyConversation) emptyConversation.style.display = "none";
+    if (activeConversationEl) activeConversationEl.style.display = "flex";
 
-    document.getElementById("activeLenderMeta").textContent =
-      `${activeEmail}${activeConversation?.lenderBranch ? " • " + activeConversation.lenderBranch : ""}`;
-
-    document.getElementById("activeCategoryBadge").textContent =
-      activeConversation?.lastCategory || "general";
-
+    renderActiveHeader();
     renderConversations();
+
     await loadThread(true);
+  }
+
+  function renderActiveHeader() {
+    const avatarEl = document.getElementById("activeLenderAvatar");
+    const nameEl = document.getElementById("activeLenderName");
+    const metaEl = document.getElementById("activeLenderMeta");
+    const badgeEl = document.getElementById("activeCategoryBadge");
+
+    const lenderName = activeConversation?.lenderName || "Unknown Institution";
+    const lenderBranch = activeConversation?.lenderBranch || "";
+    const logoUrl = getLogoFromConversation(activeConversation);
+    const initials = getInitials(lenderName);
+
+    if (avatarEl) {
+      if (logoUrl) {
+        avatarEl.innerHTML = `
+          <img
+            src="${escapeAttr(logoUrl)}"
+            alt="${escapeAttr(lenderName)}"
+            onerror="this.parentElement.innerHTML='<span>${escapeAttr(initials)}</span>';"
+          />
+        `;
+      } else {
+        avatarEl.innerHTML = `<span>${escapeHtml(initials)}</span>`;
+      }
+    }
+
+    if (nameEl) {
+      nameEl.textContent = lenderName;
+    }
+
+    if (metaEl) {
+      metaEl.textContent = `${activeEmail}${lenderBranch ? " • " + lenderBranch : ""}`;
+    }
+
+    if (badgeEl) {
+      badgeEl.textContent = activeConversation?.lastCategory || "general";
+    }
   }
 
   async function loadThread(forceScroll = true) {
     if (!activeEmail) return;
 
     const box = document.getElementById("adminChatMessages");
+
     if (!box) return;
 
     const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
@@ -188,38 +247,45 @@
       return;
     }
 
-    box.innerHTML = messages.map((m, index) => {
-      const isAdmin = m.senderRole === "superadmin";
-      const timeText = formatFullTime(m.sentAt || m.createdAt);
-      const attachmentHtml = renderAdminAttachmentHtml(m.attachment);
-      const avatarHtml = renderThreadAvatar(isAdmin, m);
+    box.innerHTML = messages
+      .map((m) => {
+        const isAdmin = m.senderRole === "superadmin";
+        const timeText = formatFullTime(m.sentAt || m.createdAt);
+        const attachmentHtml = renderAdminAttachmentHtml(m.attachment);
 
-      return `
-        <div class="admin-thread-msg ${isAdmin ? "admin-side" : "lender-side"}"
-             style="animation-delay:${Math.min(index * 25, 300)}ms;">
-          ${avatarHtml}
+        return `
+          <div class="admin-thread-msg ${isAdmin ? "admin-side" : "lender-side"}">
+            <div class="admin-thread-bubble">
+              <div class="admin-msg-meta">
+                <span>
+                  ${
+                    isAdmin
+                      ? escapeHtml(m.adminEmail || "LinkLedger Admin")
+                      : escapeHtml(m.lenderName || activeConversation?.lenderName || "Institution")
+                  }
+                </span>
 
-          <div class="admin-thread-bubble">
-            <div class="admin-glass-shine"></div>
+                <span>${escapeHtml(timeText)}</span>
+              </div>
 
-            <div class="admin-msg-meta">
-              <span>${isAdmin ? "LinkLedger Admin" : escapeHtml(m.lenderName || "Institution")}</span>
-              <span>${escapeHtml(timeText)}</span>
+              ${
+                m.message
+                  ? `
+                    <div class="admin-msg-text">
+                      ${escapeHtml(m.message || "")}
+                    </div>
+                  `
+                  : ""
+              }
+
+              ${attachmentHtml}
+
+              <div class="admin-lock">🔒</div>
             </div>
-
-            ${
-              m.message
-                ? `<div class="admin-msg-text">${escapeHtml(m.message || "")}</div>`
-                : ""
-            }
-
-            ${attachmentHtml}
-
-            <div class="admin-lock">🔒</div>
           </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      })
+      .join("");
 
     box.dataset.loaded = "1";
 
@@ -228,17 +294,6 @@
     }
 
     await loadConversations();
-  }
-
-  function renderThreadAvatar(isAdmin, message) {
-    const label = isAdmin ? "Admin" : (message.lenderName || "Institution");
-    const text = isAdmin ? "LL" : getInitials(label);
-
-    return `
-      <div class="admin-msg-avatar ${isAdmin ? "admin-avatar" : "lender-avatar"}">
-        ${escapeHtml(text)}
-      </div>
-    `;
   }
 
   function getInitials(value) {
@@ -283,7 +338,12 @@
 
     if (isPreviewableImage(fileUrl) || isPreviewableImage(fileName)) {
       return `
-        <a class="admin-image-link" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
+        <a
+          class="admin-image-link"
+          href="${escapeAttr(fileUrl)}"
+          target="_blank"
+          rel="noopener"
+        >
           <img
             class="admin-chat-image-preview"
             src="${escapeAttr(fileUrl)}"
@@ -295,8 +355,14 @@
     }
 
     return `
-      <a class="admin-attachment" href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener">
-        ${getAttachmentIcon(fileName)} ${escapeHtml(fileName)}
+      <a
+        class="admin-attachment"
+        href="${escapeAttr(fileUrl)}"
+        target="_blank"
+        rel="noopener"
+      >
+        ${getAttachmentIcon(fileName)}
+        ${escapeHtml(fileName)}
       </a>
     `;
   }
@@ -324,14 +390,13 @@
       setAdminSendingState(true);
 
       const fd = new FormData();
+
       fd.append("message", message);
       fd.append("category", category);
 
       if (selectedAdminFile) {
         fd.append("attachment", selectedAdminFile);
       }
-
-      showAdminTyping();
 
       const API_BASE_URL = getApiBaseUrl();
       const token = getToken();
@@ -346,25 +411,24 @@
 
       const data = await res.json().catch(() => null);
 
-      hideAdminTyping();
-
       if (!res.ok) {
         alert((data && data.message) || "Failed to send reply");
         return;
       }
 
       if (input) input.value = "";
+
       selectedAdminFile = null;
 
       const fileInput = document.getElementById("adminAttachment");
+
       if (fileInput) fileInput.value = "";
 
       renderAdminFilePreview();
-      await loadThread(true);
 
+      await loadThread(true);
     } catch (err) {
       console.error("ADMIN SEND REPLY ERROR:", err);
-      hideAdminTyping();
       alert("Failed to send reply.");
     } finally {
       setAdminSendingState(false);
@@ -380,7 +444,7 @@
 
     if (btn) {
       btn.disabled = state;
-      btn.textContent = state ? "Sending..." : "Send Reply";
+      btn.textContent = state ? "Sending..." : "Send";
     }
 
     if (input) input.disabled = state;
@@ -389,6 +453,7 @@
 
   function renderAdminFilePreview() {
     const box = document.getElementById("adminFilePreview");
+
     if (!box) return;
 
     if (!selectedAdminFile) {
@@ -398,54 +463,47 @@
     }
 
     const fileName = selectedAdminFile.name || "Selected file";
-    const canPreview = isPreviewableImage(fileName);
-    const tempUrl = canPreview ? URL.createObjectURL(selectedAdminFile) : "";
 
     box.style.display = "flex";
+
     box.innerHTML = `
-      <div class="admin-selected-file">
-        ${
-          canPreview
-            ? `
-              <img
-                class="admin-selected-file-img"
-                src="${escapeAttr(tempUrl)}"
-                alt="${escapeAttr(fileName)}"
-              />
-            `
-            : `
-              <span class="admin-selected-file-icon">${getAttachmentIcon(fileName)}</span>
-            `
-        }
-
-        <span>${escapeHtml(fileName)}</span>
-      </div>
-
+      <div>${escapeHtml(fileName)}</div>
       <button id="removeAdminFile" type="button">Remove</button>
     `;
 
     document.getElementById("removeAdminFile").onclick = function () {
       selectedAdminFile = null;
+
       const input = document.getElementById("adminAttachment");
+
       if (input) input.value = "";
+
       renderAdminFilePreview();
     };
   }
 
-  function showAdminTyping() {
-    const el = document.getElementById("adminTyping");
-    if (el) el.style.display = "flex";
-  }
+  function toggleInboxPanel() {
+    const shell = document.querySelector(".admin-inbox-shell");
+    const floating = document.getElementById("adminFloatingInbox");
 
-  function hideAdminTyping() {
-    const el = document.getElementById("adminTyping");
-    if (el) el.style.display = "none";
+    if (!shell) return;
+
+    inboxCollapsed = !inboxCollapsed;
+
+    shell.style.display = inboxCollapsed ? "none" : "grid";
+
+    if (floating) {
+      floating.classList.toggle("is-closed", inboxCollapsed);
+      floating.title = inboxCollapsed ? "Open Inbox" : "Close Inbox";
+    }
   }
 
   function startAdminAutoRefresh() {
     if (adminRefreshTimer) clearInterval(adminRefreshTimer);
 
     adminRefreshTimer = setInterval(function () {
+      if (inboxCollapsed) return;
+
       if (activeEmail && !isSendingAdmin) {
         loadThread(false);
       } else {
@@ -456,9 +514,11 @@
 
   function bindEvents() {
     document.getElementById("refreshInboxBtn")?.addEventListener("click", loadConversations);
+
     document.getElementById("reloadThreadBtn")?.addEventListener("click", function () {
       loadThread(true);
     });
+
     document.getElementById("sendAdminReplyBtn")?.addEventListener("click", sendAdminReply);
 
     document.getElementById("conversationSearch")?.addEventListener("input", renderConversations);
@@ -466,8 +526,11 @@
     document.querySelectorAll(".inbox-filter").forEach((btn) => {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".inbox-filter").forEach((b) => b.classList.remove("active"));
+
         this.classList.add("active");
+
         activeFilter = this.dataset.filter || "all";
+
         renderConversations();
       });
     });
@@ -478,26 +541,34 @@
 
     document.getElementById("adminAttachment")?.addEventListener("change", function (e) {
       selectedAdminFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+
       renderAdminFilePreview();
     });
 
-    document.getElementById("adminReplyInput")?.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        sendAdminReply();
-      }
+    document.getElementById("adminFloatingInbox")?.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleInboxPanel();
     });
   }
 
   function formatShortTime(value) {
     if (!value) return "";
+
     const d = new Date(value);
-    return d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+    return d.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   }
 
   function formatFullTime(value) {
     if (!value) return "";
+
     const d = new Date(value);
+
     return d.toLocaleString([], {
       year: "numeric",
       month: "short",
