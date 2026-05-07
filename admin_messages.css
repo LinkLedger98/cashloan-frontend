@@ -627,3 +627,29 @@
     padding-right: 76px;
   }
 }
+
+/* =========================================
+   HIDE SEND BUTTON (ENTER SEND ENABLED)
+========================================= */
+
+#sendAdminReplyBtn {
+  display: none !important;
+}
+
+/* =========================================
+   CLEAN MINIMIZE / RESTORE
+========================================= */
+
+.admin-inbox-shell {
+  transition:
+    opacity .18s ease,
+    transform .18s ease;
+}
+
+.admin-inbox-shell.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform:
+    translateX(-50%)
+    scale(.985);
+}

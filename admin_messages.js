@@ -382,7 +382,6 @@
     const category = String(categoryEl?.value || "general").trim();
 
     if (!message && !selectedAdminFile) {
-      alert("Type a reply or attach a file first.");
       return;
     }
 
@@ -427,9 +426,11 @@
       renderAdminFilePreview();
 
       await loadThread(true);
+
     } catch (err) {
       console.error("ADMIN SEND REPLY ERROR:", err);
       alert("Failed to send reply.");
+
     } finally {
       setAdminSendingState(false);
     }
@@ -438,14 +439,8 @@
   function setAdminSendingState(state) {
     isSendingAdmin = state;
 
-    const btn = document.getElementById("sendAdminReplyBtn");
     const input = document.getElementById("adminReplyInput");
     const attach = document.getElementById("adminAttachBtn");
-
-    if (btn) {
-      btn.disabled = state;
-      btn.textContent = state ? "Sending..." : "Send";
-    }
 
     if (input) input.disabled = state;
     if (attach) attach.disabled = state;
@@ -482,20 +477,17 @@
     };
   }
 
+  /* ✅ SIMPLE MINIMIZE ONLY */
   function toggleInboxPanel() {
     const shell = document.querySelector(".admin-inbox-shell");
-    const floating = document.getElementById("adminFloatingInbox");
 
     if (!shell) return;
 
     inboxCollapsed = !inboxCollapsed;
 
-    shell.style.display = inboxCollapsed ? "none" : "grid";
-
-    if (floating) {
-      floating.classList.toggle("is-closed", inboxCollapsed);
-      floating.title = inboxCollapsed ? "Open Inbox" : "Close Inbox";
-    }
+    shell.style.display = inboxCollapsed
+      ? "none"
+      : "grid";
   }
 
   function startAdminAutoRefresh() {
@@ -513,42 +505,71 @@
   }
 
   function bindEvents() {
-    document.getElementById("refreshInboxBtn")?.addEventListener("click", loadConversations);
 
-    document.getElementById("reloadThreadBtn")?.addEventListener("click", function () {
-      loadThread(true);
-    });
+    document.getElementById("refreshInboxBtn")
+      ?.addEventListener("click", loadConversations);
 
-    document.getElementById("sendAdminReplyBtn")?.addEventListener("click", sendAdminReply);
-
-    document.getElementById("conversationSearch")?.addEventListener("input", renderConversations);
-
-    document.querySelectorAll(".inbox-filter").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        document.querySelectorAll(".inbox-filter").forEach((b) => b.classList.remove("active"));
-
-        this.classList.add("active");
-
-        activeFilter = this.dataset.filter || "all";
-
-        renderConversations();
+    document.getElementById("reloadThreadBtn")
+      ?.addEventListener("click", function () {
+        loadThread(true);
       });
-    });
 
-    document.getElementById("adminAttachBtn")?.addEventListener("click", function () {
-      document.getElementById("adminAttachment")?.click();
-    });
+    /* ✅ ENTER TO SEND */
+    document.getElementById("adminReplyInput")
+      ?.addEventListener("keydown", function (e) {
 
-    document.getElementById("adminAttachment")?.addEventListener("change", function (e) {
-      selectedAdminFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendAdminReply();
+        }
 
-      renderAdminFilePreview();
-    });
+      });
 
-    document.getElementById("adminFloatingInbox")?.addEventListener("click", function (e) {
-      e.preventDefault();
-      toggleInboxPanel();
-    });
+    document.getElementById("conversationSearch")
+      ?.addEventListener("input", renderConversations);
+
+    document.querySelectorAll(".inbox-filter")
+      .forEach((btn) => {
+
+        btn.addEventListener("click", function () {
+
+          document.querySelectorAll(".inbox-filter")
+            .forEach((b) => b.classList.remove("active"));
+
+          this.classList.add("active");
+
+          activeFilter = this.dataset.filter || "all";
+
+          renderConversations();
+
+        });
+
+      });
+
+    document.getElementById("adminAttachBtn")
+      ?.addEventListener("click", function () {
+        document.getElementById("adminAttachment")?.click();
+      });
+
+    document.getElementById("adminAttachment")
+      ?.addEventListener("change", function (e) {
+
+        selectedAdminFile =
+          e.target.files && e.target.files[0]
+            ? e.target.files[0]
+            : null;
+
+        renderAdminFilePreview();
+
+      });
+
+    document.getElementById("adminFloatingInbox")
+      ?.addEventListener("click", function (e) {
+
+        e.preventDefault();
+        toggleInboxPanel();
+
+      });
   }
 
   function formatShortTime(value) {
@@ -592,8 +613,11 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+
     bindEvents();
     loadConversations();
     startAdminAutoRefresh();
+
   });
+
 })();
