@@ -129,20 +129,78 @@
         }
       });
 
-      // ================================
-      // 🎯 UPDATE UI (SAFE)
-      // ================================
-      const box = document.getElementById("riskBox");
-      const list = document.getElementById("riskList");
+     // ================================
+// 🎯 CLICKABLE RISK UI
+// ================================
+window.jumpToAudit = function(keyword) {
 
-      if (box && list) {
-        if (alerts.length === 0) {
-          box.style.display = "none";
-        } else {
-          box.style.display = "block";
-          list.innerHTML = alerts.map(a => `<div>${a}</div>`).join("");
-        }
-      }
+  const cards = document.querySelectorAll(".audit-premium-card");
+
+  let found = false;
+
+  cards.forEach(card => {
+
+    card.style.outline = "";
+    card.style.boxShadow = "";
+
+    const text = String(card.innerText || "").toLowerCase();
+
+    if (text.includes(String(keyword || "").toLowerCase())) {
+
+      found = true;
+
+      card.style.outline = "2px solid #ff4db8";
+      card.style.boxShadow = "0 0 0 4px rgba(255,77,184,.18)";
+
+      card.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
+  });
+
+  if (!found) {
+    alert("No matching audit log found.");
+  }
+};
+
+const box = document.getElementById("riskBox");
+const list = document.getElementById("riskList");
+
+if (box && list) {
+
+  if (alerts.length === 0) {
+
+    box.style.display = "none";
+
+  } else {
+
+    box.style.display = "block";
+
+    list.innerHTML = alerts.map(a => {
+
+      const keyword =
+        String(a)
+          .replace(/[^\w\s@.-]/g, " ")
+          .trim();
+
+      return `
+        <button
+          class="btn-ghost btn-sm"
+          style="
+            width:100%;
+            margin-bottom:6px;
+            text-align:left;
+            justify-content:flex-start;
+          "
+          onclick="jumpToAudit('${escapeHtml(keyword)}')"
+        >
+          ${escapeHtml(a)}
+        </button>
+      `;
+    }).join("");
+  }
+}
 
       // ================================
       // 🏢 DASHBOARD (SAFE)
