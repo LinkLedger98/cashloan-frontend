@@ -374,9 +374,24 @@
                 : ""
             }
 
-            ${attachmentHtml}
+           ${attachmentHtml}
 
-            <div class="ll-locked">🔒</div>
+${
+  m.metaLink && m.metaLabel
+    ? `
+      <div class="ll-msg-action-wrap">
+        <a
+          class="ll-msg-action-btn"
+          href="${escapeAttr(m.metaLink)}"
+        >
+          ${escapeHtml(m.metaLabel)}
+        </a>
+      </div>
+    `
+    : ""
+}
+
+<div class="ll-locked">🔒</div>
           </div>
         `;
 

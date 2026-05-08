@@ -33,6 +33,54 @@
     return { ok: res.ok, data, status: res.status };
   }
 
+  async function openProtectedAttachment(url) {
+
+  try {
+
+    if (!url) {
+      alert("No file link found.");
+      return;
+    }
+
+    if (typeof openFileWithAuth === "function") {
+      openFileWithAuth(url, "consent-file");
+      return;
+    }
+
+    const API_BASE_URL = getApiBaseUrl();
+    const token = getToken();
+
+    const res = await fetch(`${API_BASE_URL}${url}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+
+    if (!res.ok) {
+      alert("Failed to open consent file.");
+      return;
+    }
+
+    const blob = await res.blob();
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+    setTimeout(function () {
+      URL.revokeObjectURL(blobUrl);
+    }, 60000);
+
+  } catch (err) {
+
+    console.error("OPEN PROTECTED ATTACHMENT ERROR:", err);
+
+    alert("Failed to open consent file.");
+  }
+}
+
+window.openAdminProtectedAttachment = openProtectedAttachment;
+
   function getLogoFromConversation(c) {
     return (
       c?.logoUrl ||
@@ -278,9 +326,24 @@
                   : ""
               }
 
-              ${attachmentHtml}
+             ${attachmentHtml}
 
-              <div class="admin-lock">🔒</div>
+${
+  m.metaLink && m.metaLabel
+    ? `
+      <div class="admin-msg-action-wrap">
+        <a
+          class="admin-msg-action-btn"
+          href="${escapeAttr(m.metaLink)}"
+        >
+          ${escapeHtml(m.metaLabel)}
+        </a>
+      </div>
+    `
+    : ""
+}
+
+<div class="admin-lock">🔒</div>
             </div>
           </div>
         `;
@@ -330,42 +393,62 @@
     return "📎";
   }
 
-  function renderAdminAttachmentHtml(attachment) {
-    if (!attachment || !attachment.fileUrl) return "";
+ function renderAdminAttachmentHtml(attachment) {
 
-    const fileUrl = attachment.fileUrl;
-    const fileName = attachment.fileName || "Open attachment";
+  if (!attachment) return "";
 
-    if (isPreviewableImage(fileUrl) || isPreviewableImage(fileName)) {
-      return `
-        <a
-          class="admin-image-link"
-          href="${escapeAttr(fileUrl)}"
-          target="_blank"
-          rel="noopener"
-        >
-          <img
-            class="admin-chat-image-preview"
-            src="${escapeAttr(fileUrl)}"
-            alt="${escapeAttr(fileName)}"
-            loading="lazy"
-          />
-        </a>
-      `;
-    }
+  const protectedUrl = attachment.protectedUrl || "";
+  const fileUrl = attachment.fileUrl || "";
+  const fileName = attachment.fileName || "Open attachment";
+
+  // ✅ CONSENT FILES (protected backend route)
+  if (protectedUrl) {
+
+    return `
+      <button
+        class="admin-attachment admin-protected-attachment"
+        type="button"
+        onclick="openAdminProtectedAttachment('${escapeAttr(protectedUrl)}')"
+      >
+        📄 View Consent File • ${escapeHtml(fileName)}
+      </button>
+    `;
+  }
+
+  // ✅ NORMAL ATTACHMENTS
+  if (!fileUrl) return "";
+
+  if (isPreviewableImage(fileUrl) || isPreviewableImage(fileName)) {
 
     return `
       <a
-        class="admin-attachment"
+        class="admin-image-link"
         href="${escapeAttr(fileUrl)}"
         target="_blank"
         rel="noopener"
       >
-        ${getAttachmentIcon(fileName)}
-        ${escapeHtml(fileName)}
+        <img
+          class="admin-chat-image-preview"
+          src="${escapeAttr(fileUrl)}"
+          alt="${escapeAttr(fileName)}"
+          loading="lazy"
+        />
       </a>
     `;
   }
+
+  return `
+    <a
+      class="admin-attachment"
+      href="${escapeAttr(fileUrl)}"
+      target="_blank"
+      rel="noopener"
+    >
+      ${getAttachmentIcon(fileName)}
+      ${escapeHtml(fileName)}
+    </a>
+  `;
+}
 
   async function sendAdminReply() {
     if (isSendingAdmin) return;
