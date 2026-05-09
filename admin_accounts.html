@@ -43,7 +43,7 @@
     <!-- Stats -->
     <div class="admin-stats-grid" style="margin-top:16px;">
       <div class="admin-stat-card">
-        <div class="stat-label">Institutions</div>
+        <div class="stat-label">Accounts</div>
         <div class="stat-value" id="statInstitutions">—</div>
       </div>
 
@@ -60,10 +60,10 @@
 
     <div class="card" style="margin-top:16px;">
 
-      <!-- Create Institution -->
+      <!-- Create Account -->
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
         <div>
-          <h2>Create Institution Account</h2>
+          <h2>Create Account</h2>
           <p class="small" style="margin:6px 0 0 0;">
             Use Admin Token (recommended) or ADMIN_KEY (legacy fallback).
           </p>
@@ -112,32 +112,41 @@
           </div>
         </div>
 
-        <button class="btn-primary" type="submit">Create Institution</button>
+        <button class="btn-primary" type="submit">Create Account</button>
         <p id="msg" class="small" style="margin-top:10px;"></p>
       </form>
 
       <!-- Requests -->
-      <div style="margin-top:18px;">
-        <h2>Signup Requests</h2>
-        <button class="btn-ghost btn-sm" id="reloadRequestsBtn">Reload</button>
-        <div id="requestsList" style="margin-top:10px;"></div>
-      </div>
+      <details style="margin-top:18px;">
+        <summary style="cursor:pointer; font-weight:800; font-size:18px;">
+          Signup Requests
+        </summary>
 
-      <!-- Institutions -->
-      <div style="margin-top:18px;">
-        <h2>Institutions</h2>
-
-        <div class="row">
-          <div>
-            <input id="lendersSearch" placeholder="Search..." />
-          </div>
-          <div>
-            <button class="btn-ghost btn-sm" id="reloadLendersBtn">Reload</button>
-          </div>
+        <div style="margin-top:10px;">
+          <button class="btn-ghost btn-sm" id="reloadRequestsBtn">Reload</button>
+          <div id="requestsList" style="margin-top:10px;"></div>
         </div>
+      </details>
 
-        <div id="lendersList" style="margin-top:10px;"></div>
-      </div>
+      <!-- Accounts -->
+      <details style="margin-top:18px;">
+        <summary style="cursor:pointer; font-weight:800; font-size:18px;">
+          Accounts
+        </summary>
+
+        <div style="margin-top:10px;">
+          <div class="row">
+            <div>
+              <input id="lendersSearch" placeholder="Search..." />
+            </div>
+            <div>
+              <button class="btn-ghost btn-sm" id="reloadLendersBtn">Reload</button>
+            </div>
+          </div>
+
+          <div id="lendersList" style="margin-top:10px;"></div>
+        </div>
+      </details>
 
     </div>
 
