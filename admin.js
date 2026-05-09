@@ -495,10 +495,19 @@ window.openUpdateLender = async function (id) {
         }
 
         // ✅ USE YOUR EXISTING TOAST SYSTEM
-        toast(`${type} logged successfully`, {
-          title: "Admin Action",
-          ttlMs: 3000
-        });
+        // ✅ SAFE TOAST FALLBACK
+if (typeof toast === "function") {
+
+  toast(`${type} logged successfully`, {
+    title: "Admin Action",
+    ttlMs: 3000
+  });
+
+} else {
+
+  alert(`${type} logged successfully`);
+
+}
 
       } catch (e) {
         console.error(e);
