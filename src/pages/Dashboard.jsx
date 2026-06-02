@@ -952,20 +952,79 @@ function closeMyCustomersAndScrollTop() {
     );
   }
 
-  function renderClientRow(client, index) {
-  const id = String(client._id || client.id || "");
-  const isSelectedClient = selectedClientId === id;
-  const stUpper = String(client.status || "").toUpperCase();
-  const badgeClass = statusBadgeClass(stUpper);
-  const due = client.dueDate ? fmtDate(client.dueDate) : "";
-  const paid = client.paidDate ? fmtDate(client.paidDate) : "";
-  const editOpen = Boolean(openClientEditIds[id]);
+  function renderDisputeRow(dispute) {
+    const id = String(dispute?._id || dispute?.id || "");
+    const nationalId = dispute?.nationalId || "—";
 
-  const edit = clientEdits[id] || {
-    status: String(client.status || "owing").toLowerCase(),
-    dueDate: fmtDateInput(client.dueDate),
-    paidDate: fmtDateInput(client.paidDate)
-  };
+    const rawStatus = String(
+      dispute?.adminStatus || dispute?.status || "pending"
+    ).toLowerCase();
+
+    const label =
+      rawStatus === "investigating"
+        ? "Investigating"
+        : rawStatus === "resolved"
+        ? "Resolved"
+        : rawStatus === "rejected"
+        ? "Rejected"
+        : "Pending";
+
+    const submittedAt = dispute?.createdAt
+      ? new Date(dispute.createdAt).toLocaleString()
+      : "";
+
+    return (
+      <div className="result-item" key={id || `${nationalId}-${submittedAt}`}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>
+          Dispute Record • National ID: <b>{nationalId}</b>
+        </div>
+
+        <div className="small">
+          <b>Status:</b> {label}
+          {submittedAt ? ` • Submitted: ${submittedAt}` : ""}
+        </div>
+
+        <div className="small" style={{ marginTop: 4 }}>
+          <b>Against:</b>{" "}
+          {dispute?.againstCashloanName ||
+            dispute?.againstName ||
+            dispute?.againstBusinessName ||
+            "Unknown Institution"}
+          {dispute?.againstBranch ? ` • ${dispute.againstBranch}` : ""}
+          {dispute?.againstPhone ? ` • ${dispute.againstPhone}` : ""}
+        </div>
+
+        {dispute?.notes ? (
+          <div className="small" style={{ marginTop: 6 }}>
+            <b>Reason:</b> {dispute.notes}
+          </div>
+        ) : null}
+
+        {dispute?.adminNote ? (
+          <div className="small" style={{ marginTop: 8 }}>
+            <b>Admin Response:</b>
+            <br />
+            {dispute.adminNote}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderClientRow(client, index) {
+    const id = String(client._id || client.id || "");
+    const isSelectedClient = selectedClientId === id;
+    const stUpper = String(client.status || "").toUpperCase();
+    const badgeClass = statusBadgeClass(stUpper);
+    const due = client.dueDate ? fmtDate(client.dueDate) : "";
+    const paid = client.paidDate ? fmtDate(client.paidDate) : "";
+    const editOpen = Boolean(openClientEditIds[id]);
+
+    const edit = clientEdits[id] || {
+      status: String(client.status || "owing").toLowerCase(),
+      dueDate: fmtDateInput(client.dueDate),
+      paidDate: fmtDateInput(client.paidDate)
+    };
 
   return (
     <div className="result-item" key={id || `${client.nationalId}-${client.createdAt}`}>
