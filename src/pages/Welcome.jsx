@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "../assets/logo.png";
+import logo2 from "../assets/logo2.png";
 import "../styles/welcome.css";
 
 export default function Welcome() {
@@ -41,10 +41,10 @@ export default function Welcome() {
         <div className="logo-hero-inner">
           <div className="welcome-kicker">Welcome</div>
 
-         <img
+  <img
+  src={logo2}
+  alt="LinkLedger"
   className="hero-logo"
-  src={logo}
-  alt="LinkLedger Logo"
 />
          
         </div>

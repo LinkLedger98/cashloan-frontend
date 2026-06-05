@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import CinematicHero from "./CinematicHero";
 
 import "../styles/landing.css";
 
@@ -6,7 +7,10 @@ export default function Landing() {
   const year = new Date().getFullYear();
 
   return (
-    <main className="landing-page">
+  <>
+  <CinematicHero />
+
+  <main id="main-content" className="landing-page">
       <div className="container">
         <div className="topbar">
           <div className="brand">
@@ -304,7 +308,8 @@ export default function Landing() {
             <Link to="/login">Sign in</Link>
           </div>
         </div>
-      </div>
+           </div>
     </main>
+    </>
   );
 }

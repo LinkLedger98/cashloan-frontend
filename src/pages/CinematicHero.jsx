@@ -1,51 +1,102 @@
-// src/components/CinematicHero.jsx
-import { motion } from "framer-motion";
+import logo2 from "../assets/logo2.png";
 import "../styles/cinematicHero.css";
+import {
+  FiShield,
+  FiDatabase,
+  FiBarChart2
+} from "react-icons/fi";
 
 export default function CinematicHero() {
   return (
-    <section className="cinematic-hero">
-      <div className="hero-glow hero-glow-one" />
-      <div className="hero-glow hero-glow-two" />
+    <section className="cinematic-intro">
 
-      <motion.div
-        className="floating-card card-one"
-        animate={{ y: [0, -18, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-      >
-        Consent verified
-      </motion.div>
+<nav className="hero-nav">
 
-      <motion.div
-        className="floating-card card-two"
-        animate={{ y: [0, 16, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      >
-        Audit trail active
-      </motion.div>
+ <div className="hero-brand-block">
+  <div className="hero-slogan">
+    LINKLEDGER
+  </div>
 
-      <motion.div
-        className="hero-content"
-        initial={{ opacity: 0, y: 26 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.1, ease: "easeOut" }}
-      >
-        <p className="hero-kicker">Botswana-first lending transparency</p>
+  <div className="hero-slogan">
+    WHERE TRUST MEETS TRANSPARENCY
+  </div>
+</div>
 
-        <h1>LinkLedger</h1>
+  <div className="hero-nav-actions">
+    <a href="/login" className="hero-btn-dark">
+      Sign In
+    </a>
+  </div>
 
-        <p className="hero-subtitle">
-          Borrower verification, consent tracking, dispute visibility and audit
-          accountability for responsible lenders.
-        </p>
+</nav>
 
-        <p className="hero-tagline">Clarity. Control. Confidence.</p>
+      <div className="hero-center">
 
-        <div className="hero-actions">
-          <a href="/login" className="hero-btn primary">Get Started</a>
-          <a href="/compliance" className="hero-btn secondary">View Compliance</a>
+        <div className="hero-left">
+
+        <h1>
+  Trust.
+  <br />
+  <span className="pink">Transparency.</span>
+  <br />
+  Together.
+</h1>
+          <p>
+            Building trust through transparency,
+            consent, and responsible lending.
+          </p>
+
+          <a href="#main-content" className="hero-btn-pink">
+            Get Started
+          </a>
+
         </div>
-      </motion.div>
+
+ <div className="hero-logo-stage">
+
+  <div className="orbit orbit-one" />
+
+  <img
+    src={logo2}
+    alt="LinkLedger Logo"
+    className="hero-main-logo"
+  />
+
+</div>
+
+<div className="hero-right">
+
+  <div className="hero-feature">
+    <FiShield className="feature-icon" />
+
+    <div>
+      <h3>Verify with confidence</h3>
+      <p>National ID-based verification with consent.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <FiDatabase className="feature-icon" />
+
+    <div>
+      <h3>Reduce risk</h3>
+      <p>Prevent fraud and repeat defaults.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <FiBarChart2 className="feature-icon" />
+
+    <div>
+      <h3>Make better decisions</h3>
+      <p>Accurate data. Clear insights.</p>
+    </div>
+  </div>
+
+</div>
+
+      </div>
+
     </section>
   );
 }

@@ -660,3 +660,10 @@
 .landing-page span {
   opacity: 1 !important;
 }
+
+.landing-page .hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
