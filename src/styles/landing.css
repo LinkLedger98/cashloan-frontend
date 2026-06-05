@@ -667,3 +667,9 @@
   flex-wrap: wrap;
   margin-top: 12px;
 }
+
+.landing-page .brand-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}

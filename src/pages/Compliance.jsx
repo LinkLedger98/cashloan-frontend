@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import logo from "../assets/logo.png";
 import "../styles/landing.css";
 
 export default function Compliance() {
@@ -50,10 +51,14 @@ export default function Compliance() {
     <main className="landing-page">
       <div className="container">
         <div className="topbar">
-          <div className="brand">
-            <div className="brand-badge"></div>
-            <h1>LinkLedger</h1>
-          </div>
+         <div className="brand">
+  <img
+    src={logo}
+    alt="LinkLedger"
+    className="brand-logo"
+  />
+  <h1>LinkLedger</h1>
+</div>
 
           <div className="nav-actions">
             <Link className="btn-ghost btn-sm" to="/">
