@@ -5,6 +5,7 @@ import AdminMessenger from "./components/adminMessenger/AdminMessenger";
 
 import ImportedAdminConsents from "./pages/AdminConsents";
 import linkLedgerLogo from "./assets/logo.png";
+import logo2 from "./assets/logo2.png";
 
 import Landing from "./pages/Landing";
 import Compliance from "./pages/Compliance";
@@ -1398,7 +1399,11 @@ function Login() {
     <AuthShell>
       <div className="ll-auth-topbar">
         <div className="ll-brand">
-          <span className="ll-brand-dot" />
+          <img
+  src={logo2}
+  alt="LinkLedger"
+  className="ll-auth-logo"
+/>
           <h1 className="ll-brand-title">LinkLedger</h1>
         </div>
 
@@ -1521,7 +1526,11 @@ function Signup() {
     <AuthShell>
       <div className="ll-auth-topbar">
         <div className="ll-brand">
-          <span className="ll-brand-dot" />
+          <img
+  src={logo2}
+  alt="LinkLedger"
+  className="ll-auth-logo"
+/>
           <h1 className="ll-brand-title">LinkLedger</h1>
         </div>
 

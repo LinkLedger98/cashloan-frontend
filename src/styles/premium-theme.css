@@ -2609,3 +2609,14 @@
   background: rgba(255, 58, 167, 0.45);
   border-radius: 999px;
 }
+
+.ll-auth-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+
+  filter:
+    drop-shadow(0 0 8px rgba(255,31,143,.25));
+
+  flex-shrink: 0;
+}
