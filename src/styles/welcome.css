@@ -204,6 +204,8 @@
   height:auto;
   display:block;
 
+  animation: welcomeBreath 4.5s ease-in-out infinite;
+
   filter:drop-shadow(0 18px 28px rgba(255,46,166,0.18));
 }
 
@@ -403,4 +405,19 @@
 body:has(.welcome-page),
 #root:has(.welcome-page) {
   background: #f5f3f7 !important;
+}
+
+@keyframes welcomeBreath {
+
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.10);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
