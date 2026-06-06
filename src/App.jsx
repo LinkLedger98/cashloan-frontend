@@ -1401,7 +1401,7 @@ function Login() {
         <div className="ll-brand">
           <img
   src={logo2}
-  alt="LinkLedger"
+  alt=""
   className="ll-auth-logo"
 />
           <h1 className="ll-brand-title">LinkLedger</h1>
@@ -1528,7 +1528,7 @@ function Signup() {
         <div className="ll-brand">
           <img
   src={logo2}
-  alt="LinkLedger"
+  alt=""
   className="ll-auth-logo"
 />
           <h1 className="ll-brand-title">LinkLedger</h1>
