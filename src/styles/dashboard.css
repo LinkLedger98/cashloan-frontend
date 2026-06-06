@@ -705,3 +705,10 @@ hr {
 #myClientsList::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 105, 180, 0.7);
 }
+
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}

@@ -299,7 +299,7 @@ export default function DashboardMessenger() {
   <img
   className="ll-chat-logo"
   src="/assets/logo.png"
-  alt="LinkLedger Support"
+  alt=""
   onError={(e) => {
     e.currentTarget.src = linkLedgerLogo;
   }}

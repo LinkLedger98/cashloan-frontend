@@ -2620,3 +2620,11 @@
 
   flex-shrink: 0;
 }
+
+.ll-admin-logo{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+  display:block;
+}
+

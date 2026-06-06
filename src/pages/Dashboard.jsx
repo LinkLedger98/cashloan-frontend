@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../styles/dashboard.css";
+import logo from "../assets/logo2.png";
 
 const FALLBACK_API_BASE = "https://cashloan-backend.onrender.com";
 
@@ -1164,10 +1165,14 @@ function closeMyCustomersAndScrollTop() {
 
       <div className="container">
         <div className="topbar">
-          <div className="brand">
-            <div className="brand-badge"></div>
-            <h1>LinkLedger</h1>
-          </div>
+         <div className="brand">
+  <img
+    src={logo}
+    alt=""
+    className="brand-logo"
+  />
+  <h1>LinkLedger</h1>
+</div>
 
           <div
             style={{

@@ -264,10 +264,16 @@ function AdminTopbar({ title, active }) {
   return (
     <>
       <div className="ll-topbar">
-        <div className="ll-brand">
-          <span className="ll-brand-dot" />
-          <h1 className="ll-brand-title">{title || `LinkLedger • ${roleLabel}`}</h1>
-        </div>
+       <div className="ll-brand">
+  <img
+    src={logo2}
+    alt=""
+    className="ll-admin-logo"
+  />
+  <h1 className="ll-brand-title">
+    {title || `LinkLedger • ${roleLabel}`}
+  </h1>
+</div>
 
         <div className="ll-top-actions">
           <span className="ll-pill">{roleLabel}: {email}</span>
@@ -306,11 +312,15 @@ function DashboardTopbar() {
   }
 
   return (
-    <div className="ll-topbar">
-      <div className="ll-brand">
-        <span className="ll-brand-dot" />
-        <h1 className="ll-brand-title">LinkLedger</h1>
-      </div>
+     <div className="ll-topbar">
+  <div className="ll-brand">
+    <img
+      src={logo2}
+      alt=""
+      className="ll-admin-logo"
+    />
+    <h1 className="ll-brand-title">LinkLedger</h1>
+  </div>
 
       <div className="ll-top-actions">
         <span className="ll-pill">Account: {email}</span>
@@ -1729,10 +1739,14 @@ function SetPassword() {
   return (
     <AuthShell>
       <div className="ll-auth-topbar">
-        <div className="ll-brand">
-          <span className="ll-brand-dot" />
-          <h1 className="ll-brand-title">LinkLedger</h1>
-        </div>
+  <div className="ll-brand">
+    <img
+      src={logo2}
+      alt=""
+      className="ll-admin-logo"
+    />
+    <h1 className="ll-brand-title">LinkLedger</h1>
+  </div>
 
         <div className="ll-row">
           <Link className="ll-btn-ghost" to="/">
@@ -2301,15 +2315,15 @@ const pendingPayments = institutionLenders.filter((u) => {
             fontSize: 18
           }}
         >
-          <span
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 999,
-              background: "#ff3aa7",
-              boxShadow: "0 0 0 6px rgba(255,58,167,.12)"
-            }}
-          />
+         <img
+  src={logo2}
+  alt=""
+  style={{
+    width: 42,
+    height: 42,
+    objectFit: "contain"
+  }}
+/>
           {`LinkLedger • ${getRoleLabel()}`}
         </button>
 
