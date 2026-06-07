@@ -1496,7 +1496,7 @@ function Signup() {
     setMsg("Submitting request...");
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/requests`, {
+      const res = await fetch(`${API_BASE_URL}/api/requests/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
