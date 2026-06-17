@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../styles/dashboard.css";
-import logo from "../assets/logo2.png";
 
 const FALLBACK_API_BASE = "https://cashloan-backend.onrender.com";
 
@@ -70,29 +69,6 @@ function statusBadgeClass(status) {
   return "";
 }
 
-function riskTone(risk) {
-  if (risk === "red") {
-    return {
-      pill: "High Risk",
-      emoji: "🔴",
-      className: "overdue"
-    };
-  }
-
-  if (risk === "yellow") {
-    return {
-      pill: "Moderate Risk",
-      emoji: "🟡",
-      className: "owing"
-    };
-  }
-
-  return {
-    pill: "Low Risk",
-    emoji: "🟢",
-    className: "paid"
-  };
-}
 
 function isAllowedImageExt(name) {
   const n = String(name || "").toLowerCase().trim();
@@ -215,18 +191,35 @@ export default function Dashboard() {
   const [clientEdits, setClientEdits] = useState({});
   const [openClientEditIds, setOpenClientEditIds] = useState({});
 
-  const [myDisputes, setMyDisputes] = useState([]);
-  const [disputesLoading, setDisputesLoading] = useState(false);
-  const [changedDisputeIds, setChangedDisputeIds] = useState([]);
   const [toast, setToast] = useState("");
+  const [consentFiles, setConsentFiles] = useState({});
 
-  const lastDisputesMapRef = useRef({});
-  const lastDisputesHashRef = useRef(null);
+ const sortedMyClients = useMemo(() => {
+  const today = new Date();
 
-  const sortedMyClients = useMemo(() => {
   return [...myClients].sort((a, b) => {
+    const aRenewal = a.consentRenewalDate
+      ? new Date(a.consentRenewalDate)
+      : null;
+
+    const bRenewal = b.consentRenewalDate
+      ? new Date(b.consentRenewalDate)
+      : null;
+
+    const aExpiring =
+      aRenewal &&
+      (aRenewal - today) / (1000 * 60 * 60 * 24) <= 30;
+
+    const bExpiring =
+      bRenewal &&
+      (bRenewal - today) / (1000 * 60 * 60 * 24) <= 30;
+
+    if (aExpiring && !bExpiring) return -1;
+    if (!aExpiring && bExpiring) return 1;
+
     const nameA = String(a.fullName || "").toLowerCase().trim();
     const nameB = String(b.fullName || "").toLowerCase().trim();
+
     return nameA.localeCompare(nameB);
   });
 }, [myClients]);
@@ -337,11 +330,17 @@ export default function Dashboard() {
 
       if (await handleAuthFailure(res, data)) return;
 
-      if (!res.ok) {
-        alert(data && data.message ? data.message : "Unable to load records");
-        setMyClients([]);
-        return;
-      }
+     if (!res.ok) {
+  console.log("CONSENT UPDATE FAILED");
+  console.log("STATUS:", res.status);
+  console.log("DATA:", data);
+
+  alert(
+    `Status: ${res.status}\n${data.message || "Unable to update consent"}`
+  );
+
+  return;
+}
 
       const rows = normalizeArray(data);
       setMyClients(rows);
@@ -368,46 +367,11 @@ export default function Dashboard() {
     }
   }, [apiJson, handleAuthFailure, myClientsSearch, requireLogin]);
 
-  const loadMyDisputes = useCallback(
-    async (incomingChangedIds = []) => {
-      if (!requireLogin()) return;
-
-      setDisputesLoading(true);
-
-      try {
-        const { res, data } = await apiJson("/api/disputes/mine", {
-          method: "GET"
-        });
-
-        if (await handleAuthFailure(res, data)) return;
-
-        if (!res.ok) {
-          alert(data.message || "Unable to load dispute records");
-          setMyDisputes([]);
-          return;
-        }
-
-        setMyDisputes(Array.isArray(data) ? data : []);
-        setChangedDisputeIds(incomingChangedIds);
-
-        if (incomingChangedIds.length > 0) {
-          window.setTimeout(() => setChangedDisputeIds([]), 1800);
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Server error while loading dispute records");
-        setMyDisputes([]);
-      } finally {
-        setDisputesLoading(false);
-      }
-    },
-    [apiJson, handleAuthFailure, requireLogin]
-  );
-
   const searchClient = useCallback(async () => {
     if (!requireLogin()) return;
 
     const nationalId = searchNationalId.trim();
+
 
     if (!nationalId) {
       alert("Please enter a National ID.");
@@ -435,10 +399,9 @@ export default function Dashboard() {
         return;
       }
 
-      setSearchResult({
-        nationalId,
-        data
-      });
+     console.log("SEARCH RESPONSE", data);
+
+setSearchResult(data);
     } catch (err) {
       console.error(err);
       alert("Server error while verifying customer");
@@ -447,57 +410,7 @@ export default function Dashboard() {
     }
   }, [apiJson, handleAuthFailure, requireLogin, searchNationalId]);
 
-  const openDispute = useCallback(
-    async (nationalId, recordId) => {
-      if (!requireLogin()) return;
-
-      const cleanNationalId = String(nationalId || "").trim();
-
-      if (!/^\d{9}$/.test(cleanNationalId)) {
-        alert("National ID must be exactly 9 digits.");
-        return;
-      }
-
-      const notes = prompt("Enter dispute reason (optional):") || "";
-
-      try {
-        const { res, data } = await apiJson("/api/disputes", {
-          method: "POST",
-          body: JSON.stringify({
-            nationalId: cleanNationalId,
-            clientRecordId: String(recordId || "").trim(),
-            notes: String(notes || "").trim()
-          })
-        });
-
-        if (await handleAuthFailure(res, data)) return;
-
-        if (!res.ok) {
-          alert(data.message || "Unable to submit dispute request");
-          return;
-        }
-
-        alert("Dispute submitted successfully. The record is now under review.");
-
-        await loadMyDisputes();
-
-        if (searchNationalId.trim() === cleanNationalId) {
-          await searchClient();
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Server error while submitting dispute");
-      }
-    },
-    [
-      apiJson,
-      handleAuthFailure,
-      loadMyDisputes,
-      requireLogin,
-      searchClient,
-      searchNationalId
-    ]
-  );
+ 
 
   const addClient = useCallback(async () => {
     if (!requireLogin()) return;
@@ -626,196 +539,143 @@ export default function Dashboard() {
     requireLogin
   ]);
 
-  const updateClient = useCallback(
-    async (clientId) => {
-      if (!requireLogin()) return;
+  const updateConsent = useCallback(
+  async (clientId) => {
+    if (!requireLogin()) return;
 
-      const id = String(clientId || "");
-      const edit = clientEdits[id];
+    const id = String(clientId || "");
 
-      if (!id || !edit) {
-        alert("Unable to update this record.");
+    const file = consentFiles[id];
+
+    if (!file) {
+      alert("Please select a consent file.");
+      return;
+    }
+
+    if (!isAllowedUploadFile(file)) {
+      alert("Consent file must be an image or PDF.");
+      return;
+    }
+
+    const fd = new FormData();
+
+    fd.append("consentFile", file);
+
+    try {
+      const { res, data } = await apiJson(
+        `/api/clients/${encodeURIComponent(id)}/consent`,
+        {
+          method: "PATCH",
+          body: fd
+        }
+      );
+
+      if (await handleAuthFailure(res, data)) return;
+
+      if (!res.ok) {
+        alert(data.message || "Unable to update consent");
         return;
       }
 
-      const payload = {
-        status: edit.status
-      };
+      alert("Consent renewed successfully ✅");
 
-      if (edit.dueDate) payload.dueDate = edit.dueDate;
-      if (edit.paidDate) payload.paidDate = edit.paidDate;
+      setConsentFiles((prev) => ({
+        ...prev,
+        [id]: null
+      }));
 
-      try {
-        const { res, data } = await apiJson(`/api/clients/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload)
-        });
+      setOpenClientEditIds((prev) => ({
+        ...prev,
+        [id]: false
+      }));
 
-        if (await handleAuthFailure(res, data)) return;
+      await loadMyClients();
 
-        if (!res.ok) {
-          alert(data.message || "Unable to update record");
-          return;
-        }
-
-        alert("Record updated successfully.");
-        setOpenClientEditIds((prev) => ({
-  ...prev,
-  [id]: false
-}));
-
-        await loadMyClients();
-
-        if (searchNationalId.trim()) {
-          await searchClient();
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Server error while updating record");
+      if (searchNationalId.trim()) {
+        await searchClient();
       }
-    },
-    [
-      apiJson,
-      clientEdits,
-      handleAuthFailure,
-      loadMyClients,
-      requireLogin,
-      searchClient,
-      searchNationalId
-    ]
-  );
+    } catch (err) {
+      console.error(err);
+      alert("Server error while updating consent");
+    }
+  },
+  [
+    apiJson,
+    consentFiles,
+    handleAuthFailure,
+    loadMyClients,
+    requireLogin,
+    searchClient,
+    searchNationalId
+  ]
+);
 
-  const startDisputesAutoRefresh = useCallback(() => {
-    const intervalId = window.setInterval(async () => {
-      try {
-        const { res, data } = await apiJson("/api/disputes/mine", {
-          method: "GET"
-        });
+ const updateClient = useCallback(
+  async (clientId) => {
+    if (!requireLogin()) return;
 
-        if (!res.ok) return;
+    const id = String(clientId || "");
+    const edit = clientEdits[id];
 
-        const rows = Array.isArray(data) ? data : [];
-
-        const hash = JSON.stringify(
-          rows.map((d) => ({
-            id: d._id,
-            status: d.adminStatus,
-            note: d.adminNote
-          }))
-        );
-
-        if (hash !== lastDisputesHashRef.current) {
-          const changedIds = [];
-
-          rows.forEach((d) => {
-            const prev = lastDisputesMapRef.current[d._id];
-
-            const curr = {
-              status: d.adminStatus,
-              note: d.adminNote
-            };
-
-            if (prev && (prev.status !== curr.status || prev.note !== curr.note)) {
-              changedIds.push(d._id);
-            }
-
-            lastDisputesMapRef.current[d._id] = curr;
-          });
-
-          if (changedIds.length > 0) {
-            showToast(
-              changedIds.length === 1
-                ? "Dispute updated"
-                : `${changedIds.length} disputes updated`
-            );
-          }
-
-          lastDisputesHashRef.current = hash;
-          setMyDisputes(rows);
-          setChangedDisputeIds(changedIds);
-
-          if (changedIds.length > 0) {
-            window.setTimeout(() => setChangedDisputeIds([]), 1800);
-          }
-        }
-      } catch (err) {
-        console.error("Auto refresh error:", err);
-      }
-    }, 5000);
-
-    return intervalId;
-  }, [apiJson, showToast]);
-
-  useEffect(() => {
-    let intervalId = null;
-    let cancelled = false;
-
-    async function bootDashboard() {
-      if (!requireLogin()) return;
-
-      const storedEmail = getEmail();
-      setEmail(storedEmail);
-
-      try {
-        const authCheck = await apiJson("/api/auth/me", { method: "GET" });
-
-        if (cancelled) return;
-
-        if (
-          authCheck.data &&
-          (authCheck.data.isSuspended === true ||
-            authCheck.data.status === "suspended")
-        ) {
-          setIsSuspended(true);
-          return;
-        }
-
-        await loadMyClients();
-        await loadMyDisputes();
-
-        if (!cancelled) {
-          intervalId = startDisputesAutoRefresh();
-        }
-      } catch (err) {
-        console.error(err);
-      }
+    if (!id || !edit) {
+      alert("Unable to update this record.");
+      return;
     }
 
-    bootDashboard();
-
-    return () => {
-      cancelled = true;
-      if (intervalId) window.clearInterval(intervalId);
+    const payload = {
+      status: edit.status
     };
-  }, [
+
+    if (edit.dueDate) payload.dueDate = edit.dueDate;
+    if (edit.paidDate) payload.paidDate = edit.paidDate;
+
+    try {
+      const { res, data } = await apiJson(
+        `/api/clients/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (await handleAuthFailure(res, data)) return;
+
+      if (!res.ok) {
+        alert(data.message || "Unable to update record");
+        return;
+      }
+
+      alert("Record updated successfully.");
+
+      setOpenClientEditIds((prev) => ({
+        ...prev,
+        [id]: false
+      }));
+
+      await loadMyClients();
+
+      if (searchNationalId.trim()) {
+        await searchClient();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error while updating record");
+    }
+  },
+  [
     apiJson,
+    clientEdits,
+    handleAuthFailure,
     loadMyClients,
-    loadMyDisputes,
     requireLogin,
-    startDisputesAutoRefresh
-  ]);
+    searchClient,
+    searchNationalId
+  ]
+);
 
-  const activeDisputes = useMemo(() => {
-    return myDisputes.filter((d) => {
-      const s = String(d.adminStatus || d.status || "").toLowerCase();
-      return s !== "resolved" && s !== "rejected";
-    });
-  }, [myDisputes]);
-
-  const closedDisputes = useMemo(() => {
-    const now = new Date();
-
-    return myDisputes.filter((d) => {
-      const s = String(d.adminStatus || d.status || "").toLowerCase();
-
-      if (s !== "resolved" && s !== "rejected") return false;
-
-      const updatedAt = new Date(d.updatedAt || d.createdAt);
-      const diffDays = (now - updatedAt) / (1000 * 60 * 60 * 24);
-
-      return diffDays <= 7;
-    });
-  }, [myDisputes]);
+useEffect(() => {
+  loadMyClients();
+}, [loadMyClients]);
 
   function toggleClientEdit(id) {
   setOpenClientEditIds((prev) => ({
@@ -838,179 +698,128 @@ function closeMyCustomersAndScrollTop() {
   }, 120);
 }
 
-  function renderSearchResults() {
-    if (searchLoading) {
-      return <p className="small">Verifying records...</p>;
-    }
+function renderSearchResults() {
+  if (searchLoading) {
+    return <p className="small">Verifying records...</p>;
+  }
 
-    if (!searchResult) return null;
+  if (!searchResult) return null;
 
-    const nationalId = searchResult.nationalId;
-    const data = searchResult.data || {};
-    const fullName = data.fullName || "Unknown";
-    const risk = data.risk || "green";
-    const riskLabel = data.riskLabel || "🟢 Low Credit Risk Profile";
-    const creditRecords = Array.isArray(data.activeLoans) ? data.activeLoans : [];
-    const tone = riskTone(risk);
+  const nationalId = searchResult.nationalId || "";
+  const fullName = searchResult.fullName || "Unknown";
 
-    return (
-      <>
-        <div className="result-item">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-              alignItems: "center"
-            }}
-          >
-            <div>
-              <div className="small">
-                Verification Result – National ID: <b>{nationalId}</b>
-              </div>
-              <div style={{ marginTop: 6 }}>
-                <b>Name:</b> {fullName}
-              </div>
+ const institutions = Array.isArray(searchResult.institutions)
+  ? searchResult.institutions
+  : [];
+
+  return (
+    <>
+      <div className="result-item">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center"
+          }}
+        >
+          <div>
+            <div className="small">
+              Verification Result – National ID: <b>{nationalId}</b>
             </div>
 
-            <div className={`badge ${tone.className}`} title="Risk level">
-              {riskLabel}
+            <div style={{ marginTop: 6 }}>
+              <b>Name:</b> {fullName}
             </div>
+          </div>
+
+          <div className="badge">
+            Customer Found
           </div>
         </div>
+      </div>
 
-        {creditRecords.length === 0 ? (
-          <div className="result-item">
-            <div className="small">
-              No credit records found across institutions for this National ID.
-            </div>
+      {institutions.length === 0 ? (
+        <div className="result-item">
+          <div className="small">
+            No participating institutions found for this National ID.
           </div>
-        ) : (
-          <div className="result-item">
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Credit Records</div>
+        </div>
+      ) : (
+        <div className="result-item">
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>
+            Reported By
+          </div>
 
-            <div className="results" style={{ gap: 10 }}>
-              {creditRecords.map((record, index) => {
-                const institutionName =
-                  record.cashloanName ||
-                  record.businessName ||
-                  record.institutionName ||
-                  "Unknown Institution";
+          <div className="results" style={{ gap: 10 }}>
+            {institutions.map((institution, index) => {
+              const institutionName =
+                institution.cashloanName ||
+                institution.businessName ||
+                "Unknown Institution";
 
-                const branch =
-                  record.cashloanBranch || record.branchName || record.branch || "";
+              const branch =
+                institution.cashloanBranch ||
+                institution.branchName ||
+                "";
 
-                const phone =
-                  record.cashloanPhone || record.phone || record.contactPhone || "";
+              const phone =
+                institution.cashloanPhone ||
+                institution.phone ||
+                "";
 
-                const statusUpper = String(record.status || "").toUpperCase();
-                const badgeClass = statusBadgeClass(statusUpper);
-                const recordId = record._id || record.id || record.clientRecordId || "";
+              const recordId =
+                institution._id ||
+                institution.id ||
+                "";
 
-                return (
-                  <div className="result-item" key={`${recordId || index}-${index}`}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        alignItems: "flex-start"
-                      }}
-                    >
+              return (
+                <div
+                  className="result-item"
+                  key={`${recordId || index}-${index}`}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      alignItems: "flex-start"
+                    }}
+                  >
+                    <div>
                       <div>
-                        <div>
-                          <b>{institutionName}</b>
-                          {branch ? ` – ${branch}` : ""}
-                        </div>
-
-                        {phone ? <div className="small">Tel: {phone}</div> : null}
-
-                        <div className="small" style={{ marginTop: 4 }}>
-                          Status:{" "}
-                          <span className={`badge ${badgeClass}`}>
-                            {statusUpper || "UNKNOWN"}
-                          </span>
-                        </div>
+                        <b>{institutionName}</b>
+                        {branch ? ` – ${branch}` : ""}
                       </div>
 
-                      <button
-                        className="btn-ghost btn-sm"
-                        type="button"
-                        onClick={() => openDispute(nationalId, recordId)}
-                      >
-                        Open Dispute
-                      </button>
+                      {phone ? (
+                        <div className="small">
+                          Phone: {phone}
+                        </div>
+                      ) : null}
                     </div>
+
+                    <button
+                      className="btn-ghost btn-sm"
+                      type="button"
+                      onClick={() =>
+                        openDispute(nationalId, recordId)
+                      }
+                    >
+                      Open Dispute
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </>
-    );
-  }
-
-  function renderDisputeRow(dispute) {
-    const id = String(dispute?._id || dispute?.id || "");
-    const nationalId = dispute?.nationalId || "—";
-
-    const rawStatus = String(
-      dispute?.adminStatus || dispute?.status || "pending"
-    ).toLowerCase();
-
-    const label =
-      rawStatus === "investigating"
-        ? "Investigating"
-        : rawStatus === "resolved"
-        ? "Resolved"
-        : rawStatus === "rejected"
-        ? "Rejected"
-        : "Pending";
-
-    const submittedAt = dispute?.createdAt
-      ? new Date(dispute.createdAt).toLocaleString()
-      : "";
-
-    return (
-      <div className="result-item" key={id || `${nationalId}-${submittedAt}`}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>
-          Dispute Record • National ID: <b>{nationalId}</b>
         </div>
-
-        <div className="small">
-          <b>Status:</b> {label}
-          {submittedAt ? ` • Submitted: ${submittedAt}` : ""}
-        </div>
-
-        <div className="small" style={{ marginTop: 4 }}>
-          <b>Against:</b>{" "}
-          {dispute?.againstCashloanName ||
-            dispute?.againstName ||
-            dispute?.againstBusinessName ||
-            "Unknown Institution"}
-          {dispute?.againstBranch ? ` • ${dispute.againstBranch}` : ""}
-          {dispute?.againstPhone ? ` • ${dispute.againstPhone}` : ""}
-        </div>
-
-        {dispute?.notes ? (
-          <div className="small" style={{ marginTop: 6 }}>
-            <b>Reason:</b> {dispute.notes}
-          </div>
-        ) : null}
-
-        {dispute?.adminNote ? (
-          <div className="small" style={{ marginTop: 8 }}>
-            <b>Admin Response:</b>
-            <br />
-            {dispute.adminNote}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
+      )}
+    </>
+  );
+}
 
   function renderClientRow(client, index) {
     const id = String(client._id || client.id || "");
@@ -1021,158 +830,200 @@ function closeMyCustomersAndScrollTop() {
     const paid = client.paidDate ? fmtDate(client.paidDate) : "";
     const editOpen = Boolean(openClientEditIds[id]);
 
+    const today = new Date();
+
+const renewalDate = client.consentRenewalDate
+  ? new Date(client.consentRenewalDate)
+  : null;
+
+const daysRemaining = renewalDate
+  ? Math.ceil(
+      (renewalDate - today) / (1000 * 60 * 60 * 24)
+    )
+  : null;
+
+const expiringSoon =
+  daysRemaining !== null &&
+  daysRemaining <= 30 &&
+  daysRemaining >= 0;
+
+const expired =
+  daysRemaining !== null &&
+  daysRemaining < 0;
+
     const edit = clientEdits[id] || {
       status: String(client.status || "owing").toLowerCase(),
       dueDate: fmtDateInput(client.dueDate),
       paidDate: fmtDateInput(client.paidDate)
     };
 
-  return (
-    <div className="result-item" key={id || `${client.nationalId}-${client.createdAt}`}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 10,
-          flexWrap: "wrap",
-          alignItems: "flex-start"
-        }}
-      >
+return (
+  <div
+    className="result-item"
+    key={id || `${client.nationalId}-${client.createdAt}`}
+  >
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 10,
+        flexWrap: "wrap",
+        alignItems: "flex-start"
+      }}
+    >
+      <div>
         <div>
-          <div><b>{index + 1}. {client.fullName || "Unknown"}</b></div>
+             <b
+  className={
+    expired
+      ? "expired-consent"
+      : expiringSoon
+      ? "expiring-consent"
+      : ""
+  }
+>
+  {index + 1}. {client.fullName || "Unknown"}
+</b>
 
-          <div className="small">
-            National ID: <b>{client.nationalId || ""}</b>
-          </div>
+{expiringSoon && (
+  <div className="consent-warning">
+    ⚠ Consent expires in {daysRemaining} days
+  </div>
+)}
 
-          <div className="small">
-            Credit Status:{" "}
-            <span className={`badge ${badgeClass}`}>{stUpper || "UNKNOWN"}</span>
-          </div>
+{expired && (
+  <div className="consent-expired">
+    🚫 Consent expired
+  </div>
+)}
+        </div>
+        <div className="small">
+          National ID: <b>{client.nationalId || ""}</b>
+        </div>
 
-          {stUpper === "PAID" && paid ? <div className="small">Settled on: {paid}</div> : null}
-          {(stUpper === "OWING" || stUpper === "OVERDUE") && due ? <div className="small">Due date: {due}</div> : null}
-
-          {client.consentStatus ? (
+        {client.consentStatus ? (
+          <>
             <div className="small" style={{ marginTop: 6 }}>
               <b>Consent Status:</b> {client.consentStatus}
             </div>
-          ) : null}
 
-          {client.consentNotes ? (
             <div className="small" style={{ marginTop: 4 }}>
-              {client.consentNotes}
-            </div>
-          ) : null}
-
-          <div className="small">
-            Created: {client.createdAt ? fmtDateTime(client.createdAt) : ""}
-          </div>
-        </div>
-
-        {id ? (
-          <div
-            className="small-actions"
-            style={{
-              display: "grid",
-              gap: 8,
-              minWidth: 260
-            }}
-          >
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                className="btn-ghost btn-sm"
-                type="button"
-                onClick={closeMyCustomersAndScrollTop}
-              >
-                ↑
-              </button>
-
-              <button
-                className={`btn-ghost btn-sm update-client-toggle ${editOpen ? "is-open" : ""}`}
-                type="button"
-                onClick={() => toggleClientEdit(id)}
-              >
-                Update Client <span>⌄</span>
-              </button>
+              <b>Consent Added:</b>{" "}
+              {client.consent?.uploadedAt
+                ? fmtDate(client.consent.uploadedAt)
+                : "Not Available"}
             </div>
 
-            <div className={`mini-update-wrap ${editOpen ? "is-open" : ""}`}>
-              <div className="mini-update-inner">
-                <select
-                  value={edit.status}
-                  onChange={(e) =>
-                    setClientEdits((prev) => ({
-                      ...prev,
-                      [id]: { ...(prev[id] || edit), status: e.target.value }
-                    }))
-                  }
-                >
-                  <option value="paid">paid</option>
-                  <option value="owing">owing</option>
-                  <option value="overdue">overdue</option>
-                </select>
-
-                <div className="row" style={{ gap: 8 }}>
-                  <div>
-                    <label>Due date</label>
-                    <input
-                      type="date"
-                      value={edit.dueDate}
-                      onChange={(e) =>
-                        setClientEdits((prev) => ({
-                          ...prev,
-                          [id]: { ...(prev[id] || edit), dueDate: e.target.value }
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label>Paid date</label>
-                    <input
-                      type="date"
-                      value={edit.paidDate}
-                      onChange={(e) =>
-                        setClientEdits((prev) => ({
-                          ...prev,
-                          [id]: { ...(prev[id] || edit), paidDate: e.target.value }
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <button
-                  className="btn-primary btn-sm"
-                  type="button"
-                  onClick={() => updateClient(id)}
-                >
-                  Update Record
-                </button>
-              </div>
+            <div className="small" style={{ marginTop: 4 }}>
+              <b>Renewal Due:</b>{" "}
+              {client.consentRenewalDate
+                ? fmtDate(client.consentRenewalDate)
+                : "Not Available"}
             </div>
+          </>
+        ) : null}
+
+        {client.consentNotes ? (
+          <div className="small" style={{ marginTop: 4 }}>
+            {client.consentNotes}
           </div>
         ) : null}
+
+        <div className="small">
+          Created: {client.createdAt ? fmtDateTime(client.createdAt) : ""}
+        </div>
       </div>
+
+      {id ? (
+        <div
+          className="small-actions"
+          style={{
+            display: "grid",
+            gap: 8,
+            minWidth: 260
+          }}
+        >
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="btn-ghost btn-sm"
+              type="button"
+              onClick={closeMyCustomersAndScrollTop}
+            >
+              ↑
+            </button>
+
+            <button
+              className={`btn-ghost btn-sm update-client-toggle ${
+                editOpen ? "is-open" : ""
+              }`}
+              type="button"
+              onClick={() => toggleClientEdit(id)}
+            >
+              Update Consent <span>⌄</span>
+            </button>
+          </div>
+
+          <div className={`mini-update-wrap ${editOpen ? "is-open" : ""}`}>
+            <div className="mini-update-inner">
+              <div className="row" style={{ gap: 8 }}>
+                <div>
+                  <label>Consent Date</label>
+                  <input
+                    type="date"
+                    value={edit.consentDate || ""}
+                    onChange={(e) =>
+                      setClientEdits((prev) => ({
+                        ...prev,
+                        [id]: {
+                          ...(prev[id] || edit),
+                          consentDate: e.target.value
+                        }
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label>Upload Consent</label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) =>
+                      setConsentFiles((prev) => ({
+                        ...prev,
+                        [id]: e.target.files?.[0] || null
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+             <button
+  className="btn-primary btn-sm"
+  type="button"
+  onClick={() => updateConsent(id)}
+>
+  Update Consent
+</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
-  );
+  </div>
+);
 }
 
-  return (
-    <div className="dashboard-page">
+return (
+  <div className="dashboard-page">
       {toast ? <div id="toastContainer">{toast}</div> : null}
 
       <div className="container">
         <div className="topbar">
-         <div className="brand">
-  <img
-    src={logo}
-    alt=""
-    className="brand-logo"
-  />
-  <h1>LinkLedger</h1>
-</div>
+          <div className="brand">
+            <div className="brand-badge"></div>
+            <h1>LinkLedger</h1>
+          </div>
 
           <div
             style={{
@@ -1377,16 +1228,16 @@ function closeMyCustomersAndScrollTop() {
               ) : null}
             </div>
 
-            <div style={{ marginTop: 14 }}>
-              <button
-                className="btn-primary"
-                type="button"
-                onClick={addClient}
-                disabled={savingRecord}
-              >
-                {savingRecord ? "Saving..." : "Save record"}
-              </button>
-            </div>
+ <div style={{ marginTop: 14 }}>
+  <button
+    className="btn-primary"
+    type="button"
+    onClick={addClient}
+    disabled={savingRecord}
+  >
+    {savingRecord ? "Saving..." : "Save record"}
+  </button>
+</div>
           </div>
         </CollapseSection>
 
@@ -1411,7 +1262,11 @@ function closeMyCustomersAndScrollTop() {
               }}
             />
 
-            <button className="btn-ghost" type="button" onClick={loadMyClients}>
+            <button
+              className="btn-ghost"
+              type="button"
+              onClick={loadMyClients}
+            >
               Refresh
             </button>
           </div>
@@ -1424,63 +1279,13 @@ function closeMyCustomersAndScrollTop() {
                 <div className="small">No records available.</div>
               </div>
             ) : (
-              sortedMyClients.map((client, index) => renderClientRow(client, index))
+              sortedMyClients.map((client, index) =>
+                renderClientRow(client, index)
+              )
             )}
-          </div>
-        </CollapseSection>
-
-        <CollapseSection
-          id="myDisputesWrap"
-          title="My Disputes"
-          subtitle="Track active and recently closed dispute records."
-          collapsed={collapsed.myDisputes}
-          onToggle={() => toggleSection("myDisputes")}
-        >
-          <div className="section-tools">
-            <button
-              className="btn-ghost"
-              id="reloadMyDisputesBtn"
-              type="button"
-              onClick={() => loadMyDisputes()}
-            >
-              Refresh
-            </button>
-          </div>
-
-          <h3>Active Disputes</h3>
-          <div id="myDisputesActive" className="results">
-            {disputesLoading ? (
-              <div className="result-item">
-                <div className="small">Loading dispute records...</div>
-              </div>
-            ) : activeDisputes.length === 0 ? (
-              <div className="result-item">
-                <div className="small">No active disputes</div>
-              </div>
-            ) : (
-              activeDisputes.map(renderDisputeRow)
-            )}
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <h3>Closed Disputes</h3>
-
-            <div className="section-sub">
-              Showing recent closed disputes (last 7 days)
-            </div>
-
-            <div id="myDisputesClosed" className="results">
-              {closedDisputes.length === 0 ? (
-                <div className="result-item">
-                  <div className="small">No closed disputes</div>
-                </div>
-              ) : (
-                closedDisputes.map(renderDisputeRow)
-              )}
-            </div>
           </div>
         </CollapseSection>
       </div>
     </div>
   );
-}
+}          

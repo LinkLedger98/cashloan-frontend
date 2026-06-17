@@ -42,9 +42,9 @@ export default function CinematicHero() {
   Together.
 </h1>
           <p>
-            Building trust through transparency,
-            consent, and responsible lending.
-          </p>
+  Building trust through transparency,
+  consent, and customer verification.
+</p>
 
           <a href="#main-content" className="hero-btn-pink">
             Get Started

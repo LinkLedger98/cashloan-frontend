@@ -15,7 +15,7 @@ export default function Compliance() {
   const items = [
     [
       "1. Data Collection",
-      "LinkLedger collects limited customer information submitted by registered institutions, including National ID and repayment status (paid, owing, overdue)."
+      "LinkLedger collects limited customer information submitted by registered institutions, including National ID information, customer consent records, institution participation records, and dispute information where applicable.."
     ],
     [
       "2. Customer Consent",
@@ -23,11 +23,11 @@ export default function Compliance() {
     ],
     [
       "3. Data Usage",
-      "Customer data is used strictly for verification purposes. LinkLedger enables institutions to assess risk and make informed lending decisions based on shared repayment history."
+      "Customer data is used strictly for verification purposes. LinkLedger enables participating institutions to verify customer information, identify duplicate activity, and support responsible decision-making using consent-based information sharing."
     ],
     [
       "4. Access Control",
-      "Access to customer data is restricted to authorised institutions. Search results are limited to relevant status information and do not expose unnecessary personal data."
+      "Access to customer data is restricted to authorised institutions. Search results are limited to authorised verification information and do not expose unnecessary personal data. and do not expose unnecessary personal data."
     ],
     [
       "5. Audit Logging",

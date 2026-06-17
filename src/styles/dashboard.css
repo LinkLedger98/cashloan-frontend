@@ -712,3 +712,32 @@ hr {
   object-fit: contain;
   display: block;
 }
+
+.expiring-consent {
+  color: #ff9800;
+  text-shadow:
+    0 0 5px #ff9800,
+    0 0 10px #ff9800,
+    0 0 20px #ff9800;
+}
+
+.expired-consent {
+  color: #ff3b30;
+  text-shadow:
+    0 0 5px #ff3b30,
+    0 0 10px #ff3b30,
+    0 0 20px #ff3b30,
+    0 0 30px #ff3b30;
+}
+
+.consent-warning {
+  margin-top: 6px;
+  color: #ff9800;
+  font-weight: 700;
+}
+
+.consent-expired {
+  margin-top: 6px;
+  color: #ff3b30;
+  font-weight: 700;
+}

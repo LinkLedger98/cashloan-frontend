@@ -47,8 +47,8 @@ export default function Landing() {
             <h2>Verify a customer before you approve.</h2>
 
             <p className="lead">
-              LinkLedger is a Botswana-first customer verification and credit reporting platform for micro-institutions and similar organisations.
-              Reduce fraud, prevent repeat defaults, and make accountable lending decisions using National ID-based records.
+             LinkLedger is a Botswana-first customer verification, consent management and institution collaboration platform.
+              Reduce fraud, identify duplicate activity and support responsible customer verification.
               <br /><br />
               All customer data is submitted with verified consent, access is logged, and records are maintained with a structured audit trail.
             </p>
@@ -66,7 +66,7 @@ export default function Landing() {
 
               <div className="trust-item">
                 <div className="trust-title">Safer</div>
-                <div className="trust-text">Reduce repeat defaults</div>
+                <div className="trust-text">Identify duplicate and suspicious activity</div>
               </div>
 
               <div className="trust-item">
@@ -87,9 +87,9 @@ export default function Landing() {
             <div className="list">
               <span>• Institution registration</span>
               <span>• Add customers using National ID</span>
-              <span>• Mark: paid / owing / overdue</span>
-              <span>• Search customer history across institutions</span>
-              <span>• Reduce fraud & improve collections</span>
+              <span>• Record customer participation</span>
+              <span>• Verify customer participation across institutions</span>
+              <span>• Reduce fraud and improve verification</span>
               <span>• Consent-based data submission with audit logging</span>
               <span>• Structured dispute resolution support</span>
             </div>
@@ -108,8 +108,8 @@ export default function Landing() {
               <div className="block-title">Customer Verification</div>
               <div className="list">
                 <span>• Search by National ID</span>
-                <span>• See reported credit status history</span>
-                <span>• Identify high-risk repeat activity</span>
+                <span>• View participating institution records</span>
+                <span>• Identify duplicate and unusual activity</span>
               </div>
 
               <div className="hero-actions" style={{ marginTop: 12 }}>
@@ -121,7 +121,7 @@ export default function Landing() {
               <div className="block-title">Customer Management</div>
               <div className="list">
                 <span>• Add customer details</span>
-                <span>• Mark: paid / owing / overdue</span>
+                <span>• Manage customer consent records</span>
                 <span>• Maintain a structured, time-stamped audit trail</span>
               </div>
 
@@ -148,21 +148,21 @@ export default function Landing() {
             <div className="block">
               <div className="block-title">2) Add customers</div>
               <div className="list">
-                <span>Record National ID and credit status with verified customer consent.</span>
+                <span>Record National ID and customer consent.</span>
               </div>
             </div>
 
             <div className="block">
               <div className="block-title">3) Verify before approving</div>
               <div className="list">
-                <span>Search customer history across institutions with controlled, logged access.</span>
+                <span>Verify whether a customer appears within participating institutions.</span>
               </div>
             </div>
 
             <div className="block">
               <div className="block-title">4) Make safer decisions</div>
               <div className="list">
-                <span>Reduce fraud and improve collections.</span>
+                <span>Reduce fraud and support informed verification decisions.</span>
               </div>
             </div>
           </div>
@@ -186,8 +186,8 @@ export default function Landing() {
 
               <div className="price-list">
                 <span>• Institution registration</span>
-                <span>• Add customers + credit statuses</span>
-                <span>• Search customer history</span>
+                <span>• Add customers with verified consent</span>
+                <span>• Verify customer participation</span>
                 <span>• Basic audit trail</span>
               </div>
 
@@ -260,15 +260,15 @@ export default function Landing() {
         <div className="section">
           <h3>About LinkLedger</h3>
           <p>
-            LinkLedger is a Botswana-first customer verification and credit reporting platform built to help institutions verify customer history,
-            reduce fraud, and improve repayment discipline across the lending market.
+            LinkLedger is a Botswana-first customer verification, consent management and institution collaboration platform built to help institutions verify customer participation,
+            reduce fraud, support accountable information sharing.
             <br /><br />
             The platform is designed with a compliance-first approach, ensuring consent-based data sharing, audit logging, and structured dispute resolution.
           </p>
         </div>
 
         <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
-          LinkLedger operates under a compliance-first approach aligned with data protection and financial regulatory frameworks. All customer data requires documented consent.
+          LinkLedger only permits customer searches where documented customer consent exists. All customer data requires documented consent.
         </div>
 
         <div id="contact"></div>
