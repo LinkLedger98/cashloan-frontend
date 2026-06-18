@@ -175,12 +175,11 @@ export default function Dashboard() {
   const [selectedClientId, setSelectedClientId] = useState("");
 
   const [addForm, setAddForm] = useState({
-    fullName: "",
-    nationalId: "",
-    status: "paid",
-    dueDate: "",
-    consentGiven: false
-  });
+  fullName: "",
+  nationalId: "",
+  consentGiven: false
+});
+
   const [consentFile, setConsentFile] = useState(null);
   const [consentAck, setConsentAck] = useState(null);
   const [savingRecord, setSavingRecord] = useState(false);
@@ -419,13 +418,11 @@ setSearchResult(data);
 
     const fullName = addForm.fullName.trim();
     const nationalId = addForm.nationalId.trim();
-    const status = addForm.status;
-    const dueDate = addForm.dueDate;
 
-    if (!fullName || !nationalId || !status) {
-      alert("Please complete all required fields: Name, National ID, and Credit Status.");
-      return;
-    }
+   if (!fullName || !nationalId) {
+  alert("Please complete all required fields.");
+  return;
+}
 
     if (!/^\d{9}$/.test(nationalId)) {
       alert("National ID must be exactly 9 digits.");
@@ -454,8 +451,6 @@ setSearchResult(data);
     const fd = new FormData();
     fd.append("fullName", fullName);
     fd.append("nationalId", nationalId);
-    fd.append("status", status);
-    if (dueDate) fd.append("dueDate", dueDate);
     fd.append("consentGiven", "true");
     fd.append("consentFile", consentFile);
 
@@ -507,8 +502,6 @@ setSearchResult(data);
       setAddForm({
         fullName: "",
         nationalId: "",
-        status: "paid",
-        dueDate: "",
         consentGiven: false
       });
 
@@ -1128,41 +1121,6 @@ return (
                     setAddForm((prev) => ({
                       ...prev,
                       nationalId: e.target.value
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="row" style={{ marginTop: 12 }}>
-              <div>
-                <label htmlFor="status">Credit Status</label>
-                <select
-                  id="status"
-                  value={addForm.status}
-                  onChange={(e) =>
-                    setAddForm((prev) => ({
-                      ...prev,
-                      status: e.target.value
-                    }))
-                  }
-                >
-                  <option value="paid">paid</option>
-                  <option value="owing">owing</option>
-                  <option value="overdue">overdue</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="dueDate">Due date</label>
-                <input
-                  id="dueDate"
-                  type="date"
-                  value={addForm.dueDate}
-                  onChange={(e) =>
-                    setAddForm((prev) => ({
-                      ...prev,
-                      dueDate: e.target.value
                     }))
                   }
                 />
